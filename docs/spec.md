@@ -161,9 +161,9 @@ This is a heuristic signal, computed on demand, with nothing stored. Editing the
 
 ## 6. The dev route: `/__prose/`
 
-A Vite plugin. In `vite dev` it serves one route (following `vite-plugin-inspect`'s `/__inspect/` precedent). In `vite build` its only job is the HTML strip (§6.5).
+A Vite plugin, built on [Devframe](https://devfra.me) (`devframe` + `@vitejs/devtools-kit`) rather than bespoke server plumbing: Devframe supplies typed RPC (`query`/`action`/`event`), state that stays synced between the node process and the browser, and an MCP adapter for agent access. `prose()` mounts a devframe (`id: "prose"`) into `@vitejs/devtools`, the official Vite DevTools hub, which is why `vite.config.ts` needs both `@vitejs/devtools` and `@amitkaps/prose` in its plugin list — `prose()` brings both in for the app, so one entry is enough. In `vite dev` this serves one route, at `/__prose/` (Devframe's default mount path for a hosted devframe, `/__<id>/`). In `vite build` its only job is the HTML strip (§6.5).
 
-The route's client is served through Vite itself, so it can import dev tools (§7) and app modules.
+The route's client is a small prebuilt SPA (Devframe's `clientAssets`), served by Vite; it connects back over Devframe's RPC, so it can call into dev tools (§7) and read app modules through the same connection.
 
 ### 6.1 Navigation
 
@@ -171,7 +171,7 @@ The route's client is served through Vite itself, so it can import dev tools (§
 - The main pane shows the selected node at its level: its prose, then its children as first-paragraph summaries (§4). At L3 it also shows the diagram; at L0 it shows the code, syntax-highlighted.
 - Every node has a stable URL (`/__prose/src/store.ts#addTodo`), so levels can be linked to.
 - Warnings (§5), pending chunks, and open remarks show as badges on nodes and roll up to their ancestors.
-- The view updates live when files change, through a custom event on Vite's HMR websocket.
+- The view updates live when files change, through Devframe's synced state — no bespoke HMR-websocket wiring.
 
 ### 6.2 Prose editor
 
@@ -203,12 +203,14 @@ Remarks are questions or directions to the agent, attached to any node. They liv
 
 ### 6.4 API
 
-The server exposes JSON endpoints under `/__prose/api/` for the client:
+The server exposes Devframe RPC functions, namespaced under the `prose` devframe id, for the client:
 
-- `GET tree`: the full hierarchy, with summaries and badges.
-- `GET node?path=…`: one node's prose, code, and warnings.
-- `PUT prose`: save a prose edit.
-- `POST remark` and `PATCH remark`: add a remark, or resolve one.
+- `tree` (`query`): the full hierarchy, with summaries and badges.
+- `node` (`query`): one node's prose, code, and warnings, given its path.
+- `save-prose` (`action`): save a prose edit.
+- `add-remark` and `resolve-remark` (`action`): add a remark, or resolve one.
+
+`query` functions are reads that can change over time; `action` functions are the writes. Both are typed end to end by Devframe's RPC layer — no hand-rolled request/response shapes.
 
 ### 6.5 Build: strip HTML prose
 
@@ -301,5 +303,5 @@ Verify:
 
 - **Nested chunks.** Should prose blocks for class members and nested functions become sub-chunks?
 - **Summaries beyond first paragraphs.** Use LLM summaries, cached by a hash of the children, only if first paragraphs prove too thin.
-- **Live agent channel.** Send remarks to a running session instead of going through `remarks.md`.
+- **Live agent channel.** Send remarks to a running session instead of going through `remarks.md`. Devframe ships an MCP adapter (`prose mcp`, once there's a standalone CLI) that could expose remarks/tree/node to an agent directly — not wired up in the prototype, which still reaches the agent only through `remarks.md` (§6.3, §8).
 - **Problem-layer tools as plan items.** Could a pending chunk reference a dev tool that shows the options being decided between?

@@ -1,3 +1,4 @@
+import { connectDevframe } from "devframe/client";
 import { renderMarkdown } from "./markdown.js";
 
 interface TreeNode {
@@ -18,15 +19,15 @@ const SHIKI_LANG: Record<string, string> = { js: "javascript", ts: "typescript",
 
 let tree: TreeNode | null = null;
 
+const client = await connectDevframe();
+const prose = client.scope("prose");
+
 async function loadTree(): Promise<TreeNode> {
-	const res = await fetch("/__prose/api/tree");
-	return res.json();
+	return prose.rpc.call("tree");
 }
 
 async function loadNode(path: string): Promise<TreeNode | null> {
-	const res = await fetch(`/__prose/api/node?path=${encodeURIComponent(path)}`);
-	if (!res.ok) return null;
-	return res.json();
+	return prose.rpc.call("node", path);
 }
 
 function currentPath(): string {
