@@ -1,0 +1,30 @@
+<!-- @prose
+The counter's only page. It holds the markup the script needs, and nothing else: an output that
+shows the count, and the buttons that change it.
+-->
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Counter</title>
+		<link rel="stylesheet" href="/style.css" />
+	</head>
+	<body>
+		<!-- @prose
+		The count lives in an `<output>`, which is announced to screen readers when it changes. The
+		buttons carry their step as `data-step`, so the script needs one handler for all of them.
+		-->
+		<main class="counter">
+			<button type="button" data-step="-1" aria-label="Decrement">−</button>
+			<output id="count" aria-live="polite">0</output>
+			<button type="button" data-step="1" aria-label="Increment">+</button>
+		</main>
+
+		<!-- @prose
+		The script is a module, so it runs after the document is parsed and can find the elements
+		above without waiting for an event.
+		-->
+		<script type="module" src="/main.js"></script>
+	</body>
+</html>

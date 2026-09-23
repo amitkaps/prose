@@ -1,0 +1,11 @@
+{
+	"extends": "$app/tsconfig",
+	"compilerOptions": {
+		"strict": true,
+		// `wrangler types` points Cloudflare.GlobalProps at the built worker, which
+		// drags .svelte-kit/cloudflare/_worker.js into the program once a build exists.
+		"checkJs": false,
+		"types": ["$app/types", "./worker-configuration.d.ts"]
+	},
+	"include": ["src", "vite.config.ts"]
+}
