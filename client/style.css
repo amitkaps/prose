@@ -1,0 +1,159 @@
+:root {
+	--bg: #fafafa;
+	--pane-bg: #ffffff;
+	--text: #18181b;
+	--muted: #71717a;
+	--border: #e4e4e7;
+	--accent: #4f46e5;
+	--pending: #d97706;
+	--font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	--font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #0a0a0a;
+		--pane-bg: #111113;
+		--text: #fafafa;
+		--muted: #a1a1aa;
+		--border: #27272a;
+		--accent: #818cf8;
+		--pending: #fbbf24;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: var(--font-sans);
+	color: var(--text);
+	background: var(--bg);
+}
+
+#app {
+	display: grid;
+	grid-template-columns: 280px 1fr;
+	min-height: 100dvh;
+}
+
+#rail {
+	border-right: 1px solid var(--border);
+	padding: 1rem 0.5rem;
+	overflow-y: auto;
+}
+
+#rail ul {
+	list-style: none;
+	margin: 0;
+	padding-left: 1rem;
+}
+
+#rail > ul {
+	padding-left: 0;
+}
+
+#rail a {
+	display: block;
+	padding: 0.15rem 0.5rem;
+	border-radius: 4px;
+	color: var(--text);
+	text-decoration: none;
+	font-size: 0.875rem;
+}
+
+#rail a:hover {
+	background: var(--border);
+}
+
+#rail a.active {
+	background: var(--accent);
+	color: white;
+}
+
+#rail .pending::after {
+	content: "pending";
+	margin-left: 0.4rem;
+	font-size: 0.7rem;
+	color: var(--pending);
+	border: 1px solid var(--pending);
+	border-radius: 3px;
+	padding: 0 0.3rem;
+}
+
+#pane {
+	padding: 2rem 3rem;
+	max-width: 860px;
+	background: var(--pane-bg);
+}
+
+#pane h1 {
+	margin-top: 0;
+}
+
+#pane .breadcrumb {
+	font-size: 0.8rem;
+	color: var(--muted);
+	margin-bottom: 1rem;
+}
+
+#pane .children {
+	list-style: none;
+	padding: 0;
+	margin-top: 2rem;
+	border-top: 1px solid var(--border);
+}
+
+#pane .children li {
+	padding: 0.9rem 0;
+	border-bottom: 1px solid var(--border);
+}
+
+#pane .children a {
+	color: var(--text);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+#pane .children p {
+	margin: 0.25rem 0 0;
+	color: var(--muted);
+	font-size: 0.9rem;
+}
+
+#pane .undocumented {
+	font-style: italic;
+	color: var(--muted);
+}
+
+#pane .pending-badge {
+	display: inline-block;
+	margin-left: 0.5rem;
+	font-size: 0.7rem;
+	color: var(--pending);
+	border: 1px solid var(--pending);
+	border-radius: 3px;
+	padding: 0 0.3rem;
+	vertical-align: middle;
+}
+
+#pane pre.shiki,
+#pane pre.plain-code {
+	padding: 1rem;
+	border-radius: 6px;
+	overflow-x: auto;
+	font-size: 0.85rem;
+	font-family: var(--font-mono);
+	border: 1px solid var(--border);
+}
+
+code {
+	font-family: var(--font-mono);
+	background: var(--border);
+	border-radius: 3px;
+	padding: 0.1em 0.3em;
+	font-size: 0.9em;
+}

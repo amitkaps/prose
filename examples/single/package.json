@@ -9,6 +9,7 @@
 		"preview": "vite preview"
 	},
 	"devDependencies": {
+		"@amitkaps/prose": "link:../..",
 		"vite": "^8.3.0"
 	}
 }
