@@ -13,8 +13,10 @@ export interface TreeNode {
 	children: TreeNode[];
 }
 
-const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".svelte-kit", ".vscode", ".prose"]);
+const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".svelte-kit", ".vscode", "prose"]);
 const SOURCE_EXTENSIONS = new Set(["js", "ts", "css", "html", "svelte", "md"]);
+// The one name inside `prose/` with special meaning (spec §3.4/§6.3) — not a document itself.
+const RESERVED_PROSE_FILES = new Set(["remarks.md"]);
 
 function extensionOf(name: string): string {
 	return name.slice(name.lastIndexOf(".") + 1).toLowerCase();
@@ -117,11 +119,31 @@ function folderToNode(root: string, dir: string, name: string): TreeNode {
 	};
 }
 
+/**
+ * `prose/*.md` (except `remarks.md`) are cross-cutting project prose (spec §3.4), surfaced at
+ * L3 rather than nested as an ordinary folder — `prose` itself stays in `SKIP_DIRS` so the
+ * recursive walk never turns it into a folder node.
+ */
+function proseDocs(root: string): TreeNode[] {
+	const dir = join(root, "prose");
+	let entries: string[];
+	try {
+		entries = readdirSync(dir);
+	} catch {
+		return [];
+	}
+	return entries
+		.filter((entry) => extensionOf(entry) === "md" && !RESERVED_PROSE_FILES.has(entry))
+		.sort()
+		.map((entry) => fileToNode(root, join(dir, entry)));
+}
+
 /** Builds the L3→L0 hierarchy (spec §4) for the project rooted at `root`. */
 export function buildTree(root: string): TreeNode {
 	const projectNode = folderToNode(root, root, "project");
 	projectNode.kind = "project";
 	projectNode.path = ".";
+	projectNode.children = [...proseDocs(root), ...projectNode.children];
 	return projectNode;
 }
 

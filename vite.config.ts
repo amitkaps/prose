@@ -1,12 +1,12 @@
 import { defineConfig } from "vite-plus";
 
 // `examples/**` each have their own vite-plus config and style — running from the repo root
-// must not reach into them. `docs/**` and `README.md` are hand-formatted prose, not code.
+// must not reach into them. `prose/**` and `README.md` are hand-formatted prose, not code.
 const ignored = [
 	"dist/**",
 	"client/dist/**",
 	"examples/**",
-	"docs/**",
+	"prose/**",
 	"README.md",
 	"pnpm-lock.yaml",
 ];

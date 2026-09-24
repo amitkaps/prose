@@ -1,7 +1,7 @@
 # base (Prose example)
 
 A copy of [amitkaps/base](https://github.com/amitkaps/base), used as the Prose
-prototype's test case (see [`docs/spec.md`](../../docs/spec.md) §9). The CI workflow,
+prototype's test case (see [`prose/spec.md`](../../prose/spec.md) §9). The CI workflow,
 `deploy` script and custom-domain route are removed, so it runs locally only.
 
 An opinionated, kept-current starter for SvelteKit apps deployed to Cloudflare

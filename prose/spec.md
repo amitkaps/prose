@@ -11,7 +11,7 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 
 **Humans and agents work in divided worlds.** The agent works in text and code at thousands of words a minute; the human reads at a few hundred and reasons spatially and structurally. What passes between them today is thin: walls of Markdown plans, specs, and diffs. (See Maggie Appleton, [Planning with Agents](https://maggieappleton.com/planning-agents).)
 
-**Separate specs and plans drift.** A `spec.md` that sits beside the code has to be kept in sync by hand, and the code can't be reasoned about from it. The intent must live *with* the code, change in the same diff, and be checked where possible.
+**Separate specs and plans drift — when they live outside the repo.** A spec in Notion or a wiki, disconnected from the commits that implement it, rots because nothing forces it to change in the same diff. Prose fixes this two ways, not one: prose that explains *a specific piece of code* lives directly in it (`@prose`, §3), so it changes in the same diff as that code or it's visibly stale (§5.2); prose that explains *across* the codebase — architecture rationale, a migration's history, engineering lessons — lives in `prose/` (§3.4), still in the same repo, same commits, same review. The failure mode isn't "a separate file"; it's a separate *system*.
 
 **The agent writes the code, and most of the prose.** The human doesn't need to read code line by line or write all the prose. The human needs to hold the **mental model of the whole architecture**, and to give direction at any level of it.
 
@@ -26,15 +26,19 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 
 **Standard files, not a toolchain.** Adopting a new file type or compiler is expensive even for one person, and breaks `tsc`, the language server, oxlint, oxfmt, vite, and every other standard workflow. Prose is a convention (like JSDoc) plus a Vite plugin that is dev-only apart from one step: stripping `@prose` comments from HTML output (§6.5). JS, CSS and Svelte build output is untouched.
 
+**`@prose` isn't documentation — it's the map the agent keeps current while working.** The loop is: human gives direction → agent changes code → agent updates `@prose` in the same diff → the view reflects the new map → human reads it, in minutes, and redirects. First-paragraph summaries make the map scannable without an LLM pass (§4); the symbol and staleness checks (§5) are mechanical, not generated, so they can't hallucinate either.
+
+**The test of whether this is working:** after an agent makes a few dozen meaningful changes, can the human spend five minutes in `/__prose/` and recover what changed, why, what's still uncertain, and where to step in? The sweet spot is one human plus coding agents on a real, nontrivial app — tiny projects don't need the ceremony, and very large ones have coordination problems this doesn't solve. It's most valuable exactly when the agent writes code faster than the human can read it.
+
 ## 2. Scope of the prototype
 
 | In                                                                      | Out                                                  |
 | ----------------------------------------------------------------------- | ---------------------------------------------------- |
 | `.ts`, `.js`, `.css`, `.html`, `.svelte` with prose in comments         | New file types, tangling, `.ts.md`                   |
-| Folder `README.md` as folder prose                                      | A published documentation site                       |
+| Folder `README.md` as folder prose; `prose/` for cross-cutting prose   | A published documentation site                       |
 | `/__prose/` dev route: navigation, woven view, import-graph diagram | Editing *code* in the view                           |
 | Symbol check and staleness check                                        | LLM-generated summaries (first paragraphs are used) |
-| Prose editor and `.prose/remarks.md`                                 | Live channel from the view to an agent session       |
+| Prose editor and `prose/remarks.md`                                 | Live channel from the view to an agent session       |
 | Mounting agent-written dev tools                                        | Anything in production builds                        |
 
 Target: small apps, audience of one.
@@ -127,14 +131,33 @@ The last block is a pending chunk: the section exists as a plan, with no code ye
 
 These are ordinary READMEs; GitHub already renders them.
 
+### 3.4 Cross-cutting prose: `prose/`
+
+Not every piece of prose has a natural home in a comment or a README — architecture rationale that spans files, the history of a migration, engineering lessons learned building the thing. Forcing that into one function's comment distorts it as much as leaving it in a wiki does. `prose/` is where it goes instead:
+
+```text
+prose/
+  architecture.md
+  migration-2026-09.md
+  lessons.md
+  remarks.md
+```
+
+- **No prescribed taxonomy.** Prose doesn't require or expect specific filenames (no mandatory `spec.md`/`plan.md`). Name a document for what it's about; the content determines what it means, the same way a chunk's meaning comes from its prose, not a template.
+- **The one name with special meaning is `remarks.md`** — the human↔agent coordination channel (§6.3). Every other file in `prose/` is plain cross-cutting prose: a whole-document node, same as any other `.md` file that isn't a `README.md` (§3.1), just placed here because it explains something wider than one file.
+- **The rule of thumb:** prose belongs next to what it explains — in the code via `@prose`, in a folder via `README.md`. `prose/` is for prose that explains *across* the codebase, not a substitute for either.
+- Surfaced at L3, alongside the project prose (§4) — not nested as an ordinary folder, since its contents are about the whole project, not about a `prose` subdirectory specifically.
+
 ## 4. Hierarchy
 
 | Level | Unit    | Prose from           | Structure from                          |
 | ----- | ------- | -------------------- | --------------------------------------- |
-| L3    | project | root `README.md`     | folder tree + import-graph diagram      |
+| L3    | project | root `README.md` + `prose/*.md` (except `remarks.md`) | folder tree + import-graph diagram |
 | L2    | folder  | folder `README.md`   | files and subfolders                    |
 | L1    | file    | file prose block     | sections and chunks                     |
 | L0    | chunk   | its prose block      | its code                                |
+
+**L3 is a small set of documents, not one.** The project view shows the root `README.md` first, then every other `prose/*.md` file as its own named section — each summarized by its own first paragraph, same as any other node. There's no ranking beyond that (alphabetical by filename); `prose/` has no prescribed taxonomy to rank by (§3.4).
 
 **Summaries are first paragraphs.** At any level, each child is shown as its name plus the first paragraph of its prose. No LLM is involved in the prototype: the agent keeps prose current (§8), and the view only selects from it. A child with no prose shows as *undocumented*.
 
@@ -189,7 +212,7 @@ Adding a new pending chunk or section (a new prose block after a given chunk) go
 
 ### 6.3 Remarks
 
-Remarks are questions or directions to the agent, attached to any node. They live in `.prose/remarks.md`, which is committed:
+Remarks are questions or directions to the agent, attached to any node. They live in `prose/remarks.md` — the one name inside `prose/` with special meaning (§3.4) — which is committed:
 
 ```markdown
 ## src/store.ts#addTodo
@@ -250,7 +273,7 @@ The plugin ships a snippet for the project's `CLAUDE.md` / `AGENTS.md`:
 - Prose goes in `@prose` comments (§3.1). Ordinary comments stay for code-level notes.
 - Keep prose current in the same change as the code. Rewrite it where it has drifted; don't append.
 - Fill pending chunks as plan items.
-- When asked to "handle remarks": work through the open items in `.prose/remarks.md`, reply as nested bullets, and tick them off. `prose-edit` remarks mean the prose is the direction; change the code to match it.
+- When asked to "handle remarks": work through the open items in `prose/remarks.md`, reply as nested bullets, and tick them off. `prose-edit` remarks mean the prose is the direction; change the code to match it.
 - Resolve unresolved-symbol and possibly-stale warnings before finishing. The plugin also exposes them as a CLI (`prose check`) for the agent.
 
 ## 9. Prototype test cases

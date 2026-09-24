@@ -3,7 +3,7 @@
  *
  * One [`vite-plus`](https://vite-plus.dev) config drives dev, build, format, lint and test —
  * `vp <script>` in `package.json` reads whichever of the sections below its command needs.
- * `prose()` (this repo's own dev tool, see [`../../docs/spec.md`](../../docs/spec.md)) is mounted
+ * `prose()` (this repo's own dev tool, see [`../../prose/spec.md`](../../prose/spec.md)) is mounted
  * alongside SvelteKit's own plugin, at `/__prose/`.
  */
 import { defineConfig } from 'vite-plus';

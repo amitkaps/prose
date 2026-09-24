@@ -81,6 +81,44 @@ describe("buildTree", () => {
 	});
 });
 
+describe("buildTree: prose/ cross-cutting docs (spec §3.4)", () => {
+	it("surfaces prose/*.md files at L3, ahead of the folder tree, sorted alphabetically", () => {
+		const dir = makeProject({
+			"prose/lessons.md": "Lessons body.",
+			"prose/architecture.md": "Architecture body.",
+			"src/main.ts": "const a = 1;\n",
+		});
+		const tree = buildTree(dir);
+		expect(tree.children.map((n) => n.path)).toEqual([
+			"prose/architecture.md",
+			"prose/lessons.md",
+			"src",
+		]);
+		expect(tree.children[0].prose).toBe("Architecture body.");
+	});
+
+	it("excludes remarks.md from the surfaced docs", () => {
+		const dir = makeProject({
+			"prose/remarks.md": "## some/file.ts\n\n- [ ] a remark",
+			"prose/lessons.md": "Lessons body.",
+		});
+		const tree = buildTree(dir);
+		expect(tree.children.map((n) => n.path)).toEqual(["prose/lessons.md"]);
+	});
+
+	it("never turns prose itself into an ordinary folder node", () => {
+		const dir = makeProject({ "prose/lessons.md": "Lessons body." });
+		const tree = buildTree(dir);
+		expect(tree.children.find((n) => n.name === "prose")).toBeUndefined();
+	});
+
+	it("is a no-op when there is no prose/ directory", () => {
+		const dir = makeProject({ "main.js": "const a = 1;\n" });
+		const tree = buildTree(dir);
+		expect(tree.children.map((n) => n.path)).toEqual(["main.js"]);
+	});
+});
+
 describe("findNode", () => {
 	it("finds a node by its stable path, including a chunk's #-anchored path", () => {
 		const dir = makeProject({

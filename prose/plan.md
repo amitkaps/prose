@@ -1,7 +1,7 @@
 # Plan
 
-A phase-by-phase roadmap for building `docs/spec.md`. Each phase should leave the repo in a
-working, reviewable state. Section numbers refer to `docs/spec.md`.
+A phase-by-phase roadmap for building `prose/spec.md`. Each phase should leave the repo in a
+working, reviewable state. Section numbers refer to `prose/spec.md`.
 
 ## Phase 1 — plugin skeleton + parser + read-only dev route, `examples/single` — in progress
 
@@ -29,7 +29,7 @@ working, reviewable state. Section numbers refer to `docs/spec.md`.
       `@devframes/vite`'s `devframeViteBridge`/`devframeVitePlugin` mount the same devframe
       directly into any Vite host, no hub — and its `auth` option takes a plain `false`, so
       `prose()` passes that explicitly, resolving the open `clientAuth` question outright.
-      `docs/spec.md` §6 documents mounting inside `@vitejs/devtools` as an alternative, for if
+      `prose/spec.md` §6 documents mounting inside `@vitejs/devtools` as an alternative, for if
       Prose ever wants to dock alongside other project tooling.
 - [x] Client (`client/`): vanilla TS, left-rail navigation + main pane, hash routing, first-paragraph
       summaries, syntax-highlighted code at L0 via `shiki` (§6.1 subset). Now a small prebuilt SPA
@@ -53,12 +53,12 @@ working, reviewable state. Section numbers refer to `docs/spec.md`.
 - [x] **Toolchain: `tsdown` for the library build, `vite-plus` for lint/format/test — no
       standalone tests existed before this.** Every check up to this point was a one-off `curl`
       or Node script, written and deleted each time; that gap is exactly what let the
-      `new URL(literal, import.meta.url)` build-time-inlining bug ship (see `docs/lessons.md`).
+      `new URL(literal, import.meta.url)` build-time-inlining bug ship (see `prose/lessons.md`).
       `src/parser.test.ts` and `src/tree.test.ts` (20 tests, via `vp test`) cover the parser's
       chunking/section rules for JS/TS/CSS, HTML, and `.svelte` (including the part-boundary
       clipping bug from earlier), and the tree walker's folder/README/`.md`-frontmatter/pending-
       chunk/skip-directory behavior. `vp check` runs `oxfmt` + type-aware `oxlint` scoped to
-      `src/`, `client/`, and the repo's own config files (`examples/**` and `docs/**` are
+      `src/`, `client/`, and the repo's own config files (`examples/**` and `prose/**` are
       ignored — each example has its own toolchain and style). `pnpm build`'s last step,
       `scripts/check-client-bundle.mjs`, greps the built client bundle for stray
       `data:text/javascript` — a permanent regression guard for that exact bug class, since
@@ -70,6 +70,15 @@ working, reviewable state. Section numbers refer to `docs/spec.md`.
       `oxlint`'s type-aware mode (`tsgolint`, the Go-ported checker vite-plus bundles) is what
       actually catches type errors in `vp check` now, not a separate `tsc --noEmit` pass — it
       caught a real `no-floating-promises` issue in `client/main.ts` immediately.
+- [x] **`docs/` moved to `prose/`, formalizing spec.md §3.4.** `spec.md`, `plan.md` (this file)
+      and `lessons.md` are now cross-cutting project prose, not an ad hoc `docs/` folder — the
+      tree walker (`src/tree.ts`'s `proseDocs`) surfaces every `prose/*.md` except `remarks.md`
+      at L3, ahead of the folder tree, sorted alphabetically; `prose` itself stays out of the
+      tree as an ordinary folder (`SKIP_DIRS`). This is the first real dogfooding of the L3 model
+      on the plugin's own repo — confirmed via a throwaway test that `buildTree(process.cwd())`
+      lists `prose/lessons.md`, `prose/plan.md`, `prose/spec.md` first, then the folder tree.
+      **Still not dogfooded**: `src/*.ts` and `client/*.ts` have zero `@prose` comments of their
+      own — the plugin's own implementation isn't yet annotated the way `examples/base` is.
 
 **Dependencies:** `devframe`, `@devframes/vite`, `markdown-exit`, `shiki` (runtime, pulled in
 transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts` still only adds
@@ -98,7 +107,7 @@ transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts
 
 - In-place Markdown editor with preview for any prose node; write-back into the source comment
   (or README file), preserving indentation and `@prose` marker/prefixes.
-- `.prose/remarks.md`: anchors, open/resolved bullets, orphaning when an anchor no longer
+- `prose/remarks.md`: anchors, open/resolved bullets, orphaning when an anchor no longer
   resolves.
 - `save-prose`, `add-remark`, `resolve-remark` as Devframe `action` RPC functions (§6.4); consider
   an `event` function or synced state so the client sees remark/prose changes without a manual
@@ -143,7 +152,7 @@ transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts
   `src/plugin.ts`).
 - Evaluate turning on Devframe's MCP adapter (`devframe/adapters/mcp`) to resolve §10's "live
   agent channel" open question — expose `tree`/`node`/remarks to an agent directly, as an
-  addition to (not a replacement for) `.prose/remarks.md` in the prototype's scope (§2).
+  addition to (not a replacement for) `prose/remarks.md` in the prototype's scope (§2).
 
 ## Open questions (§10)
 

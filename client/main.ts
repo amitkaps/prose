@@ -26,7 +26,7 @@ const SHIKI_LANG: Record<string, string> = {
 let tree: TreeNode | null = null;
 
 // `connectDevframe()` defaults to a *relative* base ("./"), resolved against the current page
-// URL — which breaks the same way an asset base does (see docs/lessons.md): visiting `/__prose`
+// URL — which breaks the same way an asset base does (see prose/lessons.md): visiting `/__prose`
 // without its trailing slash resolves "./__connection.json" against the parent path instead.
 // `import.meta.url` is always this script's own absolute served URL (e.g.
 // `.../__prose/assets/main-x.js`) regardless of what the address bar shows, so deriving the base
