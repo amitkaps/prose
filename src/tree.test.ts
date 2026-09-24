@@ -136,3 +136,48 @@ describe("findNode", () => {
 		expect(findNode(tree, "nope.js")).toBeNull();
 	});
 });
+
+describe("buildTree: checks (spec §5)", () => {
+	it("flags a symbol that resolves nowhere in the project, and rolls the count up to every ancestor", () => {
+		const dir = makeProject({
+			"main.js": "/** @prose File. */\n\n/** @prose Calls `doesNotExist`. */\nconst a = 1;\n",
+		});
+		const tree = buildTree(dir);
+		const chunk = findNode(tree, "main.js#top-chunk-0");
+		expect(chunk?.symbols).toEqual([{ text: "doesNotExist", status: "unresolved" }]);
+		expect(chunk?.warnings).toEqual([
+			{
+				kind: "unresolved-symbol",
+				symbol: "doesNotExist",
+				message: "`doesNotExist` isn't declared anywhere in this project.",
+			},
+		]);
+		expect(chunk?.warningCount).toBe(1);
+		const file = findNode(tree, "main.js");
+		expect(file?.warningCount).toBe(1);
+		expect(tree.warningCount).toBe(1);
+	});
+
+	it("links a symbol declared in a different chunk, project-wide, with no warning", () => {
+		const dir = makeProject({
+			"store.ts":
+				"/** @prose Store. */\n\n/** @prose The store. */\nexport function addTodo() {}\n",
+			"main.js": "/** @prose File. */\n\n/** @prose Calls `addTodo`. */\nconst a = 1;\n",
+		});
+		const tree = buildTree(dir);
+		const chunk = findNode(tree, "main.js#top-chunk-0");
+		expect(chunk?.symbols).toEqual([
+			{ text: "addTodo", status: "linked", target: "store.ts#top-chunk-0" },
+		]);
+		expect(chunk?.warningCount).toBe(0);
+		expect(tree.warningCount).toBe(0);
+	});
+
+	it("has no warnings for a project with no git repo and no unresolved symbols", () => {
+		const dir = makeProject({
+			"main.js": "/** @prose File. */\n\n/** @prose A plain chunk, no symbols. */\nconst a = 1;\n",
+		});
+		const tree = buildTree(dir);
+		expect(tree.warningCount).toBe(0);
+	});
+});

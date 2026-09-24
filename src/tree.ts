@@ -1,5 +1,13 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import {
+	checkStaleness,
+	checkSymbols,
+	declaredIdentifiers,
+	type Symbol,
+	type Warning,
+} from "./checks.js";
+import { blameFile } from "./git.js";
 import { type FileParse, firstParagraph, parseFile } from "./parser.js";
 
 /** @prose
@@ -19,6 +27,13 @@ export interface TreeNode {
 	pending?: boolean;
 	prose?: string | null;
 	code?: string;
+	/** Chunk-only: inline code spans from this chunk's own prose, resolved per spec §5.1. */
+	symbols?: Symbol[];
+	/** This node's own warnings (chunks only, for now — §5 doesn't define file/folder-level checks). */
+	warnings?: Warning[];
+	/** Own warnings plus every descendant's, so a badge can show at any level without the client
+	 *  walking the subtree itself (spec §6.1: "roll up to their ancestors"). */
+	warningCount: number;
 	children: TreeNode[];
 }
 
@@ -65,38 +80,56 @@ function fileToNode(root: string, absPath: string): TreeNode {
 				? parseFile(source, ext)
 				: { fileProse: null, preamble: source.trim(), sections: [] };
 
+	// One blame read per file, reused across every chunk in it (spec §5.2) — computed lazily,
+	// only if there's actually a chunk with code to compare, since `git blame` is a subprocess call.
+	const hasCode = parsed.sections.some((s) => s.chunks.some((c) => !c.pending));
+	const blame = hasCode ? blameFile(root, relPath) : null;
+
+	function chunkNode(
+		chunk: FileParse["sections"][number]["chunks"][number],
+		path: string,
+	): TreeNode {
+		const warnings = chunk.pending
+			? []
+			: checkStaleness(
+					blame,
+					chunk.startLine,
+					chunk.proseEndLine,
+					chunk.proseEndLine,
+					chunk.endLine,
+				);
+		return {
+			name: chunk.heading ?? chunk.slug,
+			kind: "chunk",
+			path,
+			summary: firstParagraph(chunk.prose),
+			pending: chunk.pending,
+			prose: chunk.prose,
+			code: chunk.code,
+			warnings,
+			warningCount: warnings.length,
+			children: [],
+		};
+	}
+
 	const children: TreeNode[] = [];
 	for (const section of parsed.sections) {
 		if (section.heading === null) {
 			for (const chunk of section.chunks) {
-				children.push({
-					name: chunk.heading ?? chunk.slug,
-					kind: "chunk",
-					path: `${relPath}#${chunk.slug}`,
-					summary: firstParagraph(chunk.prose),
-					pending: chunk.pending,
-					prose: chunk.prose,
-					code: chunk.code,
-					children: [],
-				});
+				children.push(chunkNode(chunk, `${relPath}#${chunk.slug}`));
 			}
 			continue;
 		}
+		const sectionChildren = section.chunks.map((chunk) =>
+			chunkNode(chunk, `${relPath}#${section.slug}/${chunk.slug}`),
+		);
 		children.push({
 			name: section.heading,
 			kind: "section",
 			path: `${relPath}#${section.slug}`,
 			summary: firstParagraph(section.chunks[0]?.prose ?? ""),
-			children: section.chunks.map((chunk) => ({
-				name: chunk.heading ?? chunk.slug,
-				kind: "chunk",
-				path: `${relPath}#${section.slug}/${chunk.slug}`,
-				summary: firstParagraph(chunk.prose),
-				pending: chunk.pending,
-				prose: chunk.prose,
-				code: chunk.code,
-				children: [],
-			})),
+			warningCount: sectionChildren.reduce((sum, c) => sum + c.warningCount, 0),
+			children: sectionChildren,
 		});
 	}
 
@@ -106,8 +139,15 @@ function fileToNode(root: string, absPath: string): TreeNode {
 		path: relPath,
 		summary: parsed.fileProse ? firstParagraph(parsed.fileProse) : "undocumented",
 		prose: parsed.fileProse,
+		warningCount: sumWarnings(children),
 		children,
 	};
+}
+
+/** Rolls a node's own warning count up from its children — every non-chunk level's count is
+ *  purely derived, never computed directly (spec §6.1: badges "roll up to their ancestors"). */
+function sumWarnings(children: TreeNode[]): number {
+	return children.reduce((sum, child) => sum + child.warningCount, 0);
 }
 
 /** @prose
@@ -141,6 +181,7 @@ function folderToNode(root: string, dir: string, name: string): TreeNode {
 		path: relPath || ".",
 		summary: readme ? firstParagraph(readme) : "undocumented",
 		prose: readme,
+		warningCount: sumWarnings(children),
 		children,
 	};
 }
@@ -168,16 +209,72 @@ function proseDocs(root: string): TreeNode[] {
 		.map((entry) => fileToNode(root, join(dir, entry)));
 }
 
+function collectChunks(node: TreeNode, acc: TreeNode[]): void {
+	if (node.kind === "chunk") acc.push(node);
+	for (const child of node.children) collectChunks(child, acc);
+}
+
+/** @prose
+ * # The symbol check's second pass (spec §5.1)
+ *
+ * Staleness is computed per-file, as each file is walked (`fileToNode`), because it only ever
+ * needs that one file's own blame. The symbol check can't work that way — "declared elsewhere in
+ * the project" is only knowable once every chunk's code has been seen — so this runs once, after
+ * the whole tree exists: first build one project-wide `identifier → declaring chunk` table, then
+ * resolve every chunk's prose spans against it.
+ *
+ * **Known gap**: a file's preamble (the code before its first `@prose` block) isn't a chunk —
+ * `fileToNode` parses it but never turns it into a `TreeNode` — so an identifier declared only in
+ * the preamble (e.g. a module-level constant above the first prose block) never enters this
+ * table, and prose elsewhere that names it reads as unresolved. Real example: `client/main.ts`'s
+ * `SHIKI_LANG` is declared in its preamble and gets flagged this way. Fixing it means giving the
+ * preamble a place in the tree first (spec §3.2 already calls for showing it, collapsed) — not a
+ * one-line change here.
+ */
+function applySymbolChecks(root: TreeNode): void {
+	const chunks: TreeNode[] = [];
+	collectChunks(root, chunks);
+
+	const table = new Map<string, string>();
+	for (const chunk of chunks) {
+		if (!chunk.code) continue;
+		for (const id of declaredIdentifiers(chunk.code)) {
+			if (!table.has(id)) table.set(id, chunk.path);
+		}
+	}
+
+	for (const chunk of chunks) {
+		if (!chunk.prose) continue;
+		const { symbols, warnings } = checkSymbols(chunk.prose, chunk.code ?? "", chunk.path, table);
+		if (symbols.length > 0) chunk.symbols = symbols;
+		if (warnings.length > 0) {
+			chunk.warnings = [...(chunk.warnings ?? []), ...warnings];
+			chunk.warningCount += warnings.length;
+		}
+	}
+}
+
+/** Recomputes every ancestor's `warningCount` bottom-up — needed after `applySymbolChecks` adds
+ *  warnings to chunks *after* `fileToNode`/`folderToNode` already summed the staleness-only counts. */
+function rerollWarnings(node: TreeNode): number {
+	if (node.kind === "chunk") return node.warningCount;
+	node.warningCount = node.children.reduce((sum, child) => sum + rerollWarnings(child), 0);
+	return node.warningCount;
+}
+
 /** @prose
  * The project node is just the root folder's node, relabeled — `folderToNode` already does
- * everything a folder needs (README prose, recursive children); the only project-specific step
- * is prepending the cross-cutting `prose/*.md` docs ahead of the folder tree.
+ * everything a folder needs (README prose, recursive children); the project-specific steps are
+ * prepending the cross-cutting `prose/*.md` docs ahead of the folder tree, then running the
+ * symbol check's cross-file pass and re-rolling warning counts up from it (§5).
  */
 export function buildTree(root: string): TreeNode {
 	const projectNode = folderToNode(root, root, "project");
 	projectNode.kind = "project";
 	projectNode.path = ".";
 	projectNode.children = [...proseDocs(root), ...projectNode.children];
+	applySymbolChecks(projectNode);
+	rerollWarnings(projectNode);
 	return projectNode;
 }
 

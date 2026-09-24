@@ -127,14 +127,120 @@ transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts
       total. The highlighter is still created lazily and memoized on first use, so this didn't
       reintroduce the thing the dynamic import was there to avoid (blocking initial page load).
 
-## Phase 2 — checks (§5)
+## Phase 2 — checks (§5) — done
 
-- Symbol check: resolve inline code spans in prose against declared identifiers; link, or flag as
-  unresolved.
-- Staleness check: `git blame --porcelain` per file, comparing newest code line vs. newest prose
-  line per chunk.
-- Surface both as warnings/badges in the tree and on nodes (extends the `api/tree` and
-  `api/node` payloads).
+- [x] **Symbol check** (`src/checks.ts`): every backtick-quoted inline code span in a chunk's
+      prose that's identifier-shaped (a name, or a dotted chain like `store.subscribe`) resolves
+      three ways, per §5.1 — declared in the chunk's own code (`local`), declared in some *other*
+      chunk anywhere in the project (`linked`, with the declaring chunk's path), or nowhere
+      (`unresolved`, the one case that becomes a `Warning`). `declaredIdentifiers` is a regex
+      heuristic (`function`/`class`/`const`/`let`/`var`/`interface`/`type`, optionally exported),
+      not a real parser — documented limitation: it doesn't see destructuring or class members.
+      The project-wide `identifier → declaring chunk` table is built once per `buildTree` call,
+      in a second pass over every chunk already in the tree (`tree.ts`'s `applySymbolChecks`),
+      since "elsewhere in the project" isn't knowable file-by-file.
+      **Known gap, found by dogfooding**: identifiers declared in a file's *preamble* (the code
+      before its first `@prose` block) never enter that table, because the preamble isn't a
+      `TreeNode` yet — `client/main.ts`'s own `SHIKI_LANG` hits this. Fixing it means giving the
+      preamble a place in the tree first (§3.2's "shown collapsed"), tracked below, not a one-line
+      fix here.
+- [x] **Staleness check** (`src/git.ts` + `src/checks.ts`): one `git blame --porcelain` per file
+      (not per chunk — cached across a file's chunks), comparing the newest timestamp in the
+      prose block's own line range against the newest in its trailing code's range (§5.2).
+      Uncommitted lines compare as `Infinity` ("uncommitted changes count as newest," verbatim).
+      A pending chunk, an untracked file, or no git repo at all skips the check entirely rather
+      than guessing — "can't tell" must never look like "confirmed fresh."
+      Required a new `ProseChunk` field (`proseEndLine`, the boundary between a block's comment
+      and its trailing code) — `parser.ts`'s existing `startLine`/`endLine` only bracketed the
+      *whole* chunk, not its prose half from its code half.
+- [x] **Warnings roll up** (`tree.ts`): every `TreeNode` now carries `warningCount` — its own
+      warnings plus every descendant's, summed bottom-up — so a badge can render at any level
+      (folder, file, section) without the client walking the subtree itself (§6.1). `symbols` and
+      `warnings` themselves live only on `chunk` nodes, matching §5's own scope.
+- [x] **Client** (`client/main.ts`, `client/style.css`): a small red circular badge with the count
+      next to any rail entry or child-list item with `warningCount > 0`; a chunk's own warnings
+      list at the top of its pane; inline code spans in rendered prose get post-processed against
+      the chunk's `symbols` — `local`/`unresolved` get a class + hover title, `linked` gets wrapped
+      in a same-page link to the declaring chunk.
+- [x] Verified end-to-end against this repo's own dogfooded `/__prose/` (`vite.prose.config.ts`,
+      a real RPC round trip, not just unit tests): the first pass surfaced real false-positive
+      noise — file cross-references (`` `README.md` ``) and JS reserved words (`` `return` ``,
+      `` `import` ``, `` `export` ``, `` `interface` ``) matched the identifier regex and were
+      flagged unresolved — fixed by excluding filename-shaped spans and expanding the keyword
+      skip-list (spec §5.1's own "keywords... are skipped," just a longer list than the value
+      literals it names as examples), plus excluding `import.meta.*` forms (syntax, not a
+      declaration site). 12 new tests (`src/checks.test.ts`, `src/git.test.ts`, plus 3 in
+      `tree.test.ts`), 47 total. Both examples' `pnpm test`/`check`/`build` still pass unchanged.
+
+## Phase 2.5 — UI improvements for `/__prose/`
+
+Not started. The client (`client/main.ts`, `client/style.css`) has been correctness-first since
+Phase 1 — vanilla DOM, no framework, functional but bare. Now that the tree carries richer data
+(warnings, symbols, badges), the view itself is the weak point. Roughly in priority order:
+
+- **Collapsible rail.** Right now every folder/file/section/chunk renders fully expanded always
+  (`renderRail`'s recursion has no collapse state) — fine for `examples/single`, unusable once a
+  real project's tree has hundreds of nodes. Needs: collapsed-by-default below some depth, expand
+  state kept in `sessionStorage` (per-viewer convenience, not synced data), auto-expand the path
+  to whatever node is currently active.
+- **A quick-jump / fuzzy finder** (a `/`-triggered palette over the flattened tree, matching name
+  or path) — the single biggest navigation win once the rail is collapsed by default and can't be
+  scanned by eye alone.
+- **Loading and error states.** `main()`'s catch block (spec'd in `client/main.ts`'s own "#
+  Bootstrapping" prose) covers a hard failure, but there's no loading indicator between "page
+  appears" and "tree arrives" — on a slow first RPC round trip the pane is just blank. A small
+  skeleton or spinner closes that gap.
+- **Breadcrumb as real links.** `renderPane`'s breadcrumb is plain text (`kind · path`) — every
+  ancestor segment should link to that ancestor, the same way a file browser's path bar does.
+- **Unify badge language.** Pending (text badge, amber) and warnings (numeric circle, red) look
+  unrelated even though both are "this node needs attention." Worth a single small icon-badge
+  system: a hover title lists *what* kind of warning(s), not just a bare count.
+- **Section-heading deep links.** A chunk/section already has a stable URL (§6.1), but there's no
+  affordance in the view itself to copy it — a hover "copy link" icon next to each heading, common
+  in doc sites, would make that reachable without reading the address bar.
+- **Show the preamble** (§3.2: "flagged, shown collapsed") — currently parsed by `parser.ts` but
+  dropped entirely before it reaches a `TreeNode` (see the symbol-check gap noted in Phase 2
+  above; giving the preamble a real place in the tree fixes both at once).
+- **The L3 import-graph diagram** (§4) — blocked on Phase 5's `es-module-lexer` integration, but
+  the UI slot for it (where in the L3 pane it renders, how a node click routes to that module's
+  L1 view) can be designed and stubbed ahead of the data existing.
+
+### Quality signals beyond lines of code
+
+Raw LoC per file/chunk is a weak proxy on its own — it says something is big, not whether it's
+healthy. Cheaper signals this data model can already produce, or could with little new
+computation, and that say more:
+
+- **Documentation coverage**: the fraction of chunks that are `undocumented` vs. have real prose,
+  at any level — already computed today as a per-node `summary`, just not aggregated into a ratio.
+- **Warning density** (`warningCount` per chunk, or per file) — a much more direct "is this file
+  in a bad state" signal than size, since it's specifically "prose that doesn't match code" or
+  "explains something that doesn't exist," not just "there's a lot of code here."
+- **Staleness ratio**: fraction of a file's (or the project's) chunks flagged `stale` — §5.2's
+  check is per-chunk; rolling it into a ratio per file turns "which files rot fastest" into a
+  sortable list.
+- **Pending ratio**: fraction of chunks that are `pending` — a live view of "how much of the plan
+  is written down but not yet built," which is closer to project-management signal than code
+  quality, but comes for free from the same data.
+- **Chunk-size distribution, not file-size**: a single 400-line file split into twelve well-scoped
+  20-30 line chunks is a different (much better) shape than one 400-line chunk — the chunk
+  boundary itself, which only this tool's data model has, is a better unit than raw file LoC for
+  spotting an under-decomposed change.
+- **Prose-to-code ratio**: prose word count over code line count, per chunk — very low (a huge
+  chunk, one line of prose) flags a chunk that's too coarse; very high (a one-line chunk, a
+  paragraph of prose) isn't necessarily bad, but is worth a second look for prose that's actually
+  documenting something bigger than what's shown.
+- **Symbol resolution health**: the `linked`/`local`/`unresolved` split from §5.1 itself, rolled up
+  — a codebase whose prose mostly points at symbols that don't resolve is a sign the prose is
+  aspirational or stale in a way individual staleness checks might miss (e.g. a symbol renamed
+  everywhere except in the one place prose still names the old one).
+
+None of these need new data collection beyond what Phase 2 already built — they're aggregations
+over `warningCount`/`symbols`/`pending`/`prose`/`code` that already exist on every node. A natural
+home is a small "project health" panel at L3, above the folder tree, surfacing the two or three
+of these that turn out to matter most in practice — worth prototyping against `examples/base`
+once it has enough real content to make the numbers meaningful, rather than guessing which ratios
+matter from `examples/single` alone.
 
 ## Phase 3 — editing: prose editor, remarks, full API (§6.2–§6.4)
 

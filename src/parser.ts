@@ -12,7 +12,12 @@ export interface ProseChunk {
 	prose: string;
 	code: string;
 	pending: boolean;
+	/** The comment block's own first line (spec §5.2's "prose" side of a staleness comparison). */
 	startLine: number;
+	/** The comment block's last line / the code's first line — an approximation (a blank line or
+	 *  two may separate them), close enough for the staleness check's line-range heuristic. */
+	proseEndLine: number;
+	/** The chunk's trailing code's last line (spec §5.2's "code" side). */
 	endLine: number;
 }
 
@@ -321,6 +326,7 @@ export function parseFile(source: string, extension: string): FileParse {
 		const codeEnd =
 			block.partEnd !== undefined ? Math.min(nextBlockStart, block.partEnd) : nextBlockStart;
 		const code = source.slice(block.endIndex, codeEnd).trim();
+		const proseEndLine = lineAt(source, block.endIndex);
 		const endLine = lineAt(source, codeEnd);
 
 		const headingMatch = block.body.split("\n")[0]?.match(HEADING_RE);
@@ -342,6 +348,7 @@ export function parseFile(source: string, extension: string): FileParse {
 			code,
 			pending: code.length === 0,
 			startLine: block.startLine,
+			proseEndLine,
 			endLine,
 		});
 	}

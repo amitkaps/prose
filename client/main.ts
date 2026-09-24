@@ -13,6 +13,17 @@ import { createHighlighterCore } from "shiki/core";
 import { createOnigurumaEngine } from "shiki/engine/oniguruma";
 import { renderMarkdown } from "./markdown.js";
 
+interface Symbol {
+	text: string;
+	status: "local" | "linked" | "unresolved";
+	target?: string;
+}
+
+interface Warning {
+	kind: "unresolved-symbol" | "stale";
+	message: string;
+}
+
 interface TreeNode {
 	name: string;
 	kind: "project" | "folder" | "file" | "section" | "chunk";
@@ -21,6 +32,9 @@ interface TreeNode {
 	pending?: boolean;
 	prose?: string | null;
 	code?: string;
+	symbols?: Symbol[];
+	warnings?: Warning[];
+	warningCount: number;
 	children: TreeNode[];
 }
 
@@ -92,7 +106,9 @@ function renderRail(node: TreeNode, active: string): string {
 	const label = node.kind === "project" ? "project" : node.name;
 	const pendingClass = node.pending ? " pending" : "";
 	const activeClass = isActive ? " active" : "";
-	const link = `<a href="#${encodeURIComponent(node.path)}" class="${activeClass}${pendingClass}">${label}</a>`;
+	const warningBadge =
+		node.warningCount > 0 ? `<span class="warning-badge">${node.warningCount}</span>` : "";
+	const link = `<a href="#${encodeURIComponent(node.path)}" class="${activeClass}${pendingClass}">${label}${warningBadge}</a>`;
 	if (node.children.length === 0) return `<li>${link}</li>`;
 	const children = node.children.map((child) => renderRail(child, active)).join("");
 	return `<li>${link}<ul>${children}</ul></li>`;
@@ -155,10 +171,52 @@ function childrenList(node: TreeNode): string {
 					? `<p class="undocumented">undocumented</p>`
 					: `<p>${renderMarkdown(child.summary)}</p>`;
 			const pendingBadge = child.pending ? `<span class="pending-badge">pending</span>` : "";
-			return `<li><a href="#${encodeURIComponent(child.path)}">${child.name}</a>${pendingBadge}${summary}</li>`;
+			const warningBadge =
+				child.warningCount > 0 ? `<span class="warning-badge">${child.warningCount}</span>` : "";
+			return `<li><a href="#${encodeURIComponent(child.path)}">${child.name}</a>${pendingBadge}${warningBadge}${summary}</li>`;
 		})
 		.join("");
 	return `<ul class="children">${items}</ul>`;
+}
+
+/** @prose
+ * # Showing the symbol check in rendered prose (spec §5.1)
+ *
+ * `markdown-exit` has already turned every `` `text` `` span into a plain `<code>text</code>` —
+ * this runs *after* that, matching each resolved `Symbol`'s exact text against those tags and
+ * swapping in the right markup: `local`/`unresolved` just get a class (a hover title explains
+ * why), `linked` additionally wraps the tag in a same-page `<a href="#...">` to the chunk that
+ * declares it. A plain string search-and-replace, not a DOM walk, is enough here since a symbol's
+ * text is a JS identifier — no HTML metacharacters to accidentally match inside an attribute or
+ * a different tag.
+ */
+function annotateSymbols(html: string, symbols: Symbol[] | undefined): string {
+	if (!symbols || symbols.length === 0) return html;
+	let out = html;
+	for (const symbol of symbols) {
+		const escaped = symbol.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const tag = new RegExp(`<code>${escaped}</code>`, "g");
+		if (symbol.status === "linked" && symbol.target) {
+			out = out.replace(
+				tag,
+				`<a class="symbol-link" href="#${encodeURIComponent(symbol.target)}"><code>${symbol.text}</code></a>`,
+			);
+		} else {
+			const cls = symbol.status === "unresolved" ? "symbol-unresolved" : "symbol-local";
+			const title =
+				symbol.status === "unresolved"
+					? "Not declared anywhere in this project"
+					: "Declared in this chunk's own code";
+			out = out.replace(tag, `<code class="${cls}" title="${title}">${symbol.text}</code>`);
+		}
+	}
+	return out;
+}
+
+function warningsList(warnings: Warning[] | undefined): string {
+	if (!warnings || warnings.length === 0) return "";
+	const items = warnings.map((w) => `<li class="warning">${w.message}</li>`).join("");
+	return `<ul class="warnings">${items}</ul>`;
 }
 
 async function renderPane(node: TreeNode) {
@@ -167,7 +225,12 @@ async function renderPane(node: TreeNode) {
 	parts.push(
 		`<h1>${node.kind === "project" ? "project" : node.name}${node.pending ? ' <span class="pending-badge">pending</span>' : ""}</h1>`,
 	);
-	parts.push(node.prose ? renderMarkdown(node.prose) : `<p class="undocumented">undocumented</p>`);
+	parts.push(warningsList(node.warnings));
+	parts.push(
+		node.prose
+			? annotateSymbols(renderMarkdown(node.prose), node.symbols)
+			: `<p class="undocumented">undocumented</p>`,
+	);
 
 	if (node.kind === "chunk") {
 		if (node.pending) {

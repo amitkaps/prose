@@ -6,6 +6,7 @@
 	--border: #e4e4e7;
 	--accent: #4f46e5;
 	--pending: #d97706;
+	--warning: #dc2626;
 	--font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 	color-scheme: light dark;
@@ -20,6 +21,7 @@
 		--border: #27272a;
 		--accent: #818cf8;
 		--pending: #fbbf24;
+		--warning: #f87171;
 	}
 }
 
@@ -84,6 +86,19 @@ body {
 	padding: 0 0.3rem;
 }
 
+.warning-badge {
+	display: inline-block;
+	margin-left: 0.4rem;
+	font-size: 0.7rem;
+	line-height: 1.3;
+	color: white;
+	background: var(--warning);
+	border-radius: 50%;
+	min-width: 1.1em;
+	text-align: center;
+	padding: 0 0.3rem;
+}
+
 #pane {
 	padding: 2rem 3rem;
 	max-width: 860px;
@@ -127,6 +142,35 @@ body {
 #pane .undocumented {
 	font-style: italic;
 	color: var(--muted);
+}
+
+#pane .warnings {
+	list-style: none;
+	margin: 0 0 1.5rem;
+	padding: 0;
+}
+
+#pane .warnings .warning {
+	font-size: 0.85rem;
+	color: var(--warning);
+	border: 1px solid var(--warning);
+	border-radius: 4px;
+	padding: 0.4rem 0.6rem;
+	margin-bottom: 0.4rem;
+}
+
+#pane code.symbol-unresolved {
+	color: var(--warning);
+	border: 1px solid var(--warning);
+}
+
+#pane code.symbol-local {
+	border: 1px solid var(--accent);
+}
+
+#pane a.symbol-link code {
+	border: 1px solid var(--accent);
+	color: var(--accent);
 }
 
 #pane .pending-badge {
