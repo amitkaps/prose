@@ -1,35 +1,11 @@
-function escapeHtml(text: string): string {
-	return text
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
-}
+import { createMarkdownExit } from "markdown-exit";
 
-function renderInline(text: string): string {
-	let html = escapeHtml(text);
-	html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
-	html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-	html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, href) => `<a href="${href}">${label}</a>`);
-	return html;
-}
+// `html: false` — prose bodies are code comments, not a place to accept raw HTML — and a fresh
+// instance is cheap enough to not bother sharing across calls (spec §3.1: CommonMark + GFM).
+const md = createMarkdownExit("default", { html: false, linkify: true });
 
-/** A minimal Markdown-to-HTML pass: headings, paragraphs, `code`, **bold**, and [links](…). */
+/** Renders a prose block's Markdown body to HTML (spec §3.1: CommonMark + GFM). */
 export function renderMarkdown(markdown: string): string {
 	if (!markdown.trim()) return "";
-	const blocks = markdown.trim().split(/\n\s*\n/);
-	return blocks
-		.map((block) => {
-			const heading = block.match(/^(#{1,6})\s+(.*)$/);
-			if (heading) {
-				const level = heading[1].length;
-				return `<h${level}>${renderInline(heading[2])}</h${level}>`;
-			}
-			const paragraph = block
-				.split("\n")
-				.map((line) => renderInline(line))
-				.join(" ");
-			return `<p>${paragraph}</p>`;
-		})
-		.join("\n");
+	return md.render(markdown);
 }

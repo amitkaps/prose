@@ -12,47 +12,57 @@ working, reviewable state. Section numbers refer to `docs/spec.md`.
       folders, files, sections, and chunks. Symbol/staleness badges are not computed yet (§5).
 - [x] Vite plugin (`src/plugin.ts`), first pass: dev-only, hand-rolled middleware serving
       `/__prose/` and two read-only JSON endpoints (subset of §6.4).
-- [x] **Migrated the plugin onto Devframe** (`devframe` + `@vitejs/devtools-kit`, mounted via
-      `@vitejs/devtools`): the two endpoints became `query` RPC functions (`tree`, `node`) on a
-      devframe with `id: "prose"`, which mounts at `/__prose/` by default. `prose()` now returns
-      `Promise<Plugin[]>` (it bundles the `@vitejs/devtools` hub plugin itself, so a consuming
-      `vite.config.ts` only lists one entry). See §6/§6.4 in spec.md for the rationale — mainly
-      that §6.3's remarks and §10's "live agent channel" map onto Devframe's `action`/`event`
-      procedures and MCP adapter for free in later phases, instead of hand-rolled HMR/agent-bridge
-      code.
+- [x] **Migrated the plugin onto Devframe** (`devframe`, mounted via `@devframes/vite`): the two
+      endpoints became `query` RPC functions (`prose:tree`, `prose:node`) on a devframe with
+      `id: "prose"`, which mounts at `/__prose/` by default. `prose()` returns `Plugin[]` — two
+      plain plugins, `devframeVitePlugin` (serves the built client SPA) and `devframeViteBridge`
+      (mounts the RPC/WebSocket backend), both from `@devframes/vite/single`. See §6/§6.4 in
+      spec.md for the rationale — mainly that §6.3's remarks and §10's "live agent channel" map
+      onto Devframe's `action`/`event` procedures and MCP adapter for free in later phases,
+      instead of hand-rolled HMR/agent-bridge code.
+- [x] **Dropped `@vitejs/devtools` + `@vitejs/devtools-kit` for `@devframes/vite`.** The first
+      Devframe migration went through `@vitejs/devtools-kit`'s `createPluginFromDevframe`, which
+      mounts *inside* the `@vitejs/devtools` hub — confirmed from its own doc comment ("mounts
+      inside `@vitejs/devtools`"). That's real cost (the hub's dock/terminal/command surface, and
+      a `clientAuth`-gated-by-default trust handshake that isn't even a plain option on
+      `DevTools()`) for a tool with no need for any of it (§2: one developer, one machine).
+      `@devframes/vite`'s `devframeViteBridge`/`devframeVitePlugin` mount the same devframe
+      directly into any Vite host, no hub — and its `auth` option takes a plain `false`, so
+      `prose()` passes that explicitly, resolving the open `clientAuth` question outright.
+      `docs/spec.md` §6 documents mounting inside `@vitejs/devtools` as an alternative, for if
+      Prose ever wants to dock alongside other project tooling.
 - [x] Client (`client/`): vanilla TS, left-rail navigation + main pane, hash routing, first-paragraph
       summaries, syntax-highlighted code at L0 via `shiki` (§6.1 subset). Now a small prebuilt SPA
       (`client/dist`, built via a dedicated Vite config) rather than served as raw source, since
       Devframe's `clientAssets` only serves a built dist directory. It connects with
       `connectDevframe()` from `devframe/client` instead of hand-rolled `fetch` calls.
+- [x] Markdown rendering (`client/markdown.ts`) now goes through `markdown-exit` (a TypeScript
+      rewrite of `markdown-it`) instead of a hand-rolled pass — real CommonMark + GFM (tables,
+      lists, fenced code), confirmed against `examples/base`'s content docs, which already used
+      all three and rendered garbled under the old pass.
 - [x] `examples/single` wired to the plugin via `vite.config.js` + `link:../..` dependency.
-- [ ] Manually verified against `examples/single` (`pnpm install && pnpm dev`, open `/__prose/`) —
-      confirmed server-side: dev server starts with no errors, `/__prose/` serves the built SPA
-      shell, its assets resolve, `/__prose/__connection.json` returns a valid websocket/sse
-      handshake, and the app's own route (`/`) is unaffected. **Not yet confirmed**: the actual
-      RPC round trip (`tree`/`node` calls resolving real data in the rail/pane) and the exact
-      client-side call convention (`client.scope("prose").rpc.call("tree")` — whether the scope
-      auto-prefixes to `prose:tree` or the registered name needs to be `prose:tree` explicitly,
-      per the ambiguity in the Devframe docs noted during research). `@vitejs/devtools`'s
-      `clientAuth` also defaults to on, so the *first* browser connection may print a trust-prompt
-      in the `pnpm dev` terminal that needs approving — try that first if the rail stays empty.
+- [x] Manually verified against `examples/single` and `examples/base`: dev server starts with no
+      errors, `/__prose/` serves the built SPA shell, its assets resolve (checked via `curl`
+      content-type/length, not status code alone), `/__prose/__connection.json` returns a valid
+      handshake, and the app's own routes are unaffected. **The RPC round trip is now confirmed
+      too** (not just reachable): a headless script using `devframe/client`'s `connectDevframe`
+      with an explicit `baseURL` got real `tree`/`node` data back, with no auth prompt, since
+      `auth: false` removes the trust-handshake step entirely for this local, single-developer
+      tool.
 
-**New dependencies this phase added:** `devframe`, `@vitejs/devtools-kit`, `@vitejs/devtools`
-(all pulled in transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts`
-still only adds `prose()`).
+**Dependencies:** `devframe`, `@devframes/vite`, `markdown-exit`, `shiki` (all pulled in
+transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts` still only adds
+`prose()`).
 
 **Known simplifications, to revisit in later phases:**
-- Prose is rendered with a minimal hand-rolled Markdown pass (headings, paragraphs, `code`,
-  `**bold**`, `[links](…)`) — not full CommonMark + GFM (§3.1).
-- `.svelte` files are not parsed at all (needed for Phase 4 / `examples/base`).
+- `.svelte` files are parsed (`scanSvelte`, §3.3) but `.svelte` chunks are not yet symbol- or
+  staleness-checked (§5 is still Phase 2 scope generally).
 - The import-graph diagram (§4, L3) is not built — no `es-module-lexer` integration yet.
 - Live-reload isn't wired yet: the view does not update when files change. Devframe's synced
   state should make this cheaper than the hand-rolled HMR-websocket approach spec.md originally
   described, but it's still not built (§6.1).
-- L2 folder nodes are supported by the tree walker but untested, since `examples/single` is flat.
-- Devframe's `clientAuth` defaults to on (a terminal-approved trust handshake for new browser
-  clients) — not yet checked whether that's the right default for a local, audience-of-one tool,
-  or whether examples should set `clientAuth: false`.
+- L2 folder nodes are supported by the tree walker and now exercised by `examples/base`'s
+  `src/lib/README.md` and `src/routes/README.md`.
 
 ## Phase 2 — checks (§5)
 

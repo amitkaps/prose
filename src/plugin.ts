@@ -1,17 +1,21 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DevTools } from "@vitejs/devtools";
-import { createPluginFromDevframe } from "@vitejs/devtools-kit/node";
+import { devframeViteBridge, devframeVitePlugin } from "@devframes/vite/single";
 import { defineDevframe, defineRpcFunction } from "devframe";
 import type { Plugin } from "vite";
 import { handleNode, handleTree } from "./server/routes.js";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** The Prose Vite plugin: a dev-only route at `/__prose/`, built on Devframe (spec §6). */
-export async function prose(): Promise<Plugin[]> {
-	const devtools = await DevTools();
-
+/**
+ * The Prose Vite plugin: a dev-only route at `/__prose/`, built on Devframe (spec §6).
+ *
+ * `devframeVitePlugin` serves the built client SPA at `/__prose/`; `devframeViteBridge` mounts
+ * the RPC/WebSocket backend the SPA connects to, on the same origin. Both are plain Vite
+ * plugins with no dependency on `@vitejs/devtools` — see spec.md §6 for why: this tool targets
+ * one developer on one machine, not the DevTools hub's dock/terminal/command surface.
+ */
+export function prose(): Plugin[] {
 	const devframeDefinition = defineDevframe({
 		id: "prose",
 		name: "Prose",
@@ -23,20 +27,12 @@ export async function prose(): Promise<Plugin[]> {
 		icon: "ph:book-open-text-duotone",
 		clientAssets: join(packageRoot, "client", "dist"),
 		setup(ctx) {
-			console.log(`[prose] workspaceRoot: ${ctx.workspaceRoot}`);
 			ctx.rpc.register(
 				defineRpcFunction({
 					name: "prose:tree",
 					type: "query",
 					jsonSerializable: true,
-					handler: () => {
-						try {
-							return handleTree(ctx.workspaceRoot);
-						} catch (err) {
-							console.error("[prose] tree handler failed:", err);
-							throw err;
-						}
-					},
+					handler: () => handleTree(ctx.workspaceRoot),
 				}),
 			);
 			ctx.rpc.register(
@@ -44,18 +40,17 @@ export async function prose(): Promise<Plugin[]> {
 					name: "prose:node",
 					type: "query",
 					jsonSerializable: true,
-					handler: (path: string) => {
-						try {
-							return handleNode(ctx.workspaceRoot, path);
-						} catch (err) {
-							console.error("[prose] node handler failed:", err);
-							throw err;
-						}
-					},
+					handler: (path: string) => handleNode(ctx.workspaceRoot, path),
 				}),
 			);
 		},
 	});
 
-	return [...devtools, createPluginFromDevframe(devframeDefinition)];
+	return [
+		devframeVitePlugin(devframeDefinition),
+		// The bridge's RPC endpoint gates behind an OTP by default; this tool is local and
+		// single-developer (spec §2), so the dev server's own loopback binding is the trust
+		// boundary already — no second gate on top of it.
+		devframeViteBridge(devframeDefinition, { auth: false }),
+	];
 }
