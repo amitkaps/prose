@@ -100,10 +100,15 @@ async function navigate() {
 }
 
 async function main() {
-	tree = await loadTree();
-	if (!location.hash) location.hash = encodeURIComponent(tree.path);
-	await navigate();
-	window.addEventListener("hashchange", navigate);
+	try {
+		tree = await loadTree();
+		if (!location.hash) location.hash = encodeURIComponent(tree.path);
+		await navigate();
+		window.addEventListener("hashchange", navigate);
+	} catch (err) {
+		console.error("[prose]", err);
+		pane.innerHTML = `<p class="undocumented">Prose failed to load: ${err instanceof Error ? err.message : String(err)} (see console)</p>`;
+	}
 }
 
 main();

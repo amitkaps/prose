@@ -23,12 +23,20 @@ export async function prose(): Promise<Plugin[]> {
 		icon: "ph:book-open-text-duotone",
 		clientAssets: join(packageRoot, "client", "dist"),
 		setup(ctx) {
+			console.log(`[prose] workspaceRoot: ${ctx.workspaceRoot}`);
 			ctx.rpc.register(
 				defineRpcFunction({
 					name: "tree",
 					type: "query",
 					jsonSerializable: true,
-					handler: () => handleTree(ctx.workspaceRoot),
+					handler: () => {
+						try {
+							return handleTree(ctx.workspaceRoot);
+						} catch (err) {
+							console.error("[prose] tree handler failed:", err);
+							throw err;
+						}
+					},
 				}),
 			);
 			ctx.rpc.register(
@@ -36,7 +44,14 @@ export async function prose(): Promise<Plugin[]> {
 					name: "node",
 					type: "query",
 					jsonSerializable: true,
-					handler: (path: string) => handleNode(ctx.workspaceRoot, path),
+					handler: (path: string) => {
+						try {
+							return handleNode(ctx.workspaceRoot, path);
+						} catch (err) {
+							console.error("[prose] node handler failed:", err);
+							throw err;
+						}
+					},
 				}),
 			);
 		},
