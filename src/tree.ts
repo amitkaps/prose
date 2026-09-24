@@ -36,7 +36,11 @@ function fileToNode(root: string, absPath: string): TreeNode {
 	// YAML frontmatter, if present, is metadata rather than prose, so it's stripped here too.
 	const parsed: FileParse =
 		ext === "md"
-			? { fileProse: source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim(), preamble: "", sections: [] }
+			? {
+					fileProse: source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim(),
+					preamble: "",
+					sections: [],
+				}
 			: SOURCE_EXTENSIONS.has(ext)
 				? parseFile(source, ext)
 				: { fileProse: null, preamble: source.trim(), sections: [] };

@@ -50,9 +50,30 @@ working, reviewable state. Section numbers refer to `docs/spec.md`.
       `auth: false` removes the trust-handshake step entirely for this local, single-developer
       tool.
 
-**Dependencies:** `devframe`, `@devframes/vite`, `markdown-exit`, `shiki` (all pulled in
+- [x] **Toolchain: `tsdown` for the library build, `vite-plus` for lint/format/test — no
+      standalone tests existed before this.** Every check up to this point was a one-off `curl`
+      or Node script, written and deleted each time; that gap is exactly what let the
+      `new URL(literal, import.meta.url)` build-time-inlining bug ship (see `docs/lessons.md`).
+      `src/parser.test.ts` and `src/tree.test.ts` (20 tests, via `vp test`) cover the parser's
+      chunking/section rules for JS/TS/CSS, HTML, and `.svelte` (including the part-boundary
+      clipping bug from earlier), and the tree walker's folder/README/`.md`-frontmatter/pending-
+      chunk/skip-directory behavior. `vp check` runs `oxfmt` + type-aware `oxlint` scoped to
+      `src/`, `client/`, and the repo's own config files (`examples/**` and `docs/**` are
+      ignored — each example has its own toolchain and style). `pnpm build`'s last step,
+      `scripts/check-client-bundle.mjs`, greps the built client bundle for stray
+      `data:text/javascript` — a permanent regression guard for that exact bug class, since
+      no Node-based test can exercise it (Node never runs Vite's build-time asset-URL analysis).
+      **Still a real gap**: nothing here drives an actual browser or a live dev-server RPC round
+      trip automatically — that verification is still the same one-off headless
+      `devframe/client` script, run and discarded, each time a dev-route change needs checking.
+- [x] **TypeScript bumped to 7.0.2** (from 5.6), matching `examples/base`'s toolchain choice.
+      `oxlint`'s type-aware mode (`tsgolint`, the Go-ported checker vite-plus bundles) is what
+      actually catches type errors in `vp check` now, not a separate `tsc --noEmit` pass — it
+      caught a real `no-floating-promises` issue in `client/main.ts` immediately.
+
+**Dependencies:** `devframe`, `@devframes/vite`, `markdown-exit`, `shiki` (runtime, pulled in
 transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts` still only adds
-`prose()`).
+`prose()`); `tsdown`, `vite-plus` (dev-only: build, lint, format, test).
 
 **Known simplifications, to revisit in later phases:**
 - `.svelte` files are parsed (`scanSvelte`, §3.3) but `.svelte` chunks are not yet symbol- or

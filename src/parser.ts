@@ -146,7 +146,12 @@ function scanHtml(source: string): RawBlock[] {
 }
 
 /** Shifts a block found in an extracted sub-range back into the full source's coordinates. */
-function shiftBlock(block: RawBlock, offset: number, fullSource: string, partEnd: number): RawBlock {
+function shiftBlock(
+	block: RawBlock,
+	offset: number,
+	fullSource: string,
+	partEnd: number,
+): RawBlock {
 	const startIndex = block.startIndex + offset;
 	return {
 		body: block.body,
@@ -174,10 +179,12 @@ function scanSvelte(source: string): RawBlock[] {
 		for (const block of scanHtml(markup)) blocks.push(shiftBlock(block, last, source, tagStart));
 		const innerOffset = tagStart + full.indexOf(inner);
 		const innerEnd = innerOffset + inner.length;
-		for (const block of scanJsLike(inner)) blocks.push(shiftBlock(block, innerOffset, source, innerEnd));
+		for (const block of scanJsLike(inner))
+			blocks.push(shiftBlock(block, innerOffset, source, innerEnd));
 		last = tagStart + full.length;
 	}
-	for (const block of scanHtml(source.slice(last))) blocks.push(shiftBlock(block, last, source, source.length));
+	for (const block of scanHtml(source.slice(last)))
+		blocks.push(shiftBlock(block, last, source, source.length));
 	blocks.sort((a, b) => a.startIndex - b.startIndex);
 	return blocks;
 }
@@ -185,7 +192,11 @@ function scanSvelte(source: string): RawBlock[] {
 /** Parses one source file into file prose, a preamble, and its sections/chunks (spec §3.2). */
 export function parseFile(source: string, extension: string): FileParse {
 	const blocks =
-		extension === "html" ? scanHtml(source) : extension === "svelte" ? scanSvelte(source) : scanJsLike(source);
+		extension === "html"
+			? scanHtml(source)
+			: extension === "svelte"
+				? scanSvelte(source)
+				: scanJsLike(source);
 
 	if (blocks.length === 0) {
 		return { fileProse: null, preamble: source.trim(), sections: [] };
@@ -193,7 +204,8 @@ export function parseFile(source: string, extension: string): FileParse {
 
 	const [fileBlock, ...rest] = blocks;
 	const nextStart = rest.length > 0 ? rest[0].startIndex : source.length;
-	const preambleEnd = fileBlock.partEnd !== undefined ? Math.min(nextStart, fileBlock.partEnd) : nextStart;
+	const preambleEnd =
+		fileBlock.partEnd !== undefined ? Math.min(nextStart, fileBlock.partEnd) : nextStart;
 	const preamble = source.slice(fileBlock.endIndex, preambleEnd).trim();
 
 	const sections: ProseSection[] = [];
@@ -203,7 +215,8 @@ export function parseFile(source: string, extension: string): FileParse {
 	for (let i = 0; i < rest.length; i++) {
 		const block = rest[i];
 		const nextBlockStart = i + 1 < rest.length ? rest[i + 1].startIndex : source.length;
-		const codeEnd = block.partEnd !== undefined ? Math.min(nextBlockStart, block.partEnd) : nextBlockStart;
+		const codeEnd =
+			block.partEnd !== undefined ? Math.min(nextBlockStart, block.partEnd) : nextBlockStart;
 		const code = source.slice(block.endIndex, codeEnd).trim();
 		const endLine = lineAt(source, codeEnd);
 

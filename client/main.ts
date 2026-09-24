@@ -86,7 +86,10 @@ function childrenList(node: TreeNode): string {
 	if (node.children.length === 0) return "";
 	const items = node.children
 		.map((child) => {
-			const summary = child.summary === "undocumented" ? `<p class="undocumented">undocumented</p>` : `<p>${renderMarkdown(child.summary)}</p>`;
+			const summary =
+				child.summary === "undocumented"
+					? `<p class="undocumented">undocumented</p>`
+					: `<p>${renderMarkdown(child.summary)}</p>`;
 			const pendingBadge = child.pending ? `<span class="pending-badge">pending</span>` : "";
 			return `<li><a href="#${encodeURIComponent(child.path)}">${child.name}</a>${pendingBadge}${summary}</li>`;
 		})
@@ -97,7 +100,9 @@ function childrenList(node: TreeNode): string {
 async function renderPane(node: TreeNode) {
 	const parts: string[] = [];
 	parts.push(`<div class="breadcrumb">${node.kind} · ${node.path}</div>`);
-	parts.push(`<h1>${node.kind === "project" ? "project" : node.name}${node.pending ? ' <span class="pending-badge">pending</span>' : ""}</h1>`);
+	parts.push(
+		`<h1>${node.kind === "project" ? "project" : node.name}${node.pending ? ' <span class="pending-badge">pending</span>' : ""}</h1>`,
+	);
 	parts.push(node.prose ? renderMarkdown(node.prose) : `<p class="undocumented">undocumented</p>`);
 
 	if (node.kind === "chunk") {
@@ -132,4 +137,4 @@ async function main() {
 	}
 }
 
-main();
+void main();
