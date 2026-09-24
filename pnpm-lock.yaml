@@ -169,6 +169,12 @@ importers:
       '@devframes/vite':
         specifier: ^1.0.0
         version: 1.0.0(@devframes/hub-ui@1.0.0(@devframes/hub@1.0.0(@devframes/agentic@1.0.0)(crossws@0.4.12(srvx@1.0.5))(devframe@1.0.0))(@devframes/json-render@1.0.0(@devframes/hub@1.0.0(@devframes/agentic@1.0.0)(crossws@0.4.12(srvx@1.0.5))(devframe@1.0.0))(devframe@1.0.0))(devframe@1.0.0))(@devframes/hub@1.0.0(@devframes/agentic@1.0.0)(crossws@0.4.12(srvx@1.0.5))(devframe@1.0.0))(devframe@1.0.0)(vite@8.3.0)
+      '@shikijs/langs':
+        specifier: ^1.24.0
+        version: 1.29.2
+      '@shikijs/themes':
+        specifier: ^1.24.0
+        version: 1.29.2
       devframe:
         specifier: ^1.0.0
         version: 1.0.0(@devframes/agentic@1.0.0)(cac@7.0.0)(srvx@1.0.5)

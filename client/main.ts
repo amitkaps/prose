@@ -7,7 +7,10 @@
  * has a stable, linkable URL. No framework — vanilla DOM, since the view itself is simple enough
  * not to need one, and it keeps this SPA's own bundle small.
  */
+import githubDark from "@shikijs/themes/github-dark";
 import { connectDevframe } from "devframe/client";
+import { createHighlighterCore } from "shiki/core";
+import { createOnigurumaEngine } from "shiki/engine/oniguruma";
 import { renderMarkdown } from "./markdown.js";
 
 interface TreeNode {
@@ -29,6 +32,7 @@ const SHIKI_LANG: Record<string, string> = {
 	ts: "typescript",
 	css: "css",
 	html: "html",
+	md: "markdown",
 	svelte: "svelte",
 };
 
@@ -97,11 +101,16 @@ function renderRail(node: TreeNode, active: string): string {
 /** @prose
  * # Rendering a node
  *
- * Syntax highlighting is dynamically imported (`shiki`) so it only loads once a chunk is
- * actually viewed, not on initial page load — `shiki`'s per-language grammars are the largest
- * chunks in this SPA's own build output. If the import fails for any reason, the code still
- * renders, just as plain unhighlighted text — a broken syntax highlighter should never be the
- * reason `/__prose/` fails to show the code at all.
+ * Syntax highlighting goes through `shiki/core`'s fine-grained bundle, not the main `shiki`
+ * entry point: the main entry ships every language and theme it knows about (a `codeToHtml`
+ * call with a runtime-computed `lang` string can't be statically narrowed by the bundler, so
+ * Rollup keeps every language grammar reachable as a separate chunk — dozens of them, most never
+ * fetched by a real user, but still built). `shiki/core` ships none of that; only the six
+ * languages this tool actually needs (`SHIKI_LANG`'s values) are imported, by name, so only
+ * those six show up in `client/dist` at all. The highlighter itself is created lazily, on first
+ * use, and memoized — so it's still not part of the initial page load, matching the previous
+ * dynamic-`import("shiki")` behavior, just with a bounded set of languages instead of shiki's
+ * own "give me anything" default.
  */
 function langForPath(path: string): string {
 	const filePart = path.split("#")[0];
@@ -109,10 +118,28 @@ function langForPath(path: string): string {
 	return SHIKI_LANG[ext] ?? "text";
 }
 
+let highlighterPromise: ReturnType<typeof createHighlighterCore> | null = null;
+
+function getHighlighter() {
+	highlighterPromise ??= createHighlighterCore({
+		themes: [githubDark],
+		langs: [
+			import("@shikijs/langs/javascript"),
+			import("@shikijs/langs/typescript"),
+			import("@shikijs/langs/css"),
+			import("@shikijs/langs/html"),
+			import("@shikijs/langs/markdown"),
+			import("@shikijs/langs/svelte"),
+		],
+		engine: createOnigurumaEngine(import("shiki/wasm")),
+	});
+	return highlighterPromise;
+}
+
 async function renderCode(code: string, lang: string): Promise<string> {
 	try {
-		const { codeToHtml } = await import("shiki");
-		return await codeToHtml(code, { lang, theme: "github-dark" });
+		const highlighter = await getHighlighter();
+		return highlighter.codeToHtml(code, { lang, theme: "github-dark" });
 	} catch {
 		const escaped = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 		return `<pre class="plain-code"><code>${escaped}</code></pre>`;

@@ -117,6 +117,15 @@ transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts
   described, but it's still not built (§6.1).
 - L2 folder nodes are supported by the tree walker and now exercised by `examples/base`'s
   `src/lib/README.md` and `src/routes/README.md`.
+- [x] **`client/main.ts`'s syntax highlighting switched from `shiki`'s main entry to
+      `shiki/core`'s fine-grained bundle.** The main entry's `codeToHtml` resolves `lang` by name
+      at runtime, so Rollup can't statically narrow which language grammars are reachable and
+      keeps every one of shiki's ~200 bundled languages as a separate lazy chunk — 321 files in
+      `client/dist`, most never fetched by a real user but all built. Explicit per-language
+      imports (`@shikijs/langs/{javascript,typescript,css,html,markdown,svelte}` — exactly
+      `SHIKI_LANG`'s six values) plus `createHighlighterCore` cut that to 14 assets, ~1.5 MB
+      total. The highlighter is still created lazily and memoized on first use, so this didn't
+      reintroduce the thing the dynamic import was there to avoid (blocking initial page load).
 
 ## Phase 2 — checks (§5)
 

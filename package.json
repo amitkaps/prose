@@ -22,6 +22,8 @@
 	},
 	"dependencies": {
 		"@devframes/vite": "^1.0.0",
+		"@shikijs/langs": "^1.24.0",
+		"@shikijs/themes": "^1.24.0",
 		"devframe": "^1.0.0",
 		"markdown-exit": "^1.3.0",
 		"shiki": "^1.24.0"
