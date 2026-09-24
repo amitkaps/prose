@@ -14,6 +14,7 @@
 	"scripts": {
 		"build": "tsdown && vite build --config vite.client.config.ts && node scripts/check-client-bundle.mjs",
 		"dev": "tsdown --watch",
+		"dev:prose": "vite dev --config vite.prose.config.ts",
 		"fmt": "vp fmt",
 		"lint": "vp lint",
 		"check": "vp check",
