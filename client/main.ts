@@ -49,6 +49,9 @@ const SHIKI_LANG: Record<string, string> = {
 	html: "html",
 	md: "markdown",
 	svelte: "svelte",
+	yaml: "yaml",
+	yml: "yaml",
+	toml: "toml",
 };
 
 let tree: TreeNode | null = null;
@@ -79,13 +82,15 @@ const prose = client.scope("prose");
 /** @prose
  * # Data
  *
- * Two RPC calls, `tree` and `node`, cover the whole client — `client.scope("prose")` auto-
- * prefixes them to `prose:tree`/`prose:node`, matching the fully-qualified names the server
- * registers them under (`src/plugin.ts`).
+ * `tree` is Devframe *synced state*, not a query the client polls — `prose.rpc.sharedState("tree")`
+ * resolves to a live handle: `.value()` gives the current snapshot, and `.on("updated", ...)`
+ * fires with the whole new tree whenever the node side recomputes it (`src/plugin.ts`'s
+ * `refreshTree`, run after a file change or a note write). That's spec §6.1's "updates live when
+ * files change, through Devframe's synced state" — no bespoke HMR-websocket wiring, and no manual
+ * reload needed to see an edit. `node` stays a plain `query`, fetched fresh on every navigation —
+ * a chunk's own code/prose is only ever needed for whichever one node is currently shown.
  */
-async function loadTree(): Promise<TreeNode> {
-	return prose.rpc.call("tree");
-}
+const treeShared = await prose.rpc.sharedState<TreeNode>("tree");
 
 async function loadNode(path: string): Promise<TreeNode | null> {
 	return prose.rpc.call("node", path);
@@ -137,9 +142,9 @@ function renderRail(node: TreeNode, active: string): string {
  * entry point: the main entry ships every language and theme it knows about (a `codeToHtml`
  * call with a runtime-computed `lang` string can't be statically narrowed by the bundler, so
  * Rollup keeps every language grammar reachable as a separate chunk — dozens of them, most never
- * fetched by a real user, but still built). `shiki/core` ships none of that; only the six
- * languages this tool actually needs (`SHIKI_LANG`'s values) are imported, by name, so only
- * those six show up in `client/dist` at all. The highlighter itself is created lazily, on first
+ * fetched by a real user, but still built). `shiki/core` ships none of that; only the languages
+ * this tool actually needs (`SHIKI_LANG`'s distinct values) are imported, by name, so only those
+ * show up in `client/dist` at all. The highlighter itself is created lazily, on first
  * use, and memoized — so it's still not part of the initial page load, matching the previous
  * dynamic-`import("shiki")` behavior, just with a bounded set of languages instead of shiki's
  * own "give me anything" default.
@@ -162,6 +167,8 @@ function getHighlighter() {
 			import("@shikijs/langs/html"),
 			import("@shikijs/langs/markdown"),
 			import("@shikijs/langs/svelte"),
+			import("@shikijs/langs/yaml"),
+			import("@shikijs/langs/toml"),
 		],
 		engine: createOnigurumaEngine(import("shiki/wasm")),
 	});
@@ -323,11 +330,14 @@ pane.addEventListener("click", (event) => {
 	if (target.matches(".save-note")) {
 		const text = block.querySelector<HTMLTextAreaElement>(".note-input")!.value.trim();
 		if (!text) return;
-		void addNote(path, text).then(refresh);
+		// The rail's note badges update on their own via the tree's synced state (`treeShared`
+		// above); re-navigating here is just for the current pane's own immediate feedback,
+		// without waiting on that push to land first.
+		void addNote(path, text).then(() => navigate());
 		return;
 	}
 	if (target.matches(".resolve-note")) {
-		void resolveNote(path).then(refresh);
+		void resolveNote(path).then(() => navigate());
 	}
 });
 
@@ -348,17 +358,33 @@ async function navigate() {
 	await renderPane(node);
 }
 
-/** Reloads the whole tree, not just the current node — a note's badge shows in the rail too
- *  (spec §6.1's badges "roll up to their ancestors"), so a write needs both re-rendered, not just
- *  the pane. */
-async function refresh(): Promise<void> {
-	tree = await loadTree();
-	await navigate();
+/** @prose
+ * `.value()` isn't guaranteed to hold real data the instant `sharedState("tree")` resolves —
+ * confirmed directly, not assumed: with no client-side `initialValue` passed (this client has
+ * none to offer; the node side's is the only real one), Devframe's client host can resolve the
+ * handle *before* the server round trip that actually populates it finishes (an internal
+ * trust-handshake race), leaving `.value()` empty for one tick. The one real sync it does before
+ * that always arrives as an `"updated"` event, so waiting for the first one whenever `.value()`
+ * comes back empty is correct in both cases, not a workaround for one specific timing.
+ */
+async function firstTreeValue(): Promise<TreeNode> {
+	const existing = treeShared.value();
+	if (existing != null) return existing as TreeNode;
+	return new Promise((resolve) => {
+		const off = treeShared.on("updated", (fullState) => {
+			off();
+			resolve(fullState as TreeNode);
+		});
+	});
 }
 
 async function main() {
 	try {
-		tree = await loadTree();
+		tree = await firstTreeValue();
+		treeShared.on("updated", (fullState) => {
+			tree = fullState as TreeNode;
+			void navigate();
+		});
 		if (!location.hash) location.hash = encodeURIComponent(tree.path);
 		await navigate();
 		window.addEventListener("hashchange", navigate);

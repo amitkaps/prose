@@ -255,6 +255,15 @@ symbols, badges, notes), the view itself is the weak point. Roughly in priority 
 - **Section-heading deep links.** A chunk/section already has a stable URL (§6.1), but there's no
   affordance in the view itself to copy it — a hover "copy link" icon next to each heading, common
   in doc sites, would make that reachable without reading the address bar.
+- **Raw/inert preview for non-prose-able config** (`package.json`, `tsconfig.json`, …). Right now
+  the tree walker is a pure extension allowlist (`SOURCE_EXTENSIONS`) — a file either has `@prose`
+  chunking or doesn't exist in the tree at all. JSON has no comment syntax, so there's structurally
+  nothing for `@prose` to attach to in these files, but they're still real project structure a
+  human orienting in `/__prose/` might want to see (dependencies, scripts, compiler options) — a
+  third, simpler node kind (raw text, syntax-highlighted, no chunks/symbols/warnings) would cover
+  them without pretending they can carry prose. Not built: needs its own tree-node shape decision
+  (a `kind: "raw"` alongside `"file"`?) rather than stretching the existing chunked-file model to
+  fit a file that never chunks.
 - **Show the preamble** (§3.2: "flagged, shown collapsed") — currently parsed by `parser.ts` but
   dropped entirely before it reaches a `TreeNode` (see the symbol-check gap noted in Phase 2
   above; giving the preamble a real place in the tree fixes both at once).
@@ -367,16 +376,75 @@ reserved filename in `prose/`.
       previously untested — works). Verified: `pnpm test`, `pnpm check`, `pnpm build` all pass
       unchanged; `pnpm dev` boots with `/__prose/` serving and its assets resolving correctly
       (checked via `curl` per the lessons.md content-type gotcha, not status code alone).
-- [ ] HTML-strip build hook (`transformIndexHtml` in `vite build`), verified byte-identical output
-      otherwise.
-- [ ] Live view updates via Devframe's synced state (watch the project's files, push tree/node
-      changes instead of the client polling).
-- [ ] `dev/docs.tool.ts`, the §8 agent-contract snippet, and one pending chunk in `examples/base`
-      (not yet added — no undocumented-but-intentional chunk exists there yet to exercise the
-      pending-chunk UI against).
+- [x] **`.yaml`/`.yml`/`.toml` support** (§2/§3.1, extended beyond the original scope on request):
+      both languages use `#` for a line comment with no closing delimiter, so a block's boundary
+      comes from the marker itself, not a delimiter — `parser.ts`'s new `scanHashComments` starts a
+      block at a `#`-line whose stripped content is `@prose`/`@note` and runs through following
+      `#`-lines up to the next marker line or the first non-`#` line, whichever comes first (so two
+      markers can sit back-to-back with no blank line between, same as the JS/HTML styles support
+      for a `@prose` block immediately followed by its own `@note`). Only counts at column 0 —
+      indented inside a nested mapping/table it's an ordinary comment, mirroring `scanJsLike`'s
+      depth-0 rule. A new `commentStyle: "hash"` and `codeLang: "yaml" | "toml"` thread through
+      `parser.ts`/`tree.ts`/`checks.ts`/`notes.ts`; `notes.ts`'s `formatNote` writes a new `@note`
+      as `# @note` + `# `-prefixed lines, no closing delimiter to add. `tree.ts` also gained
+      `RESERVED_FILENAMES` (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, …) — generated
+      lockfiles are excluded by filename even though `.yaml` is otherwise walked, since there's
+      nothing to write prose about in a file nobody hand-edits. 9 new tests (parser/notes/tree).
+- [x] HTML-strip build hook (`src/plugin.ts`'s `stripProseHtml`, a `transformIndexHtml` hook on a
+      third plain Vite plugin, `apply: "build"`). Verified against a real `vite build` of
+      `examples/single` (not just unit tests): built with the hook removed manually stripping the
+      same regex from the unhooked output byte-for-byte matches the hooked output — confirmed via
+      `node -e` diffing the two, not assumed. **A real, permanent limitation found this way**:
+      SvelteKit's own `vite build` explicitly warns `transformIndexHtml` isn't supported by its
+      plugin pipeline (confirmed directly against `examples/base`'s real `pnpm build` output — the
+      warning is real, not a guess), so this hook never runs there at all. Currently harmless
+      (`examples/base`'s `app.html` has no `@prose`, and Svelte's own compiler already drops markup
+      comments from `.svelte` output per §6.4), but worth remembering: a `@prose` comment added
+      directly to `app.html` on a SvelteKit host would leak into production HTML unstripped, with
+      no warning that the tool trying to catch it doesn't actually run.
+- [x] **Live view updates via Devframe's synced state** (§6.1's "no bespoke HMR-websocket
+      wiring"). `prose:tree` changed from a `query` to a `SharedState<TreeNode>`
+      (`src/plugin.ts`): the node side owns one instance (`ctx.rpc.sharedState.get("prose:tree",
+      { initialValue })`), and a plain Vite `configureServer` plugin (`prose:watch`) calls
+      `server.watcher.on("all", ...)` to recompute and `.mutate()` it on every file change — full-
+      state push, no diffing, matching `server/routes.ts`'s existing "just re-walk the whole tree,
+      it's cheap enough" reasoning. `add-note`/`resolve-note` also trigger a recompute after
+      writing, so the rail's note badges update without waiting on the file watcher's own debounce.
+      Devframe's own node context deliberately doesn't expose Vite's watcher (confirmed directly:
+      `@devframes/vite`'s own doc comment says its context is "narrower than Vite's real
+      `ViteDevServer`"), so the watcher plugin and `registerRpc`'s `setup(ctx)` share one closure-
+      scoped `ProseShared` object instead of a module-level global, so multiple `prose()` instances
+      in one process can't collide.
+      **Verified live, not just typechecked**: a real dev server (`examples/single`, a scratch
+      port so as not to touch the user's own running session) plus a headless `devframe/client`
+      script that edited `main.js`'s file prose on disk and confirmed the exact new text arrived
+      over the wire as an `"updated"` event, then reverted and confirmed that arrived too.
+      **Found and fixed a real client-side race this way**: Devframe's shared-state client can
+      resolve `sharedState("tree")`'s promise *before* the server round trip that actually
+      populates it finishes (confirmed directly: `.value()` came back `undefined` for one tick,
+      followed immediately by exactly one `"updated"` event carrying the real data) — the
+      no-`initialValue`-on-the-client code path takes an internal trust-handshake branch that
+      resolves early. `client/main.ts`'s `firstTreeValue()` checks `.value()` and falls back to
+      awaiting the first `"updated"` event if it's still empty, so `main()` never runs with `tree`
+      actually `undefined` (which would throw on `tree.path`).
+      **A tooling gotcha along the way**: `devframe/client` calls the browser-global `location`
+      unconditionally in its transport-resolution code (both WS and SSE modes), so a headless
+      verification script needs `globalThis.location = new URL(...)` before connecting; separately,
+      the SSE transport hung indefinitely on every RPC call in this Node environment for reasons
+      not tracked down (not this project's own bug — a shared-state-only symptom would point here,
+      but plain `query` calls hung too), while `transport: "websocket"` worked correctly end to
+      end. Worth remembering for the next headless verification script, not something to fix here.
+- [x] The §8 agent-contract snippet added to `examples/base/AGENTS.md`, adapted slightly (the
+      "CLI (`prose check`)" line dropped — that CLI doesn't exist yet, Phase 5 — so the snippet
+      doesn't promise a tool the agent would then fail to find).
+- [ ] `dev/docs.tool.ts` and one pending chunk in `examples/base` — deliberately held off (no
+      undocumented-but-intentional chunk exists there yet to exercise the pending-chunk UI
+      against, and the dev-tool discovery mechanism itself is unbuilt, Phase 5's `dev/*.tool.ts`
+      glob).
 - [ ] Run through the full §9.2 verification checklist (`pnpm check`/`test`/`build` are covered
       above; the checklist's other items — unmarked comments not treated as prose, dev route
       alongside SvelteKit's own routing — are informally confirmed but not run down item-by-item).
+- 13 new tests this pass (parser/notes/tree/plugin), 87 total.
 
 ## Phase 5 — dev tools, import-graph diagram, CLI/MCP (§4 diagram, §7, §8's `prose check`, §10)
 

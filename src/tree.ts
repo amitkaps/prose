@@ -37,7 +37,7 @@ export interface TreeNode {
 	note?: string;
 	/** Chunk-only: which language this chunk's own code is in — gates whether the symbol check
 	 *  (§5.1) attempts a JS/TS parse of it at all (`src/checks.ts`'s `declaredIdentifiers`). */
-	codeLang?: "js" | "css" | "html";
+	codeLang?: "js" | "css" | "html" | "yaml" | "toml";
 	/** Chunk-only: inline code spans from this chunk's own prose, resolved per spec §5.1. */
 	symbols?: Symbol[];
 	/** This node's own warnings (chunks only, for now — §5 doesn't define file/folder-level checks). */
@@ -49,9 +49,30 @@ export interface TreeNode {
 }
 
 const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".svelte-kit", ".vscode", "prose"]);
-const SOURCE_EXTENSIONS = new Set(["js", "ts", "css", "html", "svelte", "md"]);
+const SOURCE_EXTENSIONS = new Set([
+	"js",
+	"ts",
+	"css",
+	"html",
+	"svelte",
+	"md",
+	"yaml",
+	"yml",
+	"toml",
+]);
 // The one name inside `prose/` with special meaning (spec §3.4/§6.3) — not a document itself.
 const RESERVED_PROSE_FILES = new Set(["remarks.md"]);
+// Generated, never authored — a package manager's own record, not something a project "writes
+// prose about." Excluded by filename rather than left to fall out of the extension allowlist,
+// since `.yaml`/`.toml` are otherwise fair game (spec §2's "In" list doesn't name these, but the
+// same "prose lives with the code" argument applies to config as much as to source).
+const RESERVED_FILENAMES = new Set([
+	"pnpm-lock.yaml",
+	"package-lock.json",
+	"yarn.lock",
+	"bun.lock",
+	"bun.lockb",
+]);
 
 function extensionOf(name: string): string {
 	return name.slice(name.lastIndexOf(".") + 1).toLowerCase();
@@ -179,6 +200,7 @@ function folderToNode(root: string, dir: string, name: string): TreeNode {
 
 	for (const entry of readdirSync(dir).sort()) {
 		if (entry.startsWith(".") || SKIP_DIRS.has(entry) || entry === "README.md") continue;
+		if (RESERVED_FILENAMES.has(entry)) continue;
 		const absPath = join(dir, entry);
 		const stat = statSync(absPath);
 		if (stat.isDirectory()) {

@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chunkAnchor, type ProseChunk, parseFile } from "./parser.js";
 
-const SOURCE_EXTENSIONS = new Set(["js", "ts", "css", "html", "svelte"]);
+const SOURCE_EXTENSIONS = new Set(["js", "ts", "css", "html", "svelte", "yaml", "yml", "toml"]);
 
 function extensionOf(name: string): string {
 	return name.slice(name.lastIndexOf(".") + 1).toLowerCase();
@@ -62,11 +62,15 @@ function wholeLineRange(source: string, start: number, end: number): [number, nu
 /** No leading or trailing newline — callers are in the best position to know how many newlines
  *  belong on each side (a fresh insert needs exactly one before it; a replacement's surrounding
  *  newlines are already accounted for by `wholeLineRange`), so this only formats the comment text. */
-function formatNote(text: string, indent: string, commentStyle: "js" | "html"): string {
+function formatNote(text: string, indent: string, commentStyle: "js" | "html" | "hash"): string {
 	const lines = text.split("\n");
 	if (commentStyle === "js") {
 		const body = lines.map((line) => `${indent} * ${line}`).join("\n");
 		return `${indent}/** @note\n${body}\n${indent} */`;
+	}
+	if (commentStyle === "hash") {
+		const body = lines.map((line) => (line ? `${indent}# ${line}` : `${indent}#`)).join("\n");
+		return `${indent}# @note\n${body}`;
 	}
 	const body = lines.join("\n");
 	return `${indent}<!-- @note\n${body}\n${indent}-->`;

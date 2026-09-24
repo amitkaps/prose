@@ -111,6 +111,36 @@ describe("parseFile: HTML (<!-- @prose -->)", () => {
 	});
 });
 
+describe("parseFile: YAML/TOML (# @prose)", () => {
+	it("reads a top-level # comment block as file prose, gutter stripped", () => {
+		const source = "# @prose\n# File summary.\nname: demo\n";
+		const parsed = parseFile(source, "yaml");
+		expect(parsed.fileProse).toBe("File summary.");
+		expect(parsed.preamble).toBe("name: demo");
+	});
+
+	it("chunks code between # comment blocks, in a .toml file", () => {
+		const source = "# @prose\n# File.\n\n# @prose\n# A chunk.\nport = 8080\n";
+		const parsed = parseFile(source, "toml");
+		expect(parsed.sections[0].chunks[0].prose).toBe("A chunk.");
+		expect(parsed.sections[0].chunks[0].code).toBe("port = 8080");
+		expect(parsed.sections[0].chunks[0].commentStyle).toBe("hash");
+		expect(parsed.sections[0].chunks[0].codeLang).toBe("toml");
+	});
+
+	it("does not treat an indented # comment (nested inside a mapping) as a prose block", () => {
+		const source = "top:\n  # not top-level, just a code comment\n  child: 1\n";
+		const parsed = parseFile(source, "yaml");
+		expect(parsed.fileProse).toBeNull();
+	});
+
+	it("ignores unmarked # comments, treating them as ordinary code", () => {
+		const source = "# just a comment\nname: demo\n";
+		const parsed = parseFile(source, "yaml");
+		expect(parsed.fileProse).toBeNull();
+	});
+});
+
 describe("parseFile: .svelte (script/style as JS/CSS, markup as HTML, merged in order)", () => {
 	it("merges blocks from all three parts in source order", () => {
 		const source = [
@@ -184,6 +214,17 @@ describe("parseFile: @note", () => {
 		expect(chunk.note).toBe("Should this reject duplicates?");
 		expect(chunk.code).toBe("const a = 1;");
 		expect(chunk.code).not.toContain("@note");
+	});
+
+	it("folds a hash-style @note after a YAML @prose block into that chunk, with no blank line between the two markers", () => {
+		const source =
+			"# @prose\n# File.\n\n# @prose\n# A chunk.\n# @note Double-check this port.\nport: 8080\n";
+		const parsed = parseFile(source, "yaml");
+		const chunk = parsed.sections[0].chunks[0];
+		expect(chunk.prose).toBe("A chunk.");
+		expect(chunk.note).toBe("Double-check this port.");
+		expect(chunk.code).toBe("port: 8080");
+		expect(chunk.commentStyle).toBe("hash");
 	});
 
 	it("records commentStyle and exact byte offsets for a chunk with no note yet", () => {

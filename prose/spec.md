@@ -34,7 +34,7 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 
 | In                                                                      | Out                                                  |
 | ----------------------------------------------------------------------- | ---------------------------------------------------- |
-| `.ts`, `.js`, `.css`, `.html`, `.svelte` with prose in comments         | New file types, tangling, `.ts.md`                   |
+| `.ts`, `.js`, `.css`, `.html`, `.svelte`, `.yaml`/`.yml`, `.toml` with prose in comments | New file types, tangling, `.ts.md`  |
 | Folder `README.md` as folder prose; `prose/` for cross-cutting prose   | A published documentation site                       |
 | `/__prose/` dev route: navigation, woven view, import-graph diagram | Editing *code* in the view                           |
 | Symbol check and staleness check                                        | LLM-generated summaries (first paragraphs are used) |
@@ -53,6 +53,7 @@ A **prose block** is a comment whose first token is the **`@prose`** marker. The
 | ------------- | ----------------------------------- |
 | JS, TS, CSS   | `/** @prose … */` at top level      |
 | HTML, markup  | `<!-- @prose … -->`                 |
+| YAML, TOML    | `# @prose …`, one `#` per line, at column 0 |
 
 ```js
 /** @prose
@@ -74,6 +75,7 @@ The count lives in an `<output>`, announced to screen readers when it changes.
 - The marker is opt-in because comments already have many owners: JSDoc, Vite, Svelte, formatters, and linters. Adding a marker is also the explicit step of promoting a comment to prose (§9.2).
 - In JS, TS and CSS, prose blocks inside function, class, or rule bodies are ignored in the prototype.
 - TypeScript treats `@prose` as a JSDoc tag, so an editor hover shows the prose as that tag's text. It's readable, if slightly noisy.
+- YAML and TOML have no block-comment delimiter, so a prose block there is a maximal run of `#`-prefixed lines starting with a marker line (`# @prose`/`# @note`), each line's own `# ` gutter stripped; two markers can sit back-to-back with no blank line between (a `@note` directly after its `@prose` block, same as the other styles). Only counts at column 0 — an indented `#` comment (nested inside a mapping/table) is an ordinary comment, the same "top level only" rule §3.1 gives braces. A generated lockfile (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, …) is excluded by filename regardless of extension — nothing to say prose about in a file nobody hand-edits.
 
 In `.svelte` files, each part follows its own language's rule: `<script>` follows the JS/TS rule, the markup follows the HTML rule, and `<style>` follows the CSS rule. The chunks from all three parts are merged in source order. The file prose is the first prose block in any of the parts.
 

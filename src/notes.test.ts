@@ -114,6 +114,20 @@ describe("addNote", () => {
 		expect(written).toContain("<!-- @note\nA question.\n-->\n<h1>hi</h1>");
 	});
 
+	it("writes in hash comment style for a .toml chunk, no closing delimiter", () => {
+		makeFile(
+			"config.toml",
+			["# @prose", "# File.", "", "# @prose", "# A chunk.", "port = 8080", ""].join("\n"),
+		);
+		addNote(root, "config.toml#top-chunk-0", "Double-check this port.");
+		const written = readFileSync(join(root, "config.toml"), "utf-8");
+		expect(written).toContain(
+			"# @prose\n# A chunk.\n# @note\n# Double-check this port.\nport = 8080",
+		);
+		const reparsed = parseFile(written, "toml");
+		expect(reparsed.sections[0].chunks[0].note).toBe("Double-check this port.");
+	});
+
 	it("throws when the chunk path does not resolve (stale client, or a file/folder-level path)", () => {
 		makeFile("main.js", "/** @prose File. */\n\n/** @prose A chunk. */\nconst a = 1;\n");
 		expect(() => addNote(root, "main.js#nope", "text")).toThrow();
@@ -140,6 +154,28 @@ describe("resolveNote", () => {
 		const written = readFileSync(join(root, "main.js"), "utf-8");
 		expect(written).toBe(
 			["/** @prose File. */", "", "/** @prose A chunk. */", "const a = 1;", ""].join("\n"),
+		);
+	});
+
+	it("removes a hash-style note entirely, leaving the surrounding code untouched", () => {
+		makeFile(
+			"config.toml",
+			[
+				"# @prose",
+				"# File.",
+				"",
+				"# @prose",
+				"# A chunk.",
+				"# @note",
+				"# A question.",
+				"port = 8080",
+				"",
+			].join("\n"),
+		);
+		resolveNote(root, "config.toml#top-chunk-0");
+		const written = readFileSync(join(root, "config.toml"), "utf-8");
+		expect(written).toBe(
+			["# @prose", "# File.", "", "# @prose", "# A chunk.", "port = 8080", ""].join("\n"),
 		);
 	});
 

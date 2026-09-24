@@ -79,6 +79,29 @@ describe("buildTree", () => {
 		const tree = buildTree(dir);
 		expect(tree.children.map((n) => n.name)).toEqual(["main.js"]);
 	});
+
+	it("walks .yaml/.toml files with # @prose comments into file nodes", () => {
+		const dir = makeProject({
+			"config.toml": "# @prose\n# TOML config summary.\nport = 8080\n",
+			"pipeline.yaml": "# @prose\n# YAML pipeline summary.\nname: build\n",
+		});
+		const tree = buildTree(dir);
+		const names = tree.children.map((n) => n.name).sort();
+		expect(names).toEqual(["config.toml", "pipeline.yaml"]);
+		expect(tree.children.find((n) => n.name === "config.toml")?.summary).toBe(
+			"TOML config summary.",
+		);
+	});
+
+	it("skips lockfiles by name even though .yaml/.toml are otherwise walked", () => {
+		const dir = makeProject({
+			"pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+			"package.json": "{}\n",
+			"config.toml": "port = 8080\n",
+		});
+		const tree = buildTree(dir);
+		expect(tree.children.map((n) => n.name)).toEqual(["config.toml"]);
+	});
 });
 
 describe("buildTree: prose/ cross-cutting docs (spec §3.4)", () => {

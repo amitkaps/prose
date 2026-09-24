@@ -174,3 +174,45 @@ more variety than two curated examples.
   which can't reproduce it — a single-line block's opening and closing positions read the same
   indent by coincidence); locked in afterward with a regression test using a deliberately
   multi-line block.
+
+## Live updates: Devframe's `SharedState`
+
+- **A comment-syntax scanner without a closing delimiter needs the *marker* to define block
+  boundaries, not "a maximal run of comment lines."** YAML/TOML's `#` has no closing delimiter the
+  way `/** */` or `<!-- -->` does, so the naive version of `scanHashComments` (collect every
+  contiguous `#`-line into one block, then check only the first line for a marker) silently merged
+  a `@prose` block and its immediately-following `@note` into one block whenever they sat back-to-
+  back with no blank line — exactly the adjacency case `@note` is supposed to support natively
+  (spec §6.2, matching the JS/HTML styles). The fix treats a marker line itself as the boundary: a
+  block runs from a marker line through following `#`-lines *up to the next marker line or the
+  first non-`#` line*, whichever comes first. Caught by writing the back-to-back test case
+  directly, not found live — worth remembering as a general shape: any block scanner with no
+  closing delimiter needs to ask "what happens when two blocks touch," not just "what happens at
+  the end."
+- **Devframe's `SharedState` client can resolve before it's actually populated — verified
+  directly, not assumed.** Calling `scope.rpc.sharedState("tree")` with no client-side
+  `initialValue` takes an internal code path that can resolve the returned handle immediately
+  (an "isTrusted" branch) before the server round trip that fills it in completes; `.value()`
+  reads back empty for one tick, and the real data arrives moments later as an ordinary
+  `"updated"` event — not a second, different kind of event, the same one every later mutation
+  fires. Confirmed with a live headless script (`devframe/client`, real dev server, real file
+  edit) before writing the fix, not inferred from reading the source alone. `client/main.ts`'s
+  `firstTreeValue()` checks `.value()` first and only falls back to awaiting the next `"updated"`
+  event if it's empty — cheap, and correct in both the raced and non-raced case, since a real
+  empty tree is never a valid state for this app (every project has at least a root node).
+- **`devframe/client`'s transport resolution reads the browser-global `location` unconditionally**
+  — a headless Node verification script needs `globalThis.location = new URL(...)` set before
+  calling `connectDevframe`, for both the WebSocket and SSE transport paths. Separately (and not
+  yet root-caused, so noted rather than fixed): forcing `transport: "sse"` made *every* RPC call
+  hang indefinitely in this Node environment, including plain `query` calls unrelated to shared
+  state, while `transport: "websocket"` worked correctly for the same calls against the same
+  server. Treat `sse` as untested for headless Node scripts in this project until that's
+  understood; `websocket` is the one to reach for.
+- **SvelteKit's own `vite build` does not run a plugin's `transformIndexHtml` hook at all** —
+  confirmed via the explicit warning it prints (`"transformIndexHtml hook which is not
+  supported"`), not inferred. Harmless today (`examples/base` has no `@prose` in any `.html`
+  output path — Svelte's compiler already strips markup comments from `.svelte` files before this
+  hook would ever see them), but real: a `@prose` comment added directly to `app.html` on a
+  SvelteKit host would ship to production unstripped, with the build giving no error, only an
+  easy-to-miss warning. Worth remembering as a host-specific gap in §6.4's build-strip step, not
+  something this plugin can currently detect or work around.

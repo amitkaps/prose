@@ -26,14 +26,15 @@ export interface ProseChunk {
 	/** An `@note` immediately following this chunk's `@prose` block, if one exists (a direction or
 	 *  question left for whoever — human or agent — touches this chunk next). */
 	note?: string;
-	/** `/**`-delimited (with a ` * ` gutter) or `<!--`-delimited — which style a *new* `@note`
-	 *  should be written in, matching whichever style this chunk's own `@prose` block used. */
-	commentStyle: "js" | "html";
+	/** `/**`-delimited (with a ` * ` gutter), `<!--`-delimited, or `#`-delimited (YAML/TOML,
+	 *  one `#` per line, no closing delimiter) — which style a *new* `@note` should be written in,
+	 *  matching whichever style this chunk's own `@prose` block used. */
+	commentStyle: "js" | "html" | "hash";
 	/** Which language this chunk's own trailing *code* is in — not always the same as
 	 *  `commentStyle` (a `.svelte` file's `<style>` block uses JS-style `/** *\/` comments but its
 	 *  code is CSS). `src/checks.ts`'s symbol check only attempts a JS/TS parse when this is
-	 *  `"js"` — CSS and HTML aren't in scope yet (spec §5.1). */
-	codeLang: "js" | "css" | "html";
+	 *  `"js"` — CSS, HTML, YAML and TOML aren't in scope yet (spec §5.1). */
+	codeLang: "js" | "css" | "html" | "yaml" | "toml";
 	/** Byte offset just past this chunk's `@prose` comment — where a brand-new `@note` is
 	 *  inserted when `note` is unset. */
 	proseEndIndex: number;
@@ -57,11 +58,11 @@ export interface FileParse {
 
 interface RawBlock {
 	kind: "prose" | "note";
-	commentStyle: "js" | "html";
+	commentStyle: "js" | "html" | "hash";
 	/** Which language this block's own *trailing code* is in — distinct from `commentStyle` (a
 	 *  CSS file's comments are `/** *\/`-delimited too, same as JS, but its code obviously isn't
 	 *  JS). `src/checks.ts`'s symbol check only attempts a JS/TS parse when this is `"js"`. */
-	codeLang: "js" | "css" | "html";
+	codeLang: "js" | "css" | "html" | "yaml" | "toml";
 	body: string;
 	startIndex: number;
 	endIndex: number;
@@ -74,8 +75,8 @@ interface RawBlock {
 /** A `RawBlock` after `mergeNotes` has folded any following `@note` into its preceding `@prose`
  *  block — one entry per prose block, each optionally carrying the note attached to it. */
 interface ProseRawBlock {
-	commentStyle: "js" | "html";
-	codeLang: "js" | "css" | "html";
+	commentStyle: "js" | "html" | "hash";
+	codeLang: "js" | "css" | "html" | "yaml" | "toml";
 	body: string;
 	startIndex: number;
 	startLine: number;
@@ -134,11 +135,11 @@ function slugify(text: string): string {
  */
 const MARKERS = ["@prose", "@note"] as const;
 
-function extractMarkedBlock(
-	inner: string,
-	stripContinuation: boolean,
-): { kind: "prose" | "note"; body: string } | null {
-	const lines = inner.split("\n");
+/** The marker check + trimming shared by every comment style — a comment counts only if its
+ *  first line, trimmed, starts with `@prose` or `@note`; blank lines at either edge of the body
+ *  are dropped. `lines` are already gutter-stripped by the caller (each style strips its own
+ *  gutter differently: JS's ` * `, hash-style's `# `, HTML's none at all). */
+function extractMarkedFromLines(lines: string[]): { kind: "prose" | "note"; body: string } | null {
 	const trimmedFirst = lines[0].trim();
 	const marker = MARKERS.find((m) => trimmedFirst.startsWith(m));
 	if (!marker) return null;
@@ -146,12 +147,21 @@ function extractMarkedBlock(
 	if (rest.startsWith(" ")) rest = rest.slice(1);
 	const out: string[] = [];
 	if (rest.length > 0) out.push(rest);
-	for (let i = 1; i < lines.length; i++) {
-		out.push(stripContinuation ? lines[i].replace(/^[ \t]*\*[ \t]?/, "") : lines[i]);
-	}
+	for (let i = 1; i < lines.length; i++) out.push(lines[i]);
 	while (out.length && out[0].trim() === "") out.shift();
 	while (out.length && out[out.length - 1].trim() === "") out.pop();
 	return { kind: marker === "@prose" ? "prose" : "note", body: out.join("\n") };
+}
+
+function extractMarkedBlock(
+	inner: string,
+	stripContinuation: boolean,
+): { kind: "prose" | "note"; body: string } | null {
+	const lines = inner.split("\n");
+	const stripped = lines.map((line, i) =>
+		i === 0 || !stripContinuation ? line : line.replace(/^[ \t]*\*[ \t]?/, ""),
+	);
+	return extractMarkedFromLines(stripped);
 }
 
 /** @prose
@@ -320,6 +330,70 @@ function scanJsLike(source: string, codeLang: "js" | "css" = "js"): RawBlock[] {
 	return blocks;
 }
 
+/** @prose
+ * # Scanning YAML/TOML
+ *
+ * Both languages use `#` for a line comment, with no closing delimiter, so a block's boundary
+ * can't come from a delimiter the way `/** *\/` or `<!-- -->` gives one — it comes from the
+ * marker itself: a block starts at a `#`-line whose stripped content is `@prose`/`@note`, and
+ * runs through following `#`-lines up to (not including) the next marker line or the first
+ * non-`#` line, whichever comes first. That's what lets two markers sit back-to-back with no
+ * blank line between them (a `@prose` block immediately followed by its own `@note`, same as the
+ * JS/HTML styles support) without the second marker's lines bleeding into the first block's body.
+ * Only counts as top-level when the `#` sits at column 0 — indented inside a nested
+ * mapping/table it's an ordinary comment, mirroring the depth-0 rule `scanJsLike` applies to
+ * braces (spec §3.1's "prose blocks... at top level").
+ */
+function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[] {
+	const blocks: RawBlock[] = [];
+	const lines = source.split("\n");
+	const lineOffsets: number[] = [];
+	let offset = 0;
+	for (const line of lines) {
+		lineOffsets.push(offset);
+		offset += line.length + 1;
+	}
+	const isMarkerLine = (stripped: string): boolean => {
+		const trimmed = stripped.trim();
+		return MARKERS.some((m) => trimmed.startsWith(m));
+	};
+
+	let i = 0;
+	while (i < lines.length) {
+		const stripped = lines[i].startsWith("#") ? lines[i].replace(/^#[ \t]?/, "") : null;
+		if (stripped === null || !isMarkerLine(stripped)) {
+			i++;
+			continue;
+		}
+		const startLine = i;
+		const commentLines = [stripped];
+		i++;
+		while (i < lines.length && lines[i].startsWith("#")) {
+			const next = lines[i].replace(/^#[ \t]?/, "");
+			if (isMarkerLine(next)) break;
+			commentLines.push(next);
+			i++;
+		}
+		const marked = extractMarkedFromLines(commentLines);
+		if (marked) {
+			// `endIndex` lands right after the last comment line's own content, before its trailing
+			// newline — matching `scanJsLike`/`scanHtml`'s convention (their `end` sits right after
+			// `*/`/`-->`, also before any newline), so `notes.ts`'s insertion logic (which always
+			// prepends its own `"\n"`) works identically regardless of comment style.
+			const lastLine = i - 1;
+			blocks.push({
+				...marked,
+				commentStyle: "hash",
+				codeLang,
+				startIndex: lineOffsets[startLine],
+				endIndex: lineOffsets[lastLine] + lines[lastLine].length,
+				startLine: startLine + 1,
+			});
+		}
+	}
+	return blocks;
+}
+
 /** Scans HTML source for `<!-- @prose ... -->` and `<!-- @note ... -->` comments. */
 function scanHtml(source: string): RawBlock[] {
 	const blocks: RawBlock[] = [];
@@ -410,7 +484,11 @@ export function parseFile(source: string, extension: string): FileParse {
 			? scanHtml(source)
 			: extension === "svelte"
 				? scanSvelte(source)
-				: scanJsLike(source, extension === "css" ? "css" : "js");
+				: extension === "yaml" || extension === "yml"
+					? scanHashComments(source, "yaml")
+					: extension === "toml"
+						? scanHashComments(source, "toml")
+						: scanJsLike(source, extension === "css" ? "css" : "js");
 	// A note directly after the *file* prose block is folded in here too (mergeNotes doesn't
 	// distinguish file prose from a chunk's), but FileParse has nowhere to put it yet — file-level
 	// notes aren't supported (§6.3-equivalent scope, chunk-only for now), so `fileBlock.note` below

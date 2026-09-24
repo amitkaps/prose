@@ -219,7 +219,7 @@ function walk(node: unknown, visit: (node: AstNode) => void): void {
  *  chunks aren't attempted at all, not even fed through the parser to see what happens) or if
  *  parsing throws (defensive — the empirical behavior is that it doesn't, but this is an external
  *  tool, not this project's own code, so the same caution `git.ts`'s `blameFile` uses applies). */
-function tryParse(code: string, codeLang: "js" | "css" | "html"): AstNode | null {
+function tryParse(code: string, codeLang: "js" | "css" | "html" | "yaml" | "toml"): AstNode | null {
 	if (codeLang !== "js") return null;
 	try {
 		return parseSync("chunk.ts", code).program as unknown as AstNode;
@@ -242,7 +242,7 @@ function tryParse(code: string, codeLang: "js" | "css" | "html"): AstNode | null
  */
 export function declaredIdentifiers(
 	code: string,
-	codeLang: "js" | "css" | "html" = "js",
+	codeLang: "js" | "css" | "html" | "yaml" | "toml" = "js",
 ): Set<string> {
 	const names = new Set<string>();
 	const program = tryParse(code, codeLang);
@@ -294,7 +294,7 @@ export function declaredIdentifiers(
  */
 export function declaredParameters(
 	code: string,
-	codeLang: "js" | "css" | "html" = "js",
+	codeLang: "js" | "css" | "html" | "yaml" | "toml" = "js",
 ): Set<string> {
 	const names = new Set<string>();
 	const program = tryParse(code, codeLang);
@@ -340,7 +340,7 @@ export function checkSymbols(
 	table: ReadonlyMap<string, string>,
 	fileScope: ReadonlySet<string> = new Set(),
 	knownPackages: ReadonlySet<string> = new Set(),
-	codeLang: "js" | "css" | "html" = "js",
+	codeLang: "js" | "css" | "html" | "yaml" | "toml" = "js",
 ): { symbols: Symbol[]; warnings: Warning[] } {
 	const spans = extractCodeSpans(prose);
 	if (spans.length === 0) return { symbols: [], warnings: [] };
