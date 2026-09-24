@@ -26,7 +26,7 @@ export async function prose(): Promise<Plugin[]> {
 			console.log(`[prose] workspaceRoot: ${ctx.workspaceRoot}`);
 			ctx.rpc.register(
 				defineRpcFunction({
-					name: "tree",
+					name: "prose:tree",
 					type: "query",
 					jsonSerializable: true,
 					handler: () => {
@@ -41,7 +41,7 @@ export async function prose(): Promise<Plugin[]> {
 			);
 			ctx.rpc.register(
 				defineRpcFunction({
-					name: "node",
+					name: "prose:node",
 					type: "query",
 					jsonSerializable: true,
 					handler: (path: string) => {
