@@ -46,6 +46,22 @@ to build.
   `import.meta.url` (`new URL("../", import.meta.url).href`, one directory up from the script's
   own `assets/` folder) is immune to the bug entirely, since a built script's `src` is always
   absolute under the configured `base` regardless of what the address bar shows.
+- **`new URL(<string literal>, import.meta.url)` is not a plain runtime call in Vite — it's a
+  special static-asset pattern.** The fix above (`new URL("../", import.meta.url)`, to get an
+  absolute base directory) built without error and worked in every Node-based headless check, but
+  broke in a real browser with `Uncaught Error: Failed to get connection meta from
+  data:text/javascript;base64,...`. Vite's build specially recognizes the exact shape
+  `new URL(<literal>, import.meta.url)` as a request to resolve a static asset relative to *this
+  source file*, at *build time* — not a plain runtime URL join against the deployed page's URL.
+  Resolving `"../"` (a directory, not a file) from `client/main.ts` at build time walked up to the
+  repo root and picked up its `dist/index.js` (this project's own server-side entry point,
+  `export { prose } from "./plugin.js";`), then inlined its tiny contents as a base64 data URL —
+  completely unrelated content, silently substituted for the literal string argument. The fix:
+  never use that call shape for a "give me a directory" computation; do plain string slicing on
+  `import.meta.url` instead (`url.lastIndexOf("/")`, twice, to walk up two segments). Headless
+  Node checks didn't catch this because Node doesn't run the code through Vite's asset-URL
+  static analysis at all — only an actual Vite production build, inspected for it, would show it
+  (`grep -c "data:text/javascript" client/dist/assets/*.js` is now part of that check).
 - **`@vitejs/devtools`'s `clientAuth` defaulted to on**, gating new browser clients behind a
   terminal-approved trust handshake, and wasn't a plain option on `DevTools()` itself (passing
   `{ clientAuth: false }` there was a type error) — it lived in a separate `DevToolsConfig` the

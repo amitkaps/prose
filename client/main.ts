@@ -30,8 +30,16 @@ let tree: TreeNode | null = null;
 // without its trailing slash resolves "./__connection.json" against the parent path instead.
 // `import.meta.url` is always this script's own absolute served URL (e.g.
 // `.../__prose/assets/main-x.js`) regardless of what the address bar shows, so deriving the base
-// from it — one directory up from `assets/` — is immune to that.
-const base = new URL("../", import.meta.url).href;
+// from it — two path segments up, past `assets/` — is immune to that. Deliberately not
+// `new URL("../assets/../", import.meta.url)`: Vite's build specially intercepts the exact call
+// shape `new URL(<string literal>, import.meta.url)` as a static-asset reference and resolves it
+// at *build time* relative to this file, not at runtime relative to the deployed URL.
+function twoDirsUp(url: string): string {
+	const lastSlash = url.lastIndexOf("/");
+	const secondLastSlash = url.lastIndexOf("/", lastSlash - 1);
+	return url.slice(0, secondLastSlash + 1);
+}
+const base = twoDirsUp(import.meta.url);
 const client = await connectDevframe({ baseURL: base });
 const prose = client.scope("prose");
 
