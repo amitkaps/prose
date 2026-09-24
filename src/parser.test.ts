@@ -170,6 +170,81 @@ describe("parseFile: .svelte (script/style as JS/CSS, markup as HTML, merged in 
 	});
 });
 
+describe("parseFile: @note", () => {
+	it("folds an @note directly after a chunk's @prose block into that chunk", () => {
+		const source = [
+			"/** @prose File. */",
+			"",
+			"/** @prose A chunk. */",
+			"/** @note Should this reject duplicates? */",
+			"const a = 1;",
+		].join("\n");
+		const parsed = parseFile(source, "js");
+		const chunk = parsed.sections[0].chunks[0];
+		expect(chunk.note).toBe("Should this reject duplicates?");
+		expect(chunk.code).toBe("const a = 1;");
+		expect(chunk.code).not.toContain("@note");
+	});
+
+	it("records commentStyle and exact byte offsets for a chunk with no note yet", () => {
+		const source = ["/** @prose File. */", "", "/** @prose A chunk. */", "const a = 1;"].join("\n");
+		const parsed = parseFile(source, "js");
+		const chunk = parsed.sections[0].chunks[0];
+		expect(chunk.commentStyle).toBe("js");
+		expect(chunk.note).toBeUndefined();
+		expect(chunk.noteStartIndex).toBeUndefined();
+		expect(source.slice(chunk.proseEndIndex)).toBe("\nconst a = 1;");
+	});
+
+	it("records the note's exact byte span when one exists", () => {
+		const source = [
+			"/** @prose File. */",
+			"",
+			"/** @prose A chunk. */",
+			"/** @note A question. */",
+			"const a = 1;",
+		].join("\n");
+		const parsed = parseFile(source, "js");
+		const chunk = parsed.sections[0].chunks[0];
+		expect(source.slice(chunk.noteStartIndex, chunk.noteEndIndex)).toBe("/** @note A question. */");
+	});
+
+	it("drops a note that has real code between it and the preceding prose block", () => {
+		const source = [
+			"/** @prose File. */",
+			"",
+			"/** @prose A chunk. */",
+			"const a = 1;",
+			"/** @note Too late, code is already here. */",
+			"const b = 2;",
+		].join("\n");
+		const parsed = parseFile(source, "js");
+		const chunks = parsed.sections.flatMap((s) => s.chunks);
+		expect(chunks.every((c) => c.note === undefined)).toBe(true);
+		expect(chunks[0].code).toContain("const a = 1;");
+	});
+
+	it("drops a leading note with no preceding prose block to attach to", () => {
+		const source = "/** @note Nothing came before this. */\nconst a = 1;\n";
+		const parsed = parseFile(source, "js");
+		expect(parsed.fileProse).toBeNull();
+		expect(parsed.preamble).toBe(source.trim());
+	});
+
+	it("supports @note in HTML comment style too, with no gutter stripped", () => {
+		const source = [
+			"<!-- @prose File. -->",
+			"<!-- @prose A chunk. -->",
+			"<!-- @note A question. -->",
+			"<h1>hi</h1>",
+		].join("\n");
+		const parsed = parseFile(source, "html");
+		const chunk = parsed.sections[0].chunks[0];
+		expect(chunk.note).toBe("A question.");
+		expect(chunk.commentStyle).toBe("html");
+	});
+});
+
 describe("firstParagraph", () => {
 	it("skips a leading heading and returns the first paragraph", () => {
 		expect(firstParagraph("# Title\n\nFirst paragraph.\n\nSecond paragraph.")).toBe(

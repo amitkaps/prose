@@ -8,7 +8,7 @@ import {
 	type Warning,
 } from "./checks.js";
 import { blameFile } from "./git.js";
-import { type FileParse, firstParagraph, parseFile } from "./parser.js";
+import { chunkAnchor, type FileParse, firstParagraph, parseFile } from "./parser.js";
 
 /** @prose
  * # Building the hierarchy
@@ -32,6 +32,9 @@ export interface TreeNode {
 	 *  (§5.1) can resolve a chunk's prose against names this file imports/declares up top, e.g.
 	 *  an `import { marked } from "marked"` that no individual chunk's own code repeats. */
 	preamble?: string;
+	/** Chunk-only: an `@note` left directly on this chunk — a direction or question for whoever
+	 *  touches it next, not part of its prose (`src/notes.ts` writes/removes these). */
+	note?: string;
 	/** Chunk-only: inline code spans from this chunk's own prose, resolved per spec §5.1. */
 	symbols?: Symbol[];
 	/** This node's own warnings (chunks only, for now — §5 doesn't define file/folder-level checks). */
@@ -111,6 +114,7 @@ function fileToNode(root: string, absPath: string): TreeNode {
 			pending: chunk.pending,
 			prose: chunk.prose,
 			code: chunk.code,
+			note: chunk.note,
 			warnings,
 			warningCount: warnings.length,
 			children: [],
@@ -121,12 +125,12 @@ function fileToNode(root: string, absPath: string): TreeNode {
 	for (const section of parsed.sections) {
 		if (section.heading === null) {
 			for (const chunk of section.chunks) {
-				children.push(chunkNode(chunk, `${relPath}#${chunk.slug}`));
+				children.push(chunkNode(chunk, `${relPath}#${chunkAnchor(section, chunk)}`));
 			}
 			continue;
 		}
 		const sectionChildren = section.chunks.map((chunk) =>
-			chunkNode(chunk, `${relPath}#${section.slug}/${chunk.slug}`),
+			chunkNode(chunk, `${relPath}#${chunkAnchor(section, chunk)}`),
 		);
 		children.push({
 			name: section.heading,

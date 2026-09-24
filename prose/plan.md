@@ -192,10 +192,22 @@ transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts
 
 ## Phase 2.5 — UI improvements for `/__prose/`
 
-Not started. The client (`client/main.ts`, `client/style.css`) has been correctness-first since
-Phase 1 — vanilla DOM, no framework, functional but bare. Now that the tree carries richer data
-(warnings, symbols, badges), the view itself is the weak point. Roughly in priority order:
+The client (`client/main.ts`, `client/style.css`) has been correctness-first since Phase 1 —
+vanilla DOM, no framework, functional but bare. Now that the tree carries richer data (warnings,
+symbols, badges, notes), the view itself is the weak point. Roughly in priority order:
 
+- [x] **Markdown and code-block CSS**, reported directly against `examples/base`'s real rendered
+      content: `markdown-exit`'s output (tables, lists, blockquotes, `h2`-`h6`) had no styling at
+      all beyond `h1`/inline `code`, code blocks scrolled horizontally instead of wrapping, tabs
+      rendered at the browser default width (8) instead of matching this codebase's own visual
+      convention, and — the sharpest bug — every syntax-highlighted code block had one stray
+      space before its first token. That last one turned out to be real, not cosmetic: a global
+      `code { padding: 0.1em 0.3em; ... }` rule meant for inline `` `x` `` spans in prose was also
+      matching shiki's own `<pre class="shiki"><code>`, stacking its padding on top of the
+      block's own. Confirmed by copy-testing the code (came out correct — padding is box model,
+      not content) before touching anything. Fixed with a `pre code { ... }` reset, plus
+      `white-space: pre-wrap`/`tab-size: 2` on the code blocks and a full pass of markdown-element
+      styling.
 - **Collapsible rail.** Right now every folder/file/section/chunk renders fully expanded always
   (`renderRail`'s recursion has no collapse state) — fine for `examples/single`, unusable once a
   real project's tree has hundreds of nodes. Needs: collapsed-by-default below some depth, expand
@@ -260,16 +272,55 @@ of these that turn out to matter most in practice — worth prototyping against 
 once it has enough real content to make the numbers meaningful, rather than guessing which ratios
 matter from `examples/single` alone.
 
-## Phase 3 — editing: prose editor, remarks, full API (§6.2–§6.4)
+## Phase 3 — the `@note` annotator (§6.2–§6.3) — done
 
-- In-place Markdown editor with preview for any prose node; write-back into the source comment
-  (or README file), preserving indentation and `@prose` marker/prefixes.
-- `prose/remarks.md`: anchors, open/resolved bullets, orphaning when an anchor no longer
-  resolves.
-- `save-prose`, `add-remark`, `resolve-remark` as Devframe `action` RPC functions (§6.4); consider
-  an `event` function or synced state so the client sees remark/prose changes without a manual
-  refetch.
-- Adding new pending chunks/sections from the view.
+Replaces this phase's original plan (an in-place Markdown editor + a separate `prose/remarks.md`
+with anchors and orphaning) with a smaller, more consistent design worked out in discussion with
+the user: a remark is just another comment marker, `@note`, written directly after the `@prose`
+block it's about — no anchor syntax needed (position *is* the anchor), no orphaning (delete the
+code, the note goes with it), no separate file (spec §1's own argument against a second system,
+now applied to remarks too, not just docs). The full in-place prose editor was cut too: prose is
+still authored by hand in the source file; the only write affordance the dev route needed was
+add/resolve a note. `prose/spec.md` §6.2/§6.3 rewritten to match; §3.4 no longer names any
+reserved filename in `prose/`.
+
+- [x] **Parser** (`src/parser.ts`): `@note` recognized as its own marker (alongside `@prose`,
+      sharing `extractMarkedBlock`), then folded into the immediately preceding `@prose` block by
+      `mergeNotes` if nothing but whitespace sits between them — a note with nowhere valid to
+      attach (no preceding block, or real code in between) is dropped, since there's no anchor for
+      it to fall back to. Exposed on `ProseChunk` as `note`, `commentStyle` (`"js"` or `"html"` —
+      which delimiter style a *new* note should be written in), `proseEndIndex` (where a fresh
+      note is inserted), and `noteStartIndex`/`noteEndIndex` (an existing note's exact span, for
+      replace/delete). `chunkAnchor` extracted as a shared export so `tree.ts` and the new
+      `notes.ts` compute the exact same stable path from a chunk, and can never disagree about
+      what one means.
+- [x] **Write-back** (`src/notes.ts`, new): `addNote`/`resolveNote` re-read and re-parse the
+      target file fresh on every call — the file on disk is the only truth, never the client's
+      in-memory tree — then insert, replace, or delete the `@note` comment at its exact byte
+      offset, matching the surrounding indentation and comment style. Adding a note when one
+      already exists replaces it rather than stacking a second. Verified byte-for-byte: writing
+      then resolving a note on a real `examples/base` file round-trips to the exact original
+      bytes (`git diff` empty afterward) — checked live against a real dev server, not just unit
+      tests.
+      **Found and fixed a real bug this way**: the first version measured indentation from the
+      `@prose` block's *closing* line ("` */`"), which carries the ` * ` gutter's own leading
+      space — every inserted note came out misindented by exactly one space. Fixed by giving
+      `ProseChunk` its own `startIndex` (the block's opening line) to measure from instead;
+      caught by a live round trip against `examples/base`, then locked in with a regression test
+      using a multi-line `@prose` block specifically (a single-line block can't reproduce the
+      bug — its closing gutter and opening line are the same line).
+- [x] **RPC** (`src/plugin.ts`, `src/server/routes.ts`): `prose:add-note`/`prose:resolve-note` as
+      Devframe `action` functions, both returning the affected chunk's fresh node (same shape as
+      `prose:node`) so the client can render the result without a second round trip.
+- [x] **Client** (`client/main.ts`, `client/style.css`): a chunk's existing note renders as its
+      own labeled block with a Resolve button; no existing note shows a plain "+ Add note" link
+      that reveals a textarea (no preview, no formatting toolbar — a note is a short direction,
+      not authored prose). A small blue dot badges any rail/children-list entry with an open
+      note. One delegated click listener on `pane` itself (not re-bound per render, since
+      `renderPane` replaces `pane.innerHTML` wholesale on every navigation) handles all four
+      buttons; saving or resolving reloads the whole tree, not just the current node, since a
+      note's badge shows in the rail too.
+- 26 new tests (parser + notes + tree, 66 total).
 
 ## Phase 4 — build step, live updates, `examples/base` (§6.5, §6.1 live view, §9.2)
 

@@ -4,7 +4,7 @@ import { devframeViteBridge, devframeVitePlugin } from "@devframes/vite/single";
 import { defineDevframe, defineRpcFunction } from "devframe";
 import type { DevframeNodeContext } from "devframe/types";
 import type { Plugin } from "vite";
-import { handleNode, handleTree } from "./server/routes.js";
+import { handleAddNote, handleNode, handleResolveNote, handleTree } from "./server/routes.js";
 
 /** @prose
  * # The Prose Vite plugin
@@ -52,6 +52,22 @@ function registerRpc(ctx: DevframeNodeContext): void {
 			type: "query",
 			jsonSerializable: true,
 			handler: (path: string) => handleNode(ctx.workspaceRoot, path),
+		}),
+	);
+	ctx.rpc.register(
+		defineRpcFunction({
+			name: "prose:add-note",
+			type: "action",
+			jsonSerializable: true,
+			handler: (path: string, text: string) => handleAddNote(ctx.workspaceRoot, path, text),
+		}),
+	);
+	ctx.rpc.register(
+		defineRpcFunction({
+			name: "prose:resolve-note",
+			type: "action",
+			jsonSerializable: true,
+			handler: (path: string) => handleResolveNote(ctx.workspaceRoot, path),
 		}),
 	);
 }

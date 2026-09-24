@@ -32,6 +32,7 @@ interface TreeNode {
 	pending?: boolean;
 	prose?: string | null;
 	code?: string;
+	note?: string;
 	symbols?: Symbol[];
 	warnings?: Warning[];
 	warningCount: number;
@@ -91,6 +92,20 @@ async function loadNode(path: string): Promise<TreeNode | null> {
 }
 
 /** @prose
+ * The two `action` calls behind the annotator (spec's `@note` model, `prose/plan.md`): write, or
+ * remove, the `@note` on one chunk. Both return that chunk's fresh node, same as `node` above —
+ * the caller still reloads the whole tree afterward, since a note's badge shows in the rail too,
+ * not just the pane.
+ */
+async function addNote(path: string, text: string): Promise<TreeNode | null> {
+	return prose.rpc.call("add-note", path, text);
+}
+
+async function resolveNote(path: string): Promise<TreeNode | null> {
+	return prose.rpc.call("resolve-note", path);
+}
+
+/** @prose
  * # Navigation
  *
  * The hash *is* the node path (URL-encoded, since a path can contain `#` itself for a section/
@@ -108,7 +123,8 @@ function renderRail(node: TreeNode, active: string): string {
 	const activeClass = isActive ? " active" : "";
 	const warningBadge =
 		node.warningCount > 0 ? `<span class="warning-badge">${node.warningCount}</span>` : "";
-	const link = `<a href="#${encodeURIComponent(node.path)}" class="${activeClass}${pendingClass}">${label}${warningBadge}</a>`;
+	const noteBadge = node.note ? `<span class="note-badge" title="Has a note"></span>` : "";
+	const link = `<a href="#${encodeURIComponent(node.path)}" class="${activeClass}${pendingClass}">${label}${warningBadge}${noteBadge}</a>`;
 	if (node.children.length === 0) return `<li>${link}</li>`;
 	const children = node.children.map((child) => renderRail(child, active)).join("");
 	return `<li>${link}<ul>${children}</ul></li>`;
@@ -173,7 +189,8 @@ function childrenList(node: TreeNode): string {
 			const pendingBadge = child.pending ? `<span class="pending-badge">pending</span>` : "";
 			const warningBadge =
 				child.warningCount > 0 ? `<span class="warning-badge">${child.warningCount}</span>` : "";
-			return `<li><a href="#${encodeURIComponent(child.path)}">${child.name}</a>${pendingBadge}${warningBadge}${summary}</li>`;
+			const noteBadge = child.note ? `<span class="note-badge" title="Has a note"></span>` : "";
+			return `<li><a href="#${encodeURIComponent(child.path)}">${child.name}</a>${pendingBadge}${warningBadge}${noteBadge}${summary}</li>`;
 		})
 		.join("");
 	return `<ul class="children">${items}</ul>`;
@@ -219,6 +236,34 @@ function warningsList(warnings: Warning[] | undefined): string {
 	return `<ul class="warnings">${items}</ul>`;
 }
 
+/** @prose
+ * # The annotator (in-situ `@note`, direct manipulation over a separate `remarks.md`)
+ *
+ * Only chunks can carry a note (`src/notes.ts` needs an exact `@prose` block to anchor a write
+ * to). An existing note renders with a Resolve button; otherwise a plain "+ Add note" link reveals
+ * a textarea — no preview, no formatting toolbar, since a note is a short direction or question,
+ * not prose being authored (that's still done by hand, in the source file, per spec's model).
+ */
+function noteSection(node: TreeNode): string {
+	if (node.kind !== "chunk") return "";
+	const path = encodeURIComponent(node.path);
+	if (node.note) {
+		return `<div class="note-block" data-path="${path}">
+			<div class="note-label">Note</div>
+			${renderMarkdown(node.note)}
+			<button type="button" class="resolve-note">Resolve</button>
+		</div>`;
+	}
+	return `<div class="note-block note-empty" data-path="${path}">
+		<button type="button" class="add-note">+ Add note</button>
+		<textarea class="note-input" hidden rows="3"></textarea>
+		<div class="note-actions" hidden>
+			<button type="button" class="save-note">Save</button>
+			<button type="button" class="cancel-note">Cancel</button>
+		</div>
+	</div>`;
+}
+
 async function renderPane(node: TreeNode) {
 	const parts: string[] = [];
 	parts.push(`<div class="breadcrumb">${node.kind} · ${node.path}</div>`);
@@ -226,6 +271,7 @@ async function renderPane(node: TreeNode) {
 		`<h1>${node.kind === "project" ? "project" : node.name}${node.pending ? ' <span class="pending-badge">pending</span>' : ""}</h1>`,
 	);
 	parts.push(warningsList(node.warnings));
+	parts.push(noteSection(node));
 	parts.push(
 		node.prose
 			? annotateSymbols(renderMarkdown(node.prose), node.symbols)
@@ -245,6 +291,47 @@ async function renderPane(node: TreeNode) {
 }
 
 /** @prose
+ * # Wiring the annotator's buttons
+ *
+ * One delegated listener on `pane` itself, registered once — not re-bound on every render — since
+ * `renderPane` replaces `pane.innerHTML` wholesale on every navigation; a listener attached to any
+ * of its children would be destroyed along with them, but `pane` itself is stable across renders,
+ * so delegation is what makes "click Save" keep working after the very first render.
+ */
+pane.addEventListener("click", (event) => {
+	const target = event.target;
+	if (!(target instanceof HTMLElement)) return;
+	const block = target.closest(".note-block");
+	if (!(block instanceof HTMLElement)) return;
+	const path = decodeURIComponent(block.dataset.path ?? "");
+
+	if (target.matches(".add-note")) {
+		target.hidden = true;
+		block.querySelector<HTMLElement>(".note-input")!.hidden = false;
+		block.querySelector<HTMLElement>(".note-actions")!.hidden = false;
+		block.querySelector<HTMLTextAreaElement>(".note-input")!.focus();
+		return;
+	}
+	if (target.matches(".cancel-note")) {
+		const textarea = block.querySelector<HTMLTextAreaElement>(".note-input")!;
+		textarea.value = "";
+		textarea.hidden = true;
+		block.querySelector<HTMLElement>(".note-actions")!.hidden = true;
+		block.querySelector<HTMLElement>(".add-note")!.hidden = false;
+		return;
+	}
+	if (target.matches(".save-note")) {
+		const text = block.querySelector<HTMLTextAreaElement>(".note-input")!.value.trim();
+		if (!text) return;
+		void addNote(path, text).then(refresh);
+		return;
+	}
+	if (target.matches(".resolve-note")) {
+		void resolveNote(path).then(refresh);
+	}
+});
+
+/** @prose
  * # Bootstrapping
  *
  * `main()`'s try/catch is deliberate, not defensive boilerplate: an earlier version of this file
@@ -259,6 +346,14 @@ async function navigate() {
 	const node = (await loadNode(path)) ?? tree;
 	rail.innerHTML = `<ul>${renderRail(tree, node.path)}</ul>`;
 	await renderPane(node);
+}
+
+/** Reloads the whole tree, not just the current node — a note's badge shows in the rail too
+ *  (spec §6.1's badges "roll up to their ancestors"), so a write needs both re-rendered, not just
+ *  the pane. */
+async function refresh(): Promise<void> {
+	tree = await loadTree();
+	await navigate();
 }
 
 async function main() {

@@ -116,3 +116,26 @@ more variety than two curated examples.
   looking bugs (asset base path, then RPC naming). Full verification of a client/server RPC
   integration needs either a real browser or a headless client that actually calls the RPC layer
   end to end, not just proxies for it (status codes, startup logs).
+- **Stray background dev-server processes silently serve stale code and make a real fix look like
+  it didn't work.** Across this session, `pkill -f "vp dev --port 5198"` (or similar) repeatedly
+  failed to kill the actual `vite-plus-core` child process the CLI spawns — the pattern matched
+  the wrapper, not the process holding the port — leaving 2-3 old servers running simultaneously.
+  The *oldest* one keeps the port; a fresh rebuild + restart attempt actually starts a new server
+  on a different port while the stale one keeps answering `curl`. Symptom: a fix verified correct
+  by direct unit testing (`buildTree()` called straight from a script) still shows the old, wrong
+  behavior over RPC — which reads exactly like "the fix didn't propagate," and burned real time
+  investigating the wrong layer (parser logic) before `ps aux | grep vite` showed multiple
+  listeners. Fix: `ps aux | grep -i vite`, kill by literal PID, confirm the process list is
+  actually empty before starting one fresh instance — don't trust a `pkill` pattern match without
+  checking what's left running.
+- **Measuring "this block's indentation" from its closing delimiter line is wrong when the
+  delimiter has its own leading whitespace.** `notes.ts`'s first version measured a `@prose`
+  block's indent from the position right after its own `*/` — but for a multi-line block, that
+  line is `" */"` (the ` * ` gutter's own single leading space), not the block's real column.
+  Every note this wrote came out indented one space further than the code around it. The fix
+  needed the block's *opening* line's indentation instead, which meant adding a new byte-offset
+  field (`ProseChunk.startIndex`) that hadn't been needed before this feature. Caught by a live
+  round trip against `examples/base` (not by unit tests against synthetic single-line fixtures,
+  which can't reproduce it — a single-line block's opening and closing positions read the same
+  indent by coincidence); locked in afterward with a regression test using a deliberately
+  multi-line block.

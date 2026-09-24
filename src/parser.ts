@@ -14,11 +14,28 @@ export interface ProseChunk {
 	pending: boolean;
 	/** The comment block's own first line (spec §5.2's "prose" side of a staleness comparison). */
 	startLine: number;
+	/** Byte offset of the `@prose` comment's own opening delimiter — where its indentation is
+	 *  measured from (`notes.ts`), not the closing line's, which carries the gutter's own leading
+	 *  space and would be misread as the block's column. */
+	startIndex: number;
 	/** The comment block's last line / the code's first line — an approximation (a blank line or
 	 *  two may separate them), close enough for the staleness check's line-range heuristic. */
 	proseEndLine: number;
 	/** The chunk's trailing code's last line (spec §5.2's "code" side). */
 	endLine: number;
+	/** An `@note` immediately following this chunk's `@prose` block, if one exists (a direction or
+	 *  question left for whoever — human or agent — touches this chunk next). */
+	note?: string;
+	/** `/**`-delimited (with a ` * ` gutter) or `<!--`-delimited — which style a *new* `@note`
+	 *  should be written in, matching whichever style this chunk's own `@prose` block used. */
+	commentStyle: "js" | "html";
+	/** Byte offset just past this chunk's `@prose` comment — where a brand-new `@note` is
+	 *  inserted when `note` is unset. */
+	proseEndIndex: number;
+	/** Set only when `note` is set — the exact byte span of the existing `@note` comment, so it
+	 *  can be replaced (a new note overwrites it) or removed (resolving it) precisely. */
+	noteStartIndex?: number;
+	noteEndIndex?: number;
 }
 
 export interface ProseSection {
@@ -34,6 +51,8 @@ export interface FileParse {
 }
 
 interface RawBlock {
+	kind: "prose" | "note";
+	commentStyle: "js" | "html";
 	body: string;
 	startIndex: number;
 	endIndex: number;
@@ -41,6 +60,24 @@ interface RawBlock {
 	/** For `.svelte` files: the end of this block's own part (script/style/markup), so its
 	 *  trailing code never bleeds across a part boundary into the next `<script>`/`<style>` tag. */
 	partEnd?: number;
+}
+
+/** A `RawBlock` after `mergeNotes` has folded any following `@note` into its preceding `@prose`
+ *  block — one entry per prose block, each optionally carrying the note attached to it. */
+interface ProseRawBlock {
+	commentStyle: "js" | "html";
+	body: string;
+	startIndex: number;
+	startLine: number;
+	partEnd?: number;
+	/** End of the `@prose` comment itself, before any note — where a brand-new `@note` goes. */
+	proseEndIndex: number;
+	note?: string;
+	noteStartIndex?: number;
+	noteEndIndex?: number;
+	/** End of everything this block consumes — the `@prose` comment plus its note, if any. Chunk
+	 *  code starts here. */
+	endIndex: number;
 }
 
 const HEADING_RE = /^#{1,6}\s+(.*)$/;
@@ -74,19 +111,28 @@ function slugify(text: string): string {
 }
 
 /** @prose
- * # Recognizing a prose block
+ * # Recognizing a prose block or a note
  *
- * A comment only counts as a prose block if its first line, trimmed, starts with `@prose` — any
- * other comment (unmarked JSDoc, `//`, a tool pragma) returns `null` here and is left as an
- * ordinary code comment (spec §3.1). `stripContinuation` is the JS/TS/CSS-vs-HTML difference:
- * JS-like comments carry a ` * ` gutter on every continuation line (which this strips); HTML
- * comments don't, so their lines are taken as-is.
+ * A comment only counts if its first line, trimmed, starts with `@prose` or `@note` — any other
+ * comment (unmarked JSDoc, `//`, a tool pragma) returns `null` here and is left as an ordinary
+ * code comment (spec §3.1). `@note` is a direction or question left for whoever touches this
+ * chunk next — human or agent — always immediately following the `@prose` block it's about
+ * (`mergeNotes` below folds it in); it's not prose in its own right, so it never opens a chunk or
+ * a section on its own. `stripContinuation` is the JS/TS/CSS-vs-HTML difference: JS-like comments
+ * carry a ` * ` gutter on every continuation line (which this strips); HTML comments don't, so
+ * their lines are taken as-is.
  */
-function extractBody(inner: string, stripContinuation: boolean): string | null {
+const MARKERS = ["@prose", "@note"] as const;
+
+function extractMarkedBlock(
+	inner: string,
+	stripContinuation: boolean,
+): { kind: "prose" | "note"; body: string } | null {
 	const lines = inner.split("\n");
 	const trimmedFirst = lines[0].trim();
-	if (!trimmedFirst.startsWith("@prose")) return null;
-	let rest = trimmedFirst.slice("@prose".length);
+	const marker = MARKERS.find((m) => trimmedFirst.startsWith(m));
+	if (!marker) return null;
+	let rest = trimmedFirst.slice(marker.length);
 	if (rest.startsWith(" ")) rest = rest.slice(1);
 	const out: string[] = [];
 	if (rest.length > 0) out.push(rest);
@@ -95,7 +141,43 @@ function extractBody(inner: string, stripContinuation: boolean): string | null {
 	}
 	while (out.length && out[0].trim() === "") out.shift();
 	while (out.length && out[out.length - 1].trim() === "") out.pop();
-	return out.join("\n");
+	return { kind: marker === "@prose" ? "prose" : "note", body: out.join("\n") };
+}
+
+/** @prose
+ * # Folding a note into its prose block
+ *
+ * A `@note` is only ever meaningful directly after the `@prose` block it's about (the convention
+ * this tool writes it in) — so it's found by adjacency, not by any anchor syntax: if nothing but
+ * whitespace sits between a block's end and the next block, and that next block is a `@note`, it
+ * belongs to the first. A note with nowhere to attach (no preceding prose block, or real code in
+ * between) has no defined position and is dropped — spec's model has no anchor for it to fall
+ * back to, unlike `remarks.md`'s design.
+ */
+function mergeNotes(blocks: RawBlock[], source: string): ProseRawBlock[] {
+	const merged: ProseRawBlock[] = [];
+	for (const block of blocks) {
+		if (block.kind === "note") {
+			const prev = merged[merged.length - 1];
+			if (prev && source.slice(prev.endIndex, block.startIndex).trim() === "") {
+				prev.note = block.body;
+				prev.noteStartIndex = block.startIndex;
+				prev.noteEndIndex = block.endIndex;
+				prev.endIndex = block.endIndex;
+			}
+			continue;
+		}
+		merged.push({
+			commentStyle: block.commentStyle,
+			body: block.body,
+			startIndex: block.startIndex,
+			startLine: block.startLine,
+			partEnd: block.partEnd,
+			proseEndIndex: block.endIndex,
+			endIndex: block.endIndex,
+		});
+	}
+	return merged;
 }
 
 /** @prose
@@ -186,9 +268,15 @@ function scanJsLike(source: string): RawBlock[] {
 			const text = source.slice(start, end);
 			if (depth === 0 && text.startsWith("/**")) {
 				const inner = text.slice(3, text.endsWith("*/") ? text.length - 2 : text.length);
-				const body = extractBody(inner, true);
-				if (body !== null) {
-					blocks.push({ body, startIndex: start, endIndex: end, startLine: lineAt(source, start) });
+				const marked = extractMarkedBlock(inner, true);
+				if (marked) {
+					blocks.push({
+						...marked,
+						commentStyle: "js",
+						startIndex: start,
+						endIndex: end,
+						startLine: lineAt(source, start),
+					});
 				}
 			}
 			i = end;
@@ -220,16 +308,17 @@ function scanJsLike(source: string): RawBlock[] {
 	return blocks;
 }
 
-/** Scans HTML source for `<!-- @prose ... -->` comments. */
+/** Scans HTML source for `<!-- @prose ... -->` and `<!-- @note ... -->` comments. */
 function scanHtml(source: string): RawBlock[] {
 	const blocks: RawBlock[] = [];
 	const re = /<!--([\s\S]*?)-->/g;
 	let match: RegExpExecArray | null;
 	while ((match = re.exec(source))) {
-		const body = extractBody(match[1], false);
-		if (body !== null) {
+		const marked = extractMarkedBlock(match[1], false);
+		if (marked) {
 			blocks.push({
-				body,
+				...marked,
+				commentStyle: "html",
 				startIndex: match.index,
 				endIndex: match.index + match[0].length,
 				startLine: lineAt(source, match.index),
@@ -248,6 +337,8 @@ function shiftBlock(
 ): RawBlock {
 	const startIndex = block.startIndex + offset;
 	return {
+		kind: block.kind,
+		commentStyle: block.commentStyle,
 		body: block.body,
 		startIndex,
 		endIndex: block.endIndex + offset,
@@ -299,12 +390,18 @@ function scanSvelte(source: string): RawBlock[] {
  * the next block is `pending`: a plan item, not a bug (spec §3.2).
  */
 export function parseFile(source: string, extension: string): FileParse {
-	const blocks =
+	const rawBlocks =
 		extension === "html"
 			? scanHtml(source)
 			: extension === "svelte"
 				? scanSvelte(source)
 				: scanJsLike(source);
+	// A note directly after the *file* prose block is folded in here too (mergeNotes doesn't
+	// distinguish file prose from a chunk's), but FileParse has nowhere to put it yet — file-level
+	// notes aren't supported (§6.3-equivalent scope, chunk-only for now), so `fileBlock.note` below
+	// is simply never read. Not a silent drop of anything a user wrote, since nothing writes one
+	// there yet either.
+	const blocks = mergeNotes(rawBlocks, source);
 
 	if (blocks.length === 0) {
 		return { fileProse: null, preamble: source.trim(), sections: [] };
@@ -348,13 +445,26 @@ export function parseFile(source: string, extension: string): FileParse {
 			code,
 			pending: code.length === 0,
 			startLine: block.startLine,
+			startIndex: block.startIndex,
 			proseEndLine,
 			endLine,
+			note: block.note,
+			commentStyle: block.commentStyle,
+			proseEndIndex: block.proseEndIndex,
+			noteStartIndex: block.noteStartIndex,
+			noteEndIndex: block.noteEndIndex,
 		});
 	}
 	sections.push(currentSection);
 
 	return { fileProse: fileBlock.body, preamble, sections };
+}
+
+/** The anchor half of a chunk's stable path (`tree.ts` prefixes it with `<relPath>#`) — shared
+ *  with `notes.ts`, which needs to re-derive the exact same anchor from a fresh parse to find the
+ *  chunk a note write targets, without duplicating this slug logic a second time. */
+export function chunkAnchor(section: ProseSection, chunk: ProseChunk): string {
+	return section.heading === null ? chunk.slug : `${section.slug}/${chunk.slug}`;
 }
 
 /** Returns the first Markdown paragraph of `text`, skipping a leading heading line, for use as a summary. */

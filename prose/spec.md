@@ -24,7 +24,7 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 
 **Plan and code are one document.** A prose block with no code under it yet is a plan item. Planning = writing prose at some level; building = the agent filling the code in; reviewing = reading the view and leaving remarks. There is no separate plan file to drift.
 
-**Standard files, not a toolchain.** Adopting a new file type or compiler is expensive even for one person, and breaks `tsc`, the language server, oxlint, oxfmt, vite, and every other standard workflow. Prose is a convention (like JSDoc) plus a Vite plugin that is dev-only apart from one step: stripping `@prose` comments from HTML output (§6.5). JS, CSS and Svelte build output is untouched.
+**Standard files, not a toolchain.** Adopting a new file type or compiler is expensive even for one person, and breaks `tsc`, the language server, oxlint, oxfmt, vite, and every other standard workflow. Prose is a convention (like JSDoc) plus a Vite plugin that is dev-only apart from one step: stripping `@prose` comments from HTML output (§6.4). JS, CSS and Svelte build output is untouched.
 
 **`@prose` isn't documentation — it's the map the agent keeps current while working.** The loop is: human gives direction → agent changes code → agent updates `@prose` in the same diff → the view reflects the new map → human reads it, in minutes, and redirects. First-paragraph summaries make the map scannable without an LLM pass (§4); the symbol and staleness checks (§5) are mechanical, not generated, so they can't hallucinate either.
 
@@ -38,7 +38,7 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 | Folder `README.md` as folder prose; `prose/` for cross-cutting prose   | A published documentation site                       |
 | `/__prose/` dev route: navigation, woven view, import-graph diagram | Editing *code* in the view                           |
 | Symbol check and staleness check                                        | LLM-generated summaries (first paragraphs are used) |
-| Prose editor and `prose/remarks.md`                                 | Live channel from the view to an agent session       |
+| The `@note` annotator, in source                                       | A separate remarks file; live channel to an agent session |
 | Mounting agent-written dev tools                                        | Anything in production builds                        |
 
 Target: small apps, audience of one.
@@ -140,11 +140,9 @@ prose/
   architecture.md
   migration-2026-09.md
   lessons.md
-  remarks.md
 ```
 
-- **No prescribed taxonomy.** Prose doesn't require or expect specific filenames (no mandatory `spec.md`/`plan.md`). Name a document for what it's about; the content determines what it means, the same way a chunk's meaning comes from its prose, not a template.
-- **The one name with special meaning is `remarks.md`** — the human↔agent coordination channel (§6.3). Every other file in `prose/` is plain cross-cutting prose: a whole-document node, same as any other `.md` file that isn't a `README.md` (§3.1), just placed here because it explains something wider than one file.
+- **No prescribed taxonomy, and no reserved name.** Prose doesn't require or expect specific filenames (no mandatory `spec.md`/`plan.md`, and no `remarks.md` either — the human↔agent feedback channel is `@note`, in source, §6.2). Every file in `prose/` is plain cross-cutting prose: a whole-document node, same as any other `.md` file that isn't a `README.md` (§3.1), just placed here because it explains something wider than one file.
 - **The rule of thumb:** prose belongs next to what it explains — in the code via `@prose`, in a folder via `README.md`. `prose/` is for prose that explains *across* the codebase, not a substitute for either.
 - Surfaced at L3, alongside the project prose (§4) — not nested as an ordinary folder, since its contents are about the whole project, not about a `prose` subdirectory specifically.
 
@@ -152,7 +150,7 @@ prose/
 
 | Level | Unit    | Prose from           | Structure from                          |
 | ----- | ------- | -------------------- | --------------------------------------- |
-| L3    | project | root `README.md` + `prose/*.md` (except `remarks.md`) | folder tree + import-graph diagram |
+| L3    | project | root `README.md` + `prose/*.md` | folder tree + import-graph diagram |
 | L2    | folder  | folder `README.md`   | files and subfolders                    |
 | L1    | file    | file prose block     | sections and chunks                     |
 | L0    | chunk   | its prose block      | its code                                |
@@ -185,7 +183,7 @@ This is a heuristic signal, computed on demand, with nothing stored. Editing the
 
 ## 6. The dev route: `/__prose/`
 
-A Vite plugin, built on [Devframe](https://devfra.me) (`devframe` + `@devframes/vite`) rather than bespoke server plumbing: Devframe supplies typed RPC (`query`/`action`/`event`), state that stays synced between the node process and the browser, and an MCP adapter for agent access. `prose()` returns two plain Vite plugins from `@devframes/vite/single` — `devframeVitePlugin` (serves the built client SPA) and `devframeViteBridge` (mounts the RPC/WebSocket backend on the same origin) — both mounted directly into the consuming app's own Vite dev server, at `/__prose/` (Devframe's default mount path for a hosted devframe, `/__<id>/`). Neither depends on `@vitejs/devtools`, the official Vite DevTools hub: that hub is a good fit for a tool meant to dock alongside other DevTools panels, but adds a dock/terminal/command surface this prototype doesn't need, for a target of one developer on one machine (§2). See the note at the end of this section for that alternative. `devframeViteBridge`'s RPC endpoint gates behind an OTP by default; `prose()` passes `auth: false`, since the dev server's own loopback binding is already the trust boundary for a local, single-developer tool. In `vite build` the plugin's only job is the HTML strip (§6.5).
+A Vite plugin, built on [Devframe](https://devfra.me) (`devframe` + `@devframes/vite`) rather than bespoke server plumbing: Devframe supplies typed RPC (`query`/`action`/`event`), state that stays synced between the node process and the browser, and an MCP adapter for agent access. `prose()` returns two plain Vite plugins from `@devframes/vite/single` — `devframeVitePlugin` (serves the built client SPA) and `devframeViteBridge` (mounts the RPC/WebSocket backend on the same origin) — both mounted directly into the consuming app's own Vite dev server, at `/__prose/` (Devframe's default mount path for a hosted devframe, `/__<id>/`). Neither depends on `@vitejs/devtools`, the official Vite DevTools hub: that hub is a good fit for a tool meant to dock alongside other DevTools panels, but adds a dock/terminal/command surface this prototype doesn't need, for a target of one developer on one machine (§2). See the note at the end of this section for that alternative. `devframeViteBridge`'s RPC endpoint gates behind an OTP by default; `prose()` passes `auth: false`, since the dev server's own loopback binding is already the trust boundary for a local, single-developer tool. In `vite build` the plugin's only job is the HTML strip (§6.4).
 
 The route's client is a small prebuilt SPA (Devframe's `clientAssets`), served by Vite; it connects back over Devframe's RPC, so it can call into dev tools (§7) and read app modules through the same connection.
 
@@ -196,49 +194,45 @@ The route's client is a small prebuilt SPA (Devframe's `clientAssets`), served b
 - A left rail shows the tree: project → folders → files → sections → chunks.
 - The main pane shows the selected node at its level: its prose, then its children as first-paragraph summaries (§4). At L3 it also shows the diagram; at L0 it shows the code, syntax-highlighted.
 - Every node has a stable URL (`/__prose/src/store.ts#addTodo`), so levels can be linked to.
-- Warnings (§5), pending chunks, and open remarks show as badges on nodes and roll up to their ancestors.
+- Warnings (§5), pending chunks, and open notes show as badges on nodes and roll up to their ancestors.
 - The view updates live when files change, through Devframe's synced state — no bespoke HMR-websocket wiring.
 
-### 6.2 Prose editor
+### 6.2 The annotator: `@note`
 
-Any prose (chunk, section, file, folder, project) can be edited in place in a plain Markdown editor with a preview.
+An earlier draft of this section put feedback in `prose/remarks.md` — a separate, reserved file with its own anchor syntax (`path#symbol`) and its own orphaning rule for when an anchor stopped resolving. That was a second system, exactly the kind of thing §1 argues against: prose that explains code should live with the code, and a remark is prose about a specific spot just as much as a `@prose` block is.
 
-On save:
+So a remark is a second comment marker instead: `@note`, written immediately after the `@prose` block it's about — same delimiters, same gutter convention (§3.1), found by adjacency rather than by an anchor:
 
-1. The server writes the text back into the source comment. It keeps the `@prose` marker, re-adds the ` * ` prefixes, and keeps the original indentation. For READMEs it writes the file.
-2. It appends a remark of kind `prose-edit` to `remarks.md` (§6.3). That tells the agent the change is a direction, so it reconciles the code.
-
-Adding a new pending chunk or section (a new prose block after a given chunk) goes through the same path.
-
-### 6.3 Remarks
-
-Remarks are questions or directions to the agent, attached to any node. They live in `prose/remarks.md` — the one name inside `prose/` with special meaning (§3.4) — which is committed:
-
-```markdown
-## src/store.ts#addTodo
-
-- [ ] 2026-09-23 · Should duplicate text be rejected?
-  - agent: Yes, now rejected case-insensitively. See `addTodo`.
-- [x] 2026-09-22 · prose-edit · Reconcile code with updated prose.
+```js
+/** @prose
+ * A heading renderer that gives every heading a page-unique id...
+ */
+/** @note
+ * Should this handle non-Latin scripts too?
+ */
+function headingId(html) { ... }
 ```
 
-- **Anchors** are `path`, `path#section-slug`, or `path#symbol`. `symbol` is the first identifier declared in the chunk; a pending chunk uses its section slug plus `-chunk-N`. Anchors avoid line numbers so they survive edits.
-- `- [ ]` is open and `- [x]` is resolved. Replies are nested bullets.
-- A remark whose anchor no longer resolves is shown as **orphaned** at the nearest surviving ancestor.
-- In the prototype, remarks reach the agent only through this file (§8).
+- **No anchor, no orphaning.** A note's position *is* its meaning — it sits right after the block it's about, so there's nothing to resolve and nothing that can silently stop resolving. If the code it's attached to is deleted, the note goes with it; a note about deleted code has nothing left to say.
+- **Resolving deletes it.** Nothing is kept once a note is addressed — if the outcome is worth remembering, it belongs in the `@prose` text itself (a decision made permanent), not in a second, disposable log sitting beside it.
+- **One open note per chunk.** Adding a note when one already exists replaces it rather than stacking a second — "does this chunk have outstanding feedback" stays a yes/no question.
+- **"What's open across the project" is a derived view**, not a maintained file: the tree walk that already computes `warningCount` (§5) can collect every `note` the same way, on demand.
+- Only chunks carry a note in the prototype — file/folder/project-level prose doesn't have an obvious single insertion point the way a chunk's own `@prose` block does. Out of scope for now, not ruled out.
 
-### 6.4 API
+This also folds the in-place Markdown editor an earlier draft of this section described into a much smaller surface: no full editor, no preview pane — a chunk's own prose is still edited by hand, in the source file, the same way the code around it is. The one write affordance the dev route needs is this one: add or resolve a note.
+
+### 6.3 API
 
 The server exposes Devframe RPC functions, namespaced under the `prose` devframe id, for the client:
 
-- `tree` (`query`): the full hierarchy, with summaries and badges.
-- `node` (`query`): one node's prose, code, and warnings, given its path.
-- `save-prose` (`action`): save a prose edit.
-- `add-remark` and `resolve-remark` (`action`): add a remark, or resolve one.
+- `tree` (`query`): the full hierarchy, with summaries, warnings, and notes.
+- `node` (`query`): one node's prose, code, warnings, and note, given its path.
+- `add-note` (`action`): insert or replace the `@note` on a chunk.
+- `resolve-note` (`action`): remove a chunk's `@note` entirely.
 
-`query` functions are reads that can change over time; `action` functions are the writes. Both are typed end to end by Devframe's RPC layer — no hand-rolled request/response shapes.
+`query` functions are reads that can change over time; `action` functions are the writes. Both are typed end to end by Devframe's RPC layer — no hand-rolled request/response shapes. Every write re-reads and re-parses the target file fresh rather than trusting the client's in-memory tree — the file on disk is the only truth.
 
-### 6.5 Build: strip HTML prose
+### 6.4 Build: strip HTML prose
 
 Vite keeps HTML comments in built pages, so without this step `<!-- @prose -->` blocks would be visible to anyone viewing the page source. In `vite build`, the plugin removes them from `.html` output in a `transformIndexHtml` hook, together with the whitespace line each one leaves behind. Unmarked comments are left alone.
 
@@ -273,7 +267,7 @@ The plugin ships a snippet for the project's `CLAUDE.md` / `AGENTS.md`:
 - Prose goes in `@prose` comments (§3.1). Ordinary comments stay for code-level notes.
 - Keep prose current in the same change as the code. Rewrite it where it has drifted; don't append.
 - Fill pending chunks as plan items.
-- When asked to "handle remarks": work through the open items in `prose/remarks.md`, reply as nested bullets, and tick them off. `prose-edit` remarks mean the prose is the direction; change the code to match it.
+- When asked to "handle notes": find every `@note` (`grep -rn "@note"`), address it, and delete it — folding anything worth remembering into the `@prose` block it sat next to.
 - Resolve unresolved-symbol and possibly-stale warnings before finishing. The plugin also exposes them as a CLI (`prose check`) for the agent.
 
 ## 9. Prototype test cases
@@ -287,7 +281,7 @@ The plugin ships a snippet for the project's `CLAUDE.md` / `AGENTS.md`:
 - chunk prose that mentions `count`, `render` and `data-step`, for the symbol check;
 - one pending chunk, `# Persistence` at the end of `main.js`, as a plan item.
 
-Build it first. It exercises the parser, navigation, both checks and the editor without SvelteKit in the way.
+Build it first. It exercises the parser, navigation, both checks and the annotator without SvelteKit in the way.
 
 ### 9.2 `examples/base`: a real app
 
@@ -319,9 +313,9 @@ Verify:
 - [ ] The import-graph diagram matches the actual imports.
 - [ ] The symbol check resolves, links, and flags as §5.1 describes, including a deliberately wrong symbol.
 - [ ] The staleness check flags a chunk after a code-only commit, and clears after a prose edit.
-- [ ] A pending chunk added in the view appears in the source, and the agent fills it after "handle remarks."
-- [ ] A prose edit writes back cleanly (Prettier leaves the file unchanged) and creates a `prose-edit` remark.
-- [ ] A remark survives the agent rewriting its chunk. Deleting the chunk makes the remark orphaned, not lost.
+- [ ] A pending chunk added in the view appears in the source, and the agent fills it after "handle notes."
+- [ ] Adding, replacing, and resolving a note via `/__prose/` writes back cleanly (Oxfmt leaves the file unchanged otherwise) and round-trips byte-identical when resolved.
+- [ ] Deleting a chunk that has a note deletes the note with it — nothing orphaned to track.
 - [ ] The dev tool mounts and shows live store state.
 - [ ] Editing a source file updates the open view without a reload.
 
@@ -329,5 +323,5 @@ Verify:
 
 - **Nested chunks.** Should prose blocks for class members and nested functions become sub-chunks?
 - **Summaries beyond first paragraphs.** Use LLM summaries, cached by a hash of the children, only if first paragraphs prove too thin.
-- **Live agent channel.** Send remarks to a running session instead of going through `remarks.md`. Devframe ships an MCP adapter (`prose mcp`, once there's a standalone CLI) that could expose remarks/tree/node to an agent directly — not wired up in the prototype, which still reaches the agent only through `remarks.md` (§6.3, §8).
+- **Live agent channel.** Send a note to a running session directly instead of it waiting to be found by a grep or a "handle notes" request. Devframe ships an MCP adapter (`prose mcp`, once there's a standalone CLI) that could expose tree/node/notes to an agent directly — not wired up in the prototype, which still reaches the agent only through the source files it already reads (§6.2, §8).
 - **Problem-layer tools as plan items.** Could a pending chunk reference a dev tool that shows the options being decided between?
