@@ -10,8 +10,10 @@ import { parse as parseYaml } from 'yaml';
 import { Marked, type RendererObject, type Tokens } from 'marked';
 import { z } from 'zod';
 
-/** @prose Every `.md` file is read and rendered eagerly (not lazily per-request), so the pages
- *  stay prerenderable — `import.meta.glob`'s `eager: true` inlines the raw text at build time. */
+/** @prose
+ * Every `.md` file is read and rendered eagerly (not lazily per-request), so the pages
+ * stay prerenderable — `import.meta.glob`'s `eager: true` inlines the raw text at build time.
+ */
 const files = import.meta.glob('/src/content/*.md', {
 	query: '?raw',
 	import: 'default',
@@ -59,9 +61,11 @@ function headingId(html: string): string {
 	);
 }
 
-/** @prose A heading renderer that gives every heading a page-unique id — `marked`'s renderer
- *  hook runs once per parsed heading, so a `Set` closed over here is enough to dedupe within
- *  one page without threading state through `parse()`. */
+/** @prose
+ * A heading renderer that gives every heading a page-unique id — `marked`'s renderer
+ * hook runs once per parsed heading, so a `Set` closed over here is enough to dedupe within
+ * one page without threading state through `parse()`.
+ */
 function headingRenderer(): RendererObject {
 	const used = new Set<string>();
 	return {
@@ -80,9 +84,11 @@ function headingRenderer(): RendererObject {
 	};
 }
 
-/** @prose A fresh `Marked` instance per doc keeps heading-id uniqueness scoped to one page —
- *  reusing one instance across docs would let a heading in doc B collide with, and get
- *  renumbered against, one already seen in doc A. */
+/** @prose
+ * A fresh `Marked` instance per doc keeps heading-id uniqueness scoped to one page —
+ * reusing one instance across docs would let a heading in doc B collide with, and get
+ * renumbered against, one already seen in doc A.
+ */
 function markdown(): Marked {
 	// `Marked` is a top-level export — `new marked.Marked()` is not a constructor.
 	const instance = new Marked({ async: false, gfm: true });

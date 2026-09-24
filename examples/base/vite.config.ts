@@ -13,9 +13,11 @@ import { sveltekit } from '@sveltejs/kit/vite';
 
 const generated = ['.svelte-kit/**', 'build/**', 'worker-configuration.d.ts'];
 
-/** @prose The SvelteKit plugin installs a dev-server hook that is incompatible with the Vitest
- *  environment. Unit tests cover pure modules plus `import.meta.glob` content loading, none of
- *  which need SvelteKit — so plugins (including `prose()`) are skipped entirely under Vitest. */
+/** @prose
+ * The SvelteKit plugin installs a dev-server hook that is incompatible with the Vitest
+ * environment. Unit tests cover pure modules plus `import.meta.glob` content loading, none of
+ * which need SvelteKit — so plugins (including `prose()`) are skipped entirely under Vitest.
+ */
 const inTest = !!process.env.VITEST;
 
 export default defineConfig({

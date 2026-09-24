@@ -65,6 +65,7 @@ The count lives in an `<output>`, announced to screen readers when it changes.
 ```
 
 - The body is everything after `@prose`, with the leading ` * ` stripped in JS, TS and CSS. It is CommonMark + GFM.
+- **`@prose` starts the block on its own line, and the closing delimiter (`*/` or `-->`) sits on its own line too** — never `/** @prose text */` or `<!-- @prose text -->` on one line. In JS/TS/CSS this also keeps every body line prefixed with ` * `, which matters for two reasons: it's what Prettier/oxfmt recognize as JSDoc-shaped and re-indent when the comment's nesting changes, and it disambiguates the gutter `*` from a body line that itself starts with `*` (a Markdown bullet, or prose about pointers/multiplication) — without a gutter on every line, a stray leading `*` in the body would be silently swallowed as if it were the gutter. HTML/markup comments have no such gutter to strip; formatters don't reflow their bodies either way, so the one-line-per-delimiter rule there is purely for readability.
 - **Every other comment is a code comment**, including unmarked `/** */` JSDoc, `//`, `/* */`, and unmarked `<!-- -->`. So API docs like `/** @param x */`, `// TODO`, and tool pragmas like `<!-- svelte-ignore … -->` are never read as prose.
 - The marker is opt-in because comments already have many owners: JSDoc, Vite, Svelte, formatters, and linters. Adding a marker is also the explicit step of promoting a comment to prose (§9.2).
 - In JS, TS and CSS, prose blocks inside function, class, or rule bodies are ignored in the prototype.

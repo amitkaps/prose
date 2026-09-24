@@ -1,6 +1,8 @@
-/** @prose Covers the content pipeline in [`docs.ts`](docs.ts): every doc loads and resolves by
- *  slug, frontmatter is present and stripped from the rendered HTML, docs are ordered, and
- *  heading ids stay unique — including across non-Latin scripts. */
+/** @prose
+ * Covers the content pipeline in [`docs.ts`](docs.ts): every doc loads and resolves by
+ * slug, frontmatter is present and stripped from the rendered HTML, docs are ordered, and
+ * heading ids stay unique — including across non-Latin scripts.
+ */
 import { describe, expect, it } from 'vite-plus/test';
 import { docs, getDoc, renderMarkdown } from './docs';
 
