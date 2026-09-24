@@ -101,6 +101,41 @@ more variety than two curated examples.
   from-scratch tokenizer that handles strings and comments but not regex literals is not "mostly
   right" — it's one common construct away from corrupting everything downstream of it, silently.
 
+## The symbol check's parser (found via a real bug report, twice)
+
+- **Reimplementing scope analysis with regexes fails one construct at a time, predictably.**
+  `declaredIdentifiers` started as a regex for `function`/`class`/`const`/`interface`/`type`
+  declarations. A real bug (`examples/base`'s own `import { marked } from "marked"` not
+  resolving) added import parsing. The very next real bug (a function's own parameter, `` `html`
+  `` in `headingId(html: string)`) needed parameters too — and a parameter list can't be found
+  with a flat regex at all (`heading(this: { parser: { parseInline: (tokens: Tokens.Generic[]) =>
+  string } }, token)` nests parens and braces for its type annotations). Each fix covered exactly
+  the shape whoever wrote it happened to think of; destructuring, class members, and generics were
+  all still one bug report away. The actual fix was structural, not another regex: swap in a real
+  parser (`oxc-parser`) so the "what does this code declare" question is answered by parsing, not
+  pattern-matching text — this closes the whole class of bugs at once (destructuring, nested
+  functions, aliasing, all handled correctly by construction) instead of one instance at a time.
+- **The obvious first choice (`typescript`, already a dependency) turned out not to work at all** —
+  worth checking directly before assuming an API exists. This project deliberately runs
+  **TypeScript 7**, the new native/Go-ported compiler ("tsgo"): its installed package's default
+  entry point resolves to `version.cjs`, not a JS-facing AST API. There's no `ts.createSourceFile`
+  here — confirmed by trying it and getting `Cannot read properties of undefined (reading
+  'Latest')`, not by reading changelogs. TypeScript 7.1 is expected to add a WASM-exposed
+  compiler API of its own; if that lands and gives the same AST access `oxc-parser` does now, it's
+  worth a second look — pure-JS with no native binary is a real advantage for a package that ships
+  inside every consuming project's own dependency tree, if the API is actually there when checked.
+  Until then, this is a real, working choice, not a placeholder waiting to be replaced.
+- **A parser that tolerates invalid input gracefully — instead of throwing — matters when the same
+  code path has to handle multiple languages.** `oxc-parser`, fed CSS text from a `.svelte` file's
+  `<style>` block, doesn't throw: it returns an empty `program.body` and an `errors` array,
+  confirmed directly with a real CSS snippet before relying on it. That's exactly the behavior the
+  symbol check needs for chunks whose code isn't JS/TS at all — checked empirically rather than
+  assumed, since a stricter build-oriented parser could reasonably have chosen to hard-fail
+  instead. `codeLang`, threaded through `parser.ts` (per-chunk, since a `.svelte` file's `<script>`
+  and `<style>` blocks share the same comment-scanning path but not the same code language), gates
+  the parse attempt at the file/part level anyway — CSS/HTML chunks skip parsing entirely rather
+  than leaning on this tolerance as the only safety net.
+
 ## Working style
 
 - **When integrating an unfamiliar package, read the installed `.d.ts` files directly** rather

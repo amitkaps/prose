@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
-import { checkStaleness, checkSymbols, declaredIdentifiers, extractCodeSpans } from "./checks.js";
+import {
+	checkStaleness,
+	checkSymbols,
+	declaredIdentifiers,
+	declaredParameters,
+	extractCodeSpans,
+} from "./checks.js";
 
 describe("extractCodeSpans", () => {
 	it("picks out identifier-shaped inline code spans, including dotted chains", () => {
@@ -60,6 +66,51 @@ describe("declaredIdentifiers", () => {
 		expect([...declaredIdentifiers(code)].sort()).toEqual(
 			["RendererObject", "defaultExport", "fs", "marked", "named", "readFile", "write"].sort(),
 		);
+	});
+
+	it("finds destructured top-level bindings, including nested, renamed, and rest — a real parser's win over regex", () => {
+		const code = "const { a, b: renamed, nested: { c }, ...rest } = x;";
+		expect([...declaredIdentifiers(code)].sort()).toEqual(["a", "c", "rest", "renamed"].sort());
+	});
+
+	it("only counts top-level declarations, not ones nested inside a function body", () => {
+		const code = "function outer() { const inner = 1; }";
+		expect([...declaredIdentifiers(code)].sort()).toEqual(["outer"]);
+	});
+
+	it("skips the parse entirely for non-js codeLang, never returning false declarations from CSS/HTML text", () => {
+		const cssLike = "h1 { color: red; }\nconst used = new Set();";
+		expect(declaredIdentifiers(cssLike, "css")).toEqual(new Set());
+		expect(declaredIdentifiers(cssLike, "html")).toEqual(new Set());
+		// The same text, parsed as JS (which it partly resembles), still degrades safely: oxc-parser
+		// stops at the first syntax error rather than throwing, so this returns whatever real
+		// declarations came *before* the error, not nothing and not a crash.
+		expect(declaredIdentifiers(cssLike, "js")).toEqual(new Set());
+	});
+});
+
+describe("declaredParameters", () => {
+	it("finds a plain function's own parameter — the real bug this was written for", () => {
+		expect([...declaredParameters("function headingId(html) { return html; }")]).toEqual(["html"]);
+	});
+
+	it("finds destructured, renamed, defaulted, and rest parameters", () => {
+		const code = "function f({ a, b: renamed = 1 }, [c, ...d], ...rest) {}";
+		expect([...declaredParameters(code)].sort()).toEqual(["a", "c", "d", "renamed", "rest"].sort());
+	});
+
+	it("finds parameters of arrow functions and nested/callback functions, not just top-level ones", () => {
+		const code = "function outer(a) { return [1].map((b) => a + b); }";
+		expect([...declaredParameters(code)].sort()).toEqual(["a", "b"].sort());
+	});
+
+	it("does not mistake an explicit `this` parameter for a real one", () => {
+		const code = "const o = { heading(this, token) { return token; } };";
+		expect([...declaredParameters(code)]).toEqual(["token"]);
+	});
+
+	it("skips the parse entirely for non-js codeLang", () => {
+		expect(declaredParameters("h1 { color: red; }", "css")).toEqual(new Set());
 	});
 });
 

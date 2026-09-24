@@ -29,6 +29,11 @@ export interface ProseChunk {
 	/** `/**`-delimited (with a ` * ` gutter) or `<!--`-delimited — which style a *new* `@note`
 	 *  should be written in, matching whichever style this chunk's own `@prose` block used. */
 	commentStyle: "js" | "html";
+	/** Which language this chunk's own trailing *code* is in — not always the same as
+	 *  `commentStyle` (a `.svelte` file's `<style>` block uses JS-style `/** *\/` comments but its
+	 *  code is CSS). `src/checks.ts`'s symbol check only attempts a JS/TS parse when this is
+	 *  `"js"` — CSS and HTML aren't in scope yet (spec §5.1). */
+	codeLang: "js" | "css" | "html";
 	/** Byte offset just past this chunk's `@prose` comment — where a brand-new `@note` is
 	 *  inserted when `note` is unset. */
 	proseEndIndex: number;
@@ -53,6 +58,10 @@ export interface FileParse {
 interface RawBlock {
 	kind: "prose" | "note";
 	commentStyle: "js" | "html";
+	/** Which language this block's own *trailing code* is in — distinct from `commentStyle` (a
+	 *  CSS file's comments are `/** *\/`-delimited too, same as JS, but its code obviously isn't
+	 *  JS). `src/checks.ts`'s symbol check only attempts a JS/TS parse when this is `"js"`. */
+	codeLang: "js" | "css" | "html";
 	body: string;
 	startIndex: number;
 	endIndex: number;
@@ -66,6 +75,7 @@ interface RawBlock {
  *  block — one entry per prose block, each optionally carrying the note attached to it. */
 interface ProseRawBlock {
 	commentStyle: "js" | "html";
+	codeLang: "js" | "css" | "html";
 	body: string;
 	startIndex: number;
 	startLine: number;
@@ -169,6 +179,7 @@ function mergeNotes(blocks: RawBlock[], source: string): ProseRawBlock[] {
 		}
 		merged.push({
 			commentStyle: block.commentStyle,
+			codeLang: block.codeLang,
 			body: block.body,
 			startIndex: block.startIndex,
 			startLine: block.startLine,
@@ -231,7 +242,7 @@ function skipRegexLiteral(source: string, start: number, lastSignificant: string
  * "closed" at the next backtick anywhere later in the file, permanently corrupting the depth
  * count for everything after it. Found by dogfooding this file against itself.
  */
-function scanJsLike(source: string): RawBlock[] {
+function scanJsLike(source: string, codeLang: "js" | "css" = "js"): RawBlock[] {
 	const blocks: RawBlock[] = [];
 	let i = 0;
 	let depth = 0;
@@ -273,6 +284,7 @@ function scanJsLike(source: string): RawBlock[] {
 					blocks.push({
 						...marked,
 						commentStyle: "js",
+						codeLang,
 						startIndex: start,
 						endIndex: end,
 						startLine: lineAt(source, start),
@@ -319,6 +331,7 @@ function scanHtml(source: string): RawBlock[] {
 			blocks.push({
 				...marked,
 				commentStyle: "html",
+				codeLang: "html",
 				startIndex: match.index,
 				endIndex: match.index + match[0].length,
 				startLine: lineAt(source, match.index),
@@ -339,6 +352,7 @@ function shiftBlock(
 	return {
 		kind: block.kind,
 		commentStyle: block.commentStyle,
+		codeLang: block.codeLang,
 		body: block.body,
 		startIndex,
 		endIndex: block.endIndex + offset,
@@ -364,13 +378,14 @@ function scanSvelte(source: string): RawBlock[] {
 	let last = 0;
 	let match: RegExpExecArray | null;
 	while ((match = tagRe.exec(source))) {
-		const [full, , inner] = match;
+		const [full, tagName, inner] = match;
 		const tagStart = match.index;
 		const markup = source.slice(last, tagStart);
 		for (const block of scanHtml(markup)) blocks.push(shiftBlock(block, last, source, tagStart));
 		const innerOffset = tagStart + full.indexOf(inner);
 		const innerEnd = innerOffset + inner.length;
-		for (const block of scanJsLike(inner))
+		const codeLang = tagName === "style" ? "css" : "js";
+		for (const block of scanJsLike(inner, codeLang))
 			blocks.push(shiftBlock(block, innerOffset, source, innerEnd));
 		last = tagStart + full.length;
 	}
@@ -395,7 +410,7 @@ export function parseFile(source: string, extension: string): FileParse {
 			? scanHtml(source)
 			: extension === "svelte"
 				? scanSvelte(source)
-				: scanJsLike(source);
+				: scanJsLike(source, extension === "css" ? "css" : "js");
 	// A note directly after the *file* prose block is folded in here too (mergeNotes doesn't
 	// distinguish file prose from a chunk's), but FileParse has nowhere to put it yet — file-level
 	// notes aren't supported (§6.3-equivalent scope, chunk-only for now), so `fileBlock.note` below
@@ -450,6 +465,7 @@ export function parseFile(source: string, extension: string): FileParse {
 			endLine,
 			note: block.note,
 			commentStyle: block.commentStyle,
+			codeLang: block.codeLang,
 			proseEndIndex: block.proseEndIndex,
 			noteStartIndex: block.noteStartIndex,
 			noteEndIndex: block.noteEndIndex,

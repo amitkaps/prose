@@ -35,6 +35,9 @@ export interface TreeNode {
 	/** Chunk-only: an `@note` left directly on this chunk — a direction or question for whoever
 	 *  touches it next, not part of its prose (`src/notes.ts` writes/removes these). */
 	note?: string;
+	/** Chunk-only: which language this chunk's own code is in — gates whether the symbol check
+	 *  (§5.1) attempts a JS/TS parse of it at all (`src/checks.ts`'s `declaredIdentifiers`). */
+	codeLang?: "js" | "css" | "html";
 	/** Chunk-only: inline code spans from this chunk's own prose, resolved per spec §5.1. */
 	symbols?: Symbol[];
 	/** This node's own warnings (chunks only, for now — §5 doesn't define file/folder-level checks). */
@@ -115,6 +118,7 @@ function fileToNode(root: string, absPath: string): TreeNode {
 			prose: chunk.prose,
 			code: chunk.code,
 			note: chunk.note,
+			codeLang: chunk.codeLang,
 			warnings,
 			warningCount: warnings.length,
 			children: [],
@@ -278,7 +282,7 @@ function applySymbolChecks(root: TreeNode, knownPackages: ReadonlySet<string>): 
 	const table = new Map<string, string>();
 	for (const { chunk } of chunkRefs) {
 		if (!chunk.code) continue;
-		for (const id of declaredIdentifiers(chunk.code)) {
+		for (const id of declaredIdentifiers(chunk.code, chunk.codeLang)) {
 			if (!table.has(id)) table.set(id, chunk.path);
 		}
 	}
@@ -292,6 +296,7 @@ function applySymbolChecks(root: TreeNode, knownPackages: ReadonlySet<string>): 
 			table,
 			fileScope,
 			knownPackages,
+			chunk.codeLang,
 		);
 		if (symbols.length > 0) chunk.symbols = symbols;
 		if (warnings.length > 0) {

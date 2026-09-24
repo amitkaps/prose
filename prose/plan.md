@@ -162,6 +162,33 @@ transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts
          manifest is exactly its record of "this external name is really part of this project."
       All three verified against `examples/base`'s real dev server (RPC round trip, not just unit
       tests) before and after — 5 more tests (52 total).
+- [x] **Replaced the regex heuristic with a real parser (`oxc-parser`)**, after a third real bug
+      hit the same class of problem: `` `html` ``, `headingId`'s own parameter, still came back
+      unresolved — regexes can't find a parameter list at all when it nests parens/braces for
+      type annotations (`heading(this: { parser: { parseInline: (tokens: ...) => string } },
+      token)`). Two regex patches in a row missing a real case each time isn't a coincidence, it's
+      the predictable failure mode of reimplementing scope analysis by pattern-matching text. The
+      fix was structural: `declaredIdentifiers`/`declaredParameters` now parse with `oxc-parser`
+      (the same engine `oxlint`/`oxfmt`/`tsdown` already use in this project's own toolchain) and
+      walk the real AST — which, as a side effect, correctly handles destructuring
+      (`const { a, b: renamed, ...rest } = x`) for the first time, something no amount of regex
+      patching could reach. `typescript` (already a dependency) was tried first and doesn't work
+      for this: this project deliberately runs **TypeScript 7**, the new native/Go-ported
+      compiler, and its package exposes no `ts.createSourceFile`-style JS API through its normal
+      entry point at all — confirmed directly by trying it, not assumed. `declaredParameters` is
+      kept separate from `declaredIdentifiers`, not merged: parameters are local-only (they must
+      never enter the cross-file symbol table `tree.ts` builds — a parameter named `path` in one
+      function has no business resolving prose in an unrelated chunk).
+      Added `codeLang` (`"js" | "css" | "html"`), threaded through `parser.ts` from raw block to
+      `ProseChunk` to `TreeNode`, since a `.svelte` file's `<script>` and `<style>` parts share the
+      same comment-scanning path but not the same code language — the symbol check only attempts
+      a JS/TS parse when `codeLang === "js"`. Confirmed directly (not assumed) that `oxc-parser`
+      degrades gracefully on non-JS input (a CSS snippet returns an empty `program.body` and an
+      `errors` array, no throw) as a second line of defense, not the only one.
+      Verified against the exact real bug: `` `html` `` now resolves `local`, `` `headingRenderer`
+      `` now resolves `linked` — `examples/base`'s entire tree has zero warnings. 8 more tests
+      (74 total), covering destructuring, nested/arrow-function parameters, an explicit `this`
+      parameter correctly ignored, and `codeLang` gating.
 - [x] **Staleness check** (`src/git.ts` + `src/checks.ts`): one `git blame --porcelain` per file
       (not per chunk — cached across a file's chunks), comparing the newest timestamp in the
       prose block's own line range against the newest in its trailing code's range (§5.2).

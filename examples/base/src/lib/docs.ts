@@ -44,10 +44,13 @@ export type Doc = z.infer<typeof frontmatterSchema> & {
 /** @prose
  * ## Heading ids
  *
- * Slugify rendered heading text into an id, GitHub-style: lowercase, spaces to hyphens,
- * punctuation dropped. Letters, combining marks and digits in any script are kept, so
- * non-English headings get readable ids. `marked` adds no ids of its own, so without this
- * `#section` links fail silently.
+ * Slugifies a heading's *rendered* HTML, not its raw Markdown, into an id, GitHub-style. The
+ * `html` argument has already been through Marked's own inline rendering (see `headingRenderer`
+ * below), so it can contain real markup — `<code>`, `<a>`, `&amp;` — which is why the first two
+ * steps strip tags and entities before anything else runs. After that: lowercase, punctuation
+ * dropped, whitespace runs turned into hyphens. Letters, combining marks and digits in any
+ * script are kept, so non-English headings get readable ids. `marked` adds no ids of its own,
+ * so without this `#section` links fail silently.
  */
 function headingId(html: string): string {
 	return (

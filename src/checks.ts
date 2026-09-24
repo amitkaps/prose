@@ -138,54 +138,177 @@ export function extractCodeSpans(prose: string): string[] {
 }
 
 /** @prose
+ * # A real parser, not a regex — and why
+ *
+ * This used to be two regex heuristics (one for `function`/`class`/`const`/`interface`/`type`
+ * declarations, one bolted on later for imports), and both were wrong in the same way: each
+ * covered the shapes whoever wrote it happened to think of, and missed the next one a real bug
+ * report found (imports, then function parameters — see `declaredParameters` below). That's not
+ * a coincidence, it's the predictable failure mode of reimplementing scope analysis by pattern-
+ * matching text instead of using a real parser.
+ *
+ * `oxc-parser` is that real parser — the same Rust/WASM engine `oxlint`/`oxfmt`/`tsdown` already
+ * use elsewhere in this project's own toolchain, exposed here as a plain, fast, dependency-light
+ * API. (TypeScript itself was the first thing tried: this project deliberately runs TypeScript 7,
+ * the new native/Go-ported compiler, and *its* package has no `ts.createSourceFile`-style JS API
+ * at all through the normal entry point — confirmed directly, not assumed, before reaching for
+ * oxc-parser instead. TypeScript 7.1 is expected to add a WASM-exposed API of its own; worth
+ * revisiting this choice then, not before — see `prose/lessons.md`.) Crucially, fed something
+ * that isn't JS/TS at all (a CSS rule, say, from a `.svelte` file's `<style>` block), it doesn't
+ * throw — confirmed directly too: it returns an empty `program.body` and an `errors` array,
+ * which is exactly the "found nothing" behavior this needs, for the right reason instead of by
+ * regex-just-not-matching accident.
+ */
+import { parseSync } from "oxc-parser";
+
+/** @prose
+ * Recursively collects every name a binding *pattern* binds — plain `Identifier`, `ObjectPattern`
+ * (each property's value, or a `RestElement`'s own argument), `ArrayPattern` (each element, holes
+ * skipped), `AssignmentPattern` (its `left` side only — a default value itself isn't a binding),
+ * and `RestElement`. This is what the old regex could never do (`const { foo } = ...`, a
+ * destructured parameter): a real parser hands back the actual pattern shape, so recursing it
+ * correctly is direct, not a reimplementation of destructuring syntax by hand.
+ */
+type AstNode = Record<string, unknown>;
+
+function bindingNames(pattern: AstNode | null | undefined, names: Set<string>): void {
+	if (!pattern) return;
+	switch (pattern.type) {
+		case "Identifier": {
+			const name = pattern.name as string;
+			if (name !== "this") names.add(name);
+			return;
+		}
+		case "ObjectPattern":
+			for (const prop of pattern.properties as AstNode[]) {
+				if (prop.type === "RestElement") bindingNames(prop.argument as AstNode, names);
+				else bindingNames(prop.value as AstNode, names);
+			}
+			return;
+		case "ArrayPattern":
+			for (const el of pattern.elements as (AstNode | null)[]) bindingNames(el, names);
+			return;
+		case "AssignmentPattern":
+			bindingNames(pattern.left as AstNode, names);
+			return;
+		case "RestElement":
+			bindingNames(pattern.argument as AstNode, names);
+			return;
+	}
+}
+
+/** A generic deep walk over every node in the AST (arrays and plain objects alike), calling
+ *  `visit` on each node that has a `.type`. Used by `declaredParameters` to find every function-
+ *  like node regardless of nesting — a chunk's own code isn't just its top-level statements. */
+function walk(node: unknown, visit: (node: AstNode) => void): void {
+	if (!node || typeof node !== "object") return;
+	if (Array.isArray(node)) {
+		for (const item of node) walk(item, visit);
+		return;
+	}
+	const obj = node as AstNode;
+	if (typeof obj.type === "string") visit(obj);
+	for (const key in obj) {
+		if (key === "type") continue;
+		const value = obj[key];
+		if (value && typeof value === "object") walk(value, visit);
+	}
+}
+
+/** Parses `code` as JS/TS via `oxc-parser`; returns `null` for non-`"js"` `codeLang` (CSS/HTML
+ *  chunks aren't attempted at all, not even fed through the parser to see what happens) or if
+ *  parsing throws (defensive — the empirical behavior is that it doesn't, but this is an external
+ *  tool, not this project's own code, so the same caution `git.ts`'s `blameFile` uses applies). */
+function tryParse(code: string, codeLang: "js" | "css" | "html"): AstNode | null {
+	if (codeLang !== "js") return null;
+	try {
+		return parseSync("chunk.ts", code).program as unknown as AstNode;
+	} catch {
+		return null;
+	}
+}
+
+/** @prose
  * # Declared identifiers
  *
- * A regex heuristic, not a parser: it catches the common declaration shapes (`function foo`,
- * `class Foo`, `const/let/var foo`, `interface`/`type Foo`, each optionally `export`ed) but not
- * destructuring (`const { foo } = ...`) or class members. Good enough for a symbol check whose
- * failure mode is "occasionally too quiet," not wrong — spec §5.1 only promises JS/TS for now.
- *
- * An imported binding counts too — `import { marked } from "marked"` makes `marked` a name this
- * project's code declares and uses, even though it's not *defined* here (spec §5.1's "declared"
- * is about where a name is bound, not where its implementation lives). Missing this was a real
- * bug, not a hypothetical: a chunk's own imports live in its file's preamble, which sits above
- * every chunk's own code, and the first version of this function only looked at
- * `function`/`class`/`const`/... declarations — every imported name in a real file (`marked`,
- * `RendererObject`, `Tokens`) came back "unresolved" purely because *how* it entered scope wasn't
- * one of the forms this regex knew about, not because it was actually undeclared.
+ * Top-level declarations only — `program.body`'s own statements, not walked into nested function
+ * bodies — matching spec §5.1's "declared in this chunk's own code" at the level a chunk's code
+ * actually operates: `function foo() { const bar = 1; }` declares `foo`, not `bar`, as something
+ * the rest of the project could plausibly reference. Handles `function`/`class`/`interface`/
+ * `type` declarations, `const`/`let`/`var` (destructuring included, via `bindingNames`), and every
+ * import form (default/namespace/named, aliased or not — `import { marked } from "marked"` binds
+ * `marked` here as directly as any local `const` would, since spec §5.1's "declared" is about
+ * where a name is bound, not where its implementation lives).
  */
-const DECLARATION_RE =
-	/\b(?:export\s+(?:default\s+)?)?(?:function\*?|class|interface|type|const|let|var)\s+([A-Za-z_$][\w$]*)/g;
-
-const IMPORT_DEFAULT_RE = /\bimport\s+([A-Za-z_$][\w$]*)\s*(?:,|from\b)/g;
-const IMPORT_NAMESPACE_RE = /\bimport\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\b/g;
-const IMPORT_NAMED_RE = /\bimport\s+(?:type\s+)?(?:[A-Za-z_$][\w$]*\s*,\s*)?\{([^}]*)\}\s*from\b/g;
-
-export function declaredIdentifiers(code: string): Set<string> {
+export function declaredIdentifiers(
+	code: string,
+	codeLang: "js" | "css" | "html" = "js",
+): Set<string> {
 	const names = new Set<string>();
-	let match: RegExpExecArray | null;
+	const program = tryParse(code, codeLang);
+	if (!program) return names;
 
-	DECLARATION_RE.lastIndex = 0;
-	while ((match = DECLARATION_RE.exec(code))) names.add(match[1]);
-
-	IMPORT_DEFAULT_RE.lastIndex = 0;
-	while ((match = IMPORT_DEFAULT_RE.exec(code))) names.add(match[1]);
-
-	IMPORT_NAMESPACE_RE.lastIndex = 0;
-	while ((match = IMPORT_NAMESPACE_RE.exec(code))) names.add(match[1]);
-
-	IMPORT_NAMED_RE.lastIndex = 0;
-	while ((match = IMPORT_NAMED_RE.exec(code))) {
-		for (const spec of match[1].split(",")) {
-			const name = spec
-				.trim()
-				.replace(/^type\s+/, "")
-				.split(/\s+as\s+/)
-				.pop();
-			if (name) names.add(name.trim());
+	for (const raw of program.body as AstNode[]) {
+		const node =
+			raw.type === "ExportNamedDeclaration" || raw.type === "ExportDefaultDeclaration"
+				? ((raw.declaration as AstNode | null) ?? raw)
+				: raw;
+		switch (node.type) {
+			case "VariableDeclaration":
+				for (const d of node.declarations as AstNode[]) bindingNames(d.id as AstNode, names);
+				break;
+			case "FunctionDeclaration":
+			case "ClassDeclaration":
+			case "TSInterfaceDeclaration":
+			case "TSTypeAliasDeclaration":
+			case "TSEnumDeclaration": {
+				const id = node.id as AstNode | null;
+				if (id) names.add(id.name as string);
+				break;
+			}
+			case "ImportDeclaration":
+				for (const spec of node.specifiers as AstNode[]) {
+					names.add((spec.local as AstNode).name as string);
+				}
+				break;
 		}
 	}
+	return names;
+}
 
+/** @prose
+ * # Declared parameters
+ *
+ * Found by a real bug report, not speculatively: `docs.ts`'s `headingId(html: string)` writes
+ * prose naming `` `html` ``, its own parameter — but `declaredIdentifiers` only ever recognized
+ * *declarations*, never a parameter name, so it came back "unresolved" despite being about as
+ * "declared in this chunk's own code" as a name can be.
+ *
+ * Deliberately **not** folded into `declaredIdentifiers`: parameters are local-only.
+ * `tree.ts`'s global symbol table is built from `declaredIdentifiers` alone, and a parameter
+ * named `path` or `value` in one function has no business resolving prose in some unrelated
+ * chunk that happens to name the same thing — unlike an exported function or a project-wide
+ * import, a parameter's name means nothing outside the one function it belongs to. Walks the
+ * *whole* AST (`walk`, not just `program.body`), since a chunk's own function can itself contain
+ * nested functions/callbacks with their own parameters, all still "local to this chunk."
+ */
+export function declaredParameters(
+	code: string,
+	codeLang: "js" | "css" | "html" = "js",
+): Set<string> {
+	const names = new Set<string>();
+	const program = tryParse(code, codeLang);
+	if (!program) return names;
+
+	walk(program, (node) => {
+		if (
+			node.type === "FunctionDeclaration" ||
+			node.type === "FunctionExpression" ||
+			node.type === "ArrowFunctionExpression"
+		) {
+			for (const param of node.params as AstNode[]) bindingNames(param, names);
+		}
+	});
 	return names;
 }
 
@@ -217,11 +340,13 @@ export function checkSymbols(
 	table: ReadonlyMap<string, string>,
 	fileScope: ReadonlySet<string> = new Set(),
 	knownPackages: ReadonlySet<string> = new Set(),
+	codeLang: "js" | "css" | "html" = "js",
 ): { symbols: Symbol[]; warnings: Warning[] } {
 	const spans = extractCodeSpans(prose);
 	if (spans.length === 0) return { symbols: [], warnings: [] };
 
-	const ownDeclared = declaredIdentifiers(ownCode);
+	const ownDeclared = declaredIdentifiers(ownCode, codeLang);
+	const ownParameters = declaredParameters(ownCode, codeLang);
 	const symbols: Symbol[] = [];
 	const warnings: Warning[] = [];
 	const seen = new Set<string>();
@@ -229,7 +354,7 @@ export function checkSymbols(
 		if (seen.has(text)) continue;
 		seen.add(text);
 		if (knownPackages.has(text)) continue;
-		if (ownDeclared.has(text) || fileScope.has(text)) {
+		if (ownDeclared.has(text) || ownParameters.has(text) || fileScope.has(text)) {
 			symbols.push({ text, status: "local" });
 			continue;
 		}
