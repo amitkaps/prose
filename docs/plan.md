@@ -76,16 +76,32 @@ still only adds `prose()`).
 
 ## Phase 4 — build step, live updates, `examples/base` (§6.5, §6.1 live view, §9.2)
 
-- HTML-strip build hook (`transformIndexHtml` in `vite build`), verified byte-identical output
-  otherwise.
-- Live view updates via Devframe's synced state (watch the project's files, push tree/node
-  changes instead of the client polling).
-- `.svelte` file support (script/markup/style parsed per their own language rule, merged in
-  source order) — needed before `examples/base` can be converted.
-- Convert `examples/base`: add the plugin (now two plugin-list entries become one, `prose()`,
-  since it bundles the DevTools hub), promote existing comments to `@prose`, add file prose +
-  folder `README.md`s, one pending chunk, `dev/docs.tool.ts`, the §8 agent-contract snippet.
-- Run through the full §9.2 verification checklist.
+- [x] `.svelte` file support (`src/parser.ts`'s `scanSvelte`): `<script>`/`<style>` bodies scanned
+      as JS/TS/CSS, everything else as HTML, merged back in source order (§3.3). Each block also
+      carries a `partEnd` so a chunk's trailing code is clipped at its own part's boundary and
+      never bleeds across a `</script>`/`<style>` tag into the next part's code.
+- [x] `.md` content files (not `README.md`) are now walked into the tree too (`src/tree.ts`):
+      whole file is prose per §3.3, YAML frontmatter stripped before display. Previously silent
+      dropped (not in `SOURCE_EXTENSIONS`) — worth calling out since it's outside this phase's
+      original scope but needed to make `examples/base`'s `src/content/*.md` pages visible.
+- [x] Convert `examples/base`: added `@amitkaps/prose` as a `link:../..` devDependency,
+      `prose()` alongside `sveltekit()` in `vite.config.ts` (skipped under `VITEST`, same as
+      the SvelteKit plugin). Promoted existing `//`/JSDoc/HTML comments to `@prose` across
+      `src/lib/docs.ts`, `src/lib/index.ts`, `src/routes/**`, `src/app.css`; added folder
+      `README.md`s for `src/lib` and `src/routes` (first real exercise of L2 folder nodes,
+      previously untested — works). Verified: `pnpm test`, `pnpm check`, `pnpm build` all pass
+      unchanged; `pnpm dev` boots with `/__prose/` serving and its assets resolving correctly
+      (checked via `curl` per the lessons.md content-type gotcha, not status code alone).
+- [ ] HTML-strip build hook (`transformIndexHtml` in `vite build`), verified byte-identical output
+      otherwise.
+- [ ] Live view updates via Devframe's synced state (watch the project's files, push tree/node
+      changes instead of the client polling).
+- [ ] `dev/docs.tool.ts`, the §8 agent-contract snippet, and one pending chunk in `examples/base`
+      (not yet added — no undocumented-but-intentional chunk exists there yet to exercise the
+      pending-chunk UI against).
+- [ ] Run through the full §9.2 verification checklist (`pnpm check`/`test`/`build` are covered
+      above; the checklist's other items — unmarked comments not treated as prose, dev route
+      alongside SvelteKit's own routing — are informally confirmed but not run down item-by-item).
 
 ## Phase 5 — dev tools, import-graph diagram, CLI/MCP (§4 diagram, §7, §8's `prose check`, §10)
 

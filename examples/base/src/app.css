@@ -1,4 +1,6 @@
-/* Plain CSS design tokens — no framework. */
+/** @prose Plain CSS design tokens — no framework. `@layer` orders the reset before the design
+ *  tokens/base styles regardless of source order, so either layer can be edited without
+ *  worrying about cascade order between them. */
 @layer reset, base;
 
 @layer reset {

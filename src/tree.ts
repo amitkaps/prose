@@ -14,7 +14,7 @@ export interface TreeNode {
 }
 
 const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".svelte-kit", ".vscode", ".prose"]);
-const SOURCE_EXTENSIONS = new Set(["js", "ts", "css", "html"]);
+const SOURCE_EXTENSIONS = new Set(["js", "ts", "css", "html", "svelte", "md"]);
 
 function extensionOf(name: string): string {
 	return name.slice(name.lastIndexOf(".") + 1).toLowerCase();
@@ -32,9 +32,14 @@ function fileToNode(root: string, absPath: string): TreeNode {
 	const relPath = relative(root, absPath);
 	const source = readFileSync(absPath, "utf-8");
 	const ext = extensionOf(absPath);
-	const parsed: FileParse = SOURCE_EXTENSIONS.has(ext)
-		? parseFile(source, ext)
-		: { fileProse: null, preamble: source.trim(), sections: [] };
+	// A plain .md file is prose by convention (spec §3.3) — no @prose marker or chunking needed.
+	// YAML frontmatter, if present, is metadata rather than prose, so it's stripped here too.
+	const parsed: FileParse =
+		ext === "md"
+			? { fileProse: source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim(), preamble: "", sections: [] }
+			: SOURCE_EXTENSIONS.has(ext)
+				? parseFile(source, ext)
+				: { fileProse: null, preamble: source.trim(), sections: [] };
 
 	const children: TreeNode[] = [];
 	for (const section of parsed.sections) {

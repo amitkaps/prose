@@ -1,4 +1,11 @@
 <script lang="ts">
+	/** @prose
+	 * # Shell
+	 *
+	 * The one layout every route renders inside: a header with the doc nav, the page content,
+	 * and a footer. `docs` drives the nav directly, so a new page under `src/content/` appears
+	 * in the header without touching this file.
+	 */
 	import '../app.css';
 	import favicon from '#lib/assets/favicon.svg';
 	import { docs } from '#lib';

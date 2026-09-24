@@ -25,6 +25,9 @@ interface RawBlock {
 	startIndex: number;
 	endIndex: number;
 	startLine: number;
+	/** For `.svelte` files: the end of this block's own part (script/style/markup), so its
+	 *  trailing code never bleeds across a part boundary into the next `<script>`/`<style>` tag. */
+	partEnd?: number;
 }
 
 const HEADING_RE = /^#{1,6}\s+(.*)$/;
@@ -142,9 +145,47 @@ function scanHtml(source: string): RawBlock[] {
 	return blocks;
 }
 
+/** Shifts a block found in an extracted sub-range back into the full source's coordinates. */
+function shiftBlock(block: RawBlock, offset: number, fullSource: string, partEnd: number): RawBlock {
+	const startIndex = block.startIndex + offset;
+	return {
+		body: block.body,
+		startIndex,
+		endIndex: block.endIndex + offset,
+		startLine: lineAt(fullSource, startIndex),
+		partEnd,
+	};
+}
+
+/**
+ * Scans a `.svelte` file for `@prose` blocks. Per spec §3.3, each part follows its own
+ * language's rule — `<script>` and `<style>` bodies as JS/TS/CSS, everything else as HTML — and
+ * the blocks are merged back in source order.
+ */
+function scanSvelte(source: string): RawBlock[] {
+	const blocks: RawBlock[] = [];
+	const tagRe = /<(script|style)\b[^>]*>([\s\S]*?)<\/\1>/g;
+	let last = 0;
+	let match: RegExpExecArray | null;
+	while ((match = tagRe.exec(source))) {
+		const [full, , inner] = match;
+		const tagStart = match.index;
+		const markup = source.slice(last, tagStart);
+		for (const block of scanHtml(markup)) blocks.push(shiftBlock(block, last, source, tagStart));
+		const innerOffset = tagStart + full.indexOf(inner);
+		const innerEnd = innerOffset + inner.length;
+		for (const block of scanJsLike(inner)) blocks.push(shiftBlock(block, innerOffset, source, innerEnd));
+		last = tagStart + full.length;
+	}
+	for (const block of scanHtml(source.slice(last))) blocks.push(shiftBlock(block, last, source, source.length));
+	blocks.sort((a, b) => a.startIndex - b.startIndex);
+	return blocks;
+}
+
 /** Parses one source file into file prose, a preamble, and its sections/chunks (spec §3.2). */
 export function parseFile(source: string, extension: string): FileParse {
-	const blocks = extension === "html" ? scanHtml(source) : scanJsLike(source);
+	const blocks =
+		extension === "html" ? scanHtml(source) : extension === "svelte" ? scanSvelte(source) : scanJsLike(source);
 
 	if (blocks.length === 0) {
 		return { fileProse: null, preamble: source.trim(), sections: [] };
@@ -152,7 +193,8 @@ export function parseFile(source: string, extension: string): FileParse {
 
 	const [fileBlock, ...rest] = blocks;
 	const nextStart = rest.length > 0 ? rest[0].startIndex : source.length;
-	const preamble = source.slice(fileBlock.endIndex, nextStart).trim();
+	const preambleEnd = fileBlock.partEnd !== undefined ? Math.min(nextStart, fileBlock.partEnd) : nextStart;
+	const preamble = source.slice(fileBlock.endIndex, preambleEnd).trim();
 
 	const sections: ProseSection[] = [];
 	let currentSection: ProseSection = { heading: null, slug: "top", chunks: [] };
@@ -160,7 +202,8 @@ export function parseFile(source: string, extension: string): FileParse {
 
 	for (let i = 0; i < rest.length; i++) {
 		const block = rest[i];
-		const codeEnd = i + 1 < rest.length ? rest[i + 1].startIndex : source.length;
+		const nextBlockStart = i + 1 < rest.length ? rest[i + 1].startIndex : source.length;
+		const codeEnd = block.partEnd !== undefined ? Math.min(nextBlockStart, block.partEnd) : nextBlockStart;
 		const code = source.slice(block.endIndex, codeEnd).trim();
 		const endLine = lineAt(source, codeEnd);
 

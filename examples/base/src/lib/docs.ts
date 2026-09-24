@@ -1,11 +1,17 @@
+/** @prose
+ * # Content loading
+ *
+ * Reads every Markdown file under `src/content/`, validates its frontmatter, and renders it to
+ * HTML — all at build time, so the rendered site never ships a Markdown parser or YAML parser to
+ * the client or the Worker. Each exported [`Doc`](#doc) is one page: adding a page is adding a
+ * file, since the slug comes from the filename and everything else comes from frontmatter.
+ */
 import { parse as parseYaml } from 'yaml';
 import { Marked, type RendererObject, type Tokens } from 'marked';
 import { z } from 'zod';
 
-// Eager glob: every doc is read and rendered at build time. The pages are
-// prerendered, so `marked` and `yaml` never ship to the client or the Worker.
-// Adding a page is adding a file: the slug is the filename, and everything else
-// comes from its frontmatter.
+/** @prose Every `.md` file is read and rendered eagerly (not lazily per-request), so the pages
+ *  stay prerenderable — `import.meta.glob`'s `eager: true` inlines the raw text at build time. */
 const files = import.meta.glob('/src/content/*.md', {
 	query: '?raw',
 	import: 'default',
@@ -14,8 +20,13 @@ const files = import.meta.glob('/src/content/*.md', {
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 
-// Extend this schema as pages need more fields (date, image, tags...). A file
-// that does not match fails the build with its path and the offending key.
+/** @prose
+ * ## Frontmatter schema
+ *
+ * Extend this schema as pages need more fields (date, image, tags...). A file that does not
+ * match fails the build with its path and the offending key — frontmatter errors are a build
+ * failure, not a runtime one.
+ */
 const frontmatterSchema = z.object({
 	title: z.string().min(1),
 	summary: z.string().min(1),
@@ -28,10 +39,14 @@ export type Doc = z.infer<typeof frontmatterSchema> & {
 	html: string;
 };
 
-/** Slugify rendered heading text into an id, GitHub-style: lowercase, spaces to
- *  hyphens, punctuation dropped. Letters, combining marks and digits in any
- *  script are kept, so non-English headings get readable ids. marked adds no
- *  ids of its own, so without this `#section` links fail silently. */
+/** @prose
+ * ## Heading ids
+ *
+ * Slugify rendered heading text into an id, GitHub-style: lowercase, spaces to hyphens,
+ * punctuation dropped. Letters, combining marks and digits in any script are kept, so
+ * non-English headings get readable ids. `marked` adds no ids of its own, so without this
+ * `#section` links fail silently.
+ */
 function headingId(html: string): string {
 	return (
 		html
@@ -44,7 +59,9 @@ function headingId(html: string): string {
 	);
 }
 
-/** A heading renderer that gives every heading a page-unique id. */
+/** @prose A heading renderer that gives every heading a page-unique id — `marked`'s renderer
+ *  hook runs once per parsed heading, so a `Set` closed over here is enough to dedupe within
+ *  one page without threading state through `parse()`. */
 function headingRenderer(): RendererObject {
 	const used = new Set<string>();
 	return {
@@ -63,14 +80,22 @@ function headingRenderer(): RendererObject {
 	};
 }
 
-// A fresh instance per doc keeps heading-id uniqueness scoped to one page.
-// Note `Marked` is a top-level export — `new marked.Marked()` is not a constructor.
+/** @prose A fresh `Marked` instance per doc keeps heading-id uniqueness scoped to one page —
+ *  reusing one instance across docs would let a heading in doc B collide with, and get
+ *  renumbered against, one already seen in doc A. */
 function markdown(): Marked {
+	// `Marked` is a top-level export — `new marked.Marked()` is not a constructor.
 	const instance = new Marked({ async: false, gfm: true });
 	instance.use({ renderer: headingRenderer() });
 	return instance;
 }
 
+/** @prose
+ * ## Rendering a page
+ *
+ * Splits a raw file into its YAML frontmatter and Markdown body, validates the frontmatter,
+ * and renders the body — one function, called once per file at module load.
+ */
 function render(path: string, source: string): Doc {
 	const slug = path.slice('/src/content/'.length, -'.md'.length);
 
@@ -100,6 +125,13 @@ function render(path: string, source: string): Doc {
 export const renderMarkdown = (body: string): string =>
 	markdown().parse(body, { async: false }) as string;
 
+/** @prose
+ * ## Public exports
+ *
+ * `docs` is every page, rendered and sorted once at module load — routes read from this array
+ * instead of re-rendering per request, since every route here is prerendered anyway. `getDoc`
+ * looks a single page up by slug for the `[slug]` route.
+ */
 export const docs: Doc[] = Object.entries(files)
 	.map(([path, source]) => render(path, source))
 	.sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug));

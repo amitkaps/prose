@@ -15,7 +15,13 @@ interface TreeNode {
 const rail = document.getElementById("rail") as HTMLElement;
 const pane = document.getElementById("pane") as HTMLElement;
 
-const SHIKI_LANG: Record<string, string> = { js: "javascript", ts: "typescript", css: "css", html: "html" };
+const SHIKI_LANG: Record<string, string> = {
+	js: "javascript",
+	ts: "typescript",
+	css: "css",
+	html: "html",
+	svelte: "svelte",
+};
 
 let tree: TreeNode | null = null;
 

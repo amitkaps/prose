@@ -169,6 +169,9 @@ importers:
 
   .:
     devDependencies:
+      '@amitkaps/prose':
+        specifier: link:../..
+        version: link:../..
       '@sveltejs/adapter-cloudflare':
         specifier: ^8.0.0-next.6
         version: 8.0.0-next.7(@sveltejs/kit@3.0.0-next.27(@sveltejs/vite-plugin-svelte@7.3.0(@voidzero-dev/vite-plus-core@1.0.0-rc.0(@types/node@24.13.3)(esbuild@0.28.1)(typescript@6.0.3)(yaml@2.9.1))(svelte@5.57.0))(@voidzero-dev/vite-plus-core@1.0.0-rc.0(@types/node@24.13.3)(esbuild@0.28.1)(typescript@6.0.3)(yaml@2.9.1))(svelte@5.57.0)(typescript@6.0.3))(wrangler@4.131.2(@types/node@24.13.3))

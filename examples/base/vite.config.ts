@@ -1,12 +1,21 @@
+/** @prose
+ * # Build config
+ *
+ * One [`vite-plus`](https://vite-plus.dev) config drives dev, build, format, lint and test —
+ * `vp <script>` in `package.json` reads whichever of the sections below its command needs.
+ * `prose()` (this repo's own dev tool, see [`../../docs/spec.md`](../../docs/spec.md)) is mounted
+ * alongside SvelteKit's own plugin, at `/__prose/`.
+ */
 import { defineConfig } from 'vite-plus';
+import { prose } from '@amitkaps/prose';
 import adapter from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
 
 const generated = ['.svelte-kit/**', 'build/**', 'worker-configuration.d.ts'];
 
-// The SvelteKit plugin installs a dev-server hook that is incompatible with the
-// Vitest environment. Unit tests cover pure modules plus `import.meta.glob`
-// content loading, none of which need SvelteKit.
+/** @prose The SvelteKit plugin installs a dev-server hook that is incompatible with the Vitest
+ *  environment. Unit tests cover pure modules plus `import.meta.glob` content loading, none of
+ *  which need SvelteKit — so plugins (including `prose()`) are skipped entirely under Vitest. */
 const inTest = !!process.env.VITEST;
 
 export default defineConfig({
@@ -32,7 +41,8 @@ export default defineConfig({
 							filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 					},
 					adapter: adapter()
-				})
+				}),
+				prose()
 			],
 
 	// Oxfmt — `vp fmt` / `vp check`. Formats .ts/.js/.svelte/.css/.json.
