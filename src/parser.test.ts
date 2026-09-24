@@ -56,6 +56,45 @@ describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
 		const parsed = parseFile(source, "js");
 		expect(parsed.fileProse).toBe("Intro.\na bullet");
 	});
+
+	it("does not let a backtick inside a regex literal corrupt depth tracking for the rest of the file", () => {
+		// scanJsLike doesn't disambiguate a regex literal from a template string; a bare
+		// backtick in a regex (e.g. `/\`/g`) is treated as opening a template literal that only
+		// "closes" at the next backtick anywhere later in the source, permanently miscounting
+		// `{`/`}` depth from that point on. Found dogfooding this file's own slugify() (`prose/
+		// lessons.md`), which used to write this trap directly.
+		const source = [
+			"const RE = /`/g;",
+			"function useless() { const x = 1; }",
+			"/** @prose A chunk after the regex. */",
+			"const a = 1;",
+		].join("\n");
+		const parsed = parseFile(source, "js");
+		expect(parsed.fileProse).toBe("A chunk after the regex.");
+	});
+
+	it("still treats a bare / after a value as division, not a regex", () => {
+		// `a / b` — the `/` follows an identifier, so it must stay division. If this were ever
+		// misread as a regex start, it would scan forward looking for a closing `/` and could
+		// swallow real code (including a later @prose block) as if it were inside the "regex".
+		const source = [
+			"const ratio = a / b;",
+			"/** @prose A chunk after a division. */",
+			"const c = 1;",
+		].join("\n");
+		const parsed = parseFile(source, "js");
+		expect(parsed.fileProse).toBe("A chunk after a division.");
+	});
+
+	it("handles a / inside a regex character class without ending the regex early", () => {
+		const source = [
+			"const RE = /[a/b]/g;",
+			"/** @prose A chunk after a regex with a slash in a character class. */",
+			"const c = 1;",
+		].join("\n");
+		const parsed = parseFile(source, "js");
+		expect(parsed.fileProse).toBe("A chunk after a regex with a slash in a character class.");
+	});
 });
 
 describe("parseFile: HTML (<!-- @prose -->)", () => {

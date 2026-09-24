@@ -70,6 +70,37 @@ to build.
   fix, not a workaround, once the hub's dock/terminal/command surface turned out to be unneeded
   for this project's "audience of one" target (`spec.md` §2).
 
+## The parser's own tokenizer (found by dogfooding)
+
+Annotating `src/*.ts` and `client/*.ts` with `@prose` — the plugin's own implementation, not just
+the examples — surfaced two real gaps in `scanJsLike` that no amount of testing against
+`examples/single`/`examples/base` had hit, simply because neither happened to write a regex
+literal with a brace, quote, or backtick inside it, or a `@prose` comment inside an inline
+callback. Dogfooding a tool against its own source finds exactly this class of bug: real code has
+more variety than two curated examples.
+
+- **A `@prose` comment inside an object literal passed to a function call is silently dropped,**
+  even though it *looks* just as top-level as any other comment. `defineDevframe({ ...,
+  setup(ctx) { /** @prose */ ... } })` puts the comment inside `setup`'s function body, which
+  itself is inside the object literal's braces — depth 2, not depth 0. The depth-0 rule (spec
+  §3.1) is intentional, not a bug, but a comment sitting right next to code that's clearly
+  "inside something" doesn't visually signal that it won't be read. The fix, once noticed, is
+  structural: pull the callback out to a named top-level function so its own doc comment can sit
+  at depth 0. `src/plugin.ts`'s `registerRpc` is that fix, in this repo.
+- **A regex literal is not a string, and `scanJsLike` used to treat every `` ` ``, `"`, or `'` the
+  same way regardless of context.** `slugify()`'s own `.replace(/\`/g, "")` — a regex matching a
+  literal backtick — made the tokenizer read that backtick as opening a template literal, which
+  then only "closed" at the next backtick anywhere later in the file, silently corrupting `{}`
+  depth tracking for everything after it. No error, no crash — `@prose` comments after that point
+  just stopped being detected, which is a much harder failure mode to notice than a thrown
+  exception. The real fix was giving `scanJsLike` actual regex-literal awareness
+  (`skipRegexLiteral`): the standard heuristic (a `/` after an operator/opening-bracket/start-of-
+  file is a regex; after an identifier/`)`/`]`/closed-string is division) that every JS tokenizer
+  uses, short of full keyword lookback (`return /x/` is still misread as division — a known,
+  documented limitation, not silently wrong in a new way). Worth remembering generally: a
+  from-scratch tokenizer that handles strings and comments but not regex literals is not "mostly
+  right" — it's one common construct away from corrupting everything downstream of it, silently.
+
 ## Working style
 
 - **When integrating an unfamiliar package, read the installed `.d.ts` files directly** rather

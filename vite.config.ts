@@ -1,7 +1,13 @@
+/** @prose
+ * Drives `vp fmt` / `vp lint` / `vp test` for the plugin's own source — not `vp build`: the
+ * library builds via `tsdown` (`tsdown.config.ts`) and the client SPA via
+ * `vite build --config vite.client.config.ts`, so `plugins` stays empty here. `examples/**`
+ * each have their own `vite-plus` config and style; running `vp` from the repo root must not
+ * reach into them, which is why `ignored` excludes them explicitly rather than relying on
+ * per-project config discovery.
+ */
 import { defineConfig } from "vite-plus";
 
-// `examples/**` each have their own vite-plus config and style — running from the repo root
-// must not reach into them. `prose/**` and `README.md` are hand-formatted prose, not code.
 const ignored = [
 	"dist/**",
 	"client/dist/**",
@@ -12,9 +18,6 @@ const ignored = [
 ];
 
 export default defineConfig({
-	// This config drives `vp fmt` / `vp lint` / `vp test` for the plugin's own source.
-	// The library itself builds via `tsdown` and the client SPA via
-	// `vite build --config vite.client.config.ts` — neither goes through `vp build`.
 	plugins: [],
 
 	fmt: {

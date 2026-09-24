@@ -77,8 +77,32 @@ working, reviewable state. Section numbers refer to `prose/spec.md`.
       tree as an ordinary folder (`SKIP_DIRS`). This is the first real dogfooding of the L3 model
       on the plugin's own repo — confirmed via a throwaway test that `buildTree(process.cwd())`
       lists `prose/lessons.md`, `prose/plan.md`, `prose/spec.md` first, then the folder tree.
-      **Still not dogfooded**: `src/*.ts` and `client/*.ts` have zero `@prose` comments of their
-      own — the plugin's own implementation isn't yet annotated the way `examples/base` is.
+- [x] **Fully dogfooded: `src/*.ts`, `client/*.ts`, and the three root config files
+      (`vite.config.ts`, `vite.client.config.ts`, `tsdown.config.ts`) all now carry `@prose`.**
+      Confirmed via `buildTree(process.cwd())` that every file renders with real chunks/sections,
+      not `undocumented` (only test files, `.d.ts`, and pure-type/list files stay undocumented,
+      correctly — they have nothing to say beyond their own code).
+      This surfaced two real parser bugs, not hypothetical ones:
+      1. **A `@prose` block inside an object literal passed to a function call (e.g.
+         `defineDevframe({ setup(ctx) { /** @prose *\/ ... } } })`) is silently dropped** — depth
+         tracking only recognizes depth-0 comments (spec §3.1), and an object literal's braces
+         count the same as a function body's. `src/plugin.ts`'s `setup` closure hit this
+         directly; fixed by pulling it out to a top-level `registerRpc` function so its own doc
+         comment could sit at depth 0. Not a parser bug — the depth-0 rule is intentional — but a
+         real trap for anyone writing `@prose` next to a callback passed inline.
+      2. **A genuine parser bug**: `scanJsLike` didn't disambiguate regex literals from division
+         or template strings. `src/parser.ts`'s own `slugify()` had `.replace(/\`/g, "")` — a
+         regex matching a backtick — which the tokenizer read as a bare backtick opening a
+         template literal, "closing" only at the next backtick anywhere later in the file and
+         permanently corrupting depth-tracking for everything after it. Fixed two ways:
+         `slugify` itself now uses `.replaceAll("\`", "")` (avoiding the trap in this file's own
+         source), and `scanJsLike` gained real regex-literal detection (`skipRegexLiteral`, using
+         the standard last-significant-token heuristic every JS tokenizer relies on) so any
+         *other* project's regex literals — braces, quotes, backticks, slashes in a character
+         class — don't hit the same corruption. Covered by five new tests (27 total now).
+      Both fixes and all annotations verified against the full pipeline: `vp check`, `vp test`,
+      `pnpm build` (with the client-bundle regression guard), and both examples' own
+      build/test/check, all green.
 
 **Dependencies:** `devframe`, `@devframes/vite`, `markdown-exit`, `shiki` (runtime, pulled in
 transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts` still only adds

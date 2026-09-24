@@ -2,6 +2,15 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { type FileParse, firstParagraph, parseFile } from "./parser.js";
 
+/** @prose
+ * # Building the hierarchy
+ *
+ * Walks a project root into the L3→L0 tree (spec §4): project → folders → files → sections →
+ * chunks. Each level's prose and structure come from a different place — a folder's `README.md`,
+ * a file's first `@prose` block, a chunk's own block — so this module is mostly about combining
+ * `parser.ts`'s per-file output with the filesystem's own folder structure into one shape the
+ * client can render generically at any level.
+ */
 export interface TreeNode {
 	name: string;
 	kind: "project" | "folder" | "file" | "section" | "chunk";
@@ -30,6 +39,15 @@ function readReadme(dir: string): string | null {
 	}
 }
 
+/** @prose
+ * # One file's node
+ *
+ * A `.md` file that isn't a `README.md` skips `parser.ts` entirely — the whole file (frontmatter
+ * stripped) is its prose, no chunking, since spec §3.3 treats a plain Markdown file as already
+ * being prose. Every other recognized extension goes through `parseFile`, whose sections/chunks
+ * become this file's children: an unheaded section's chunks attach directly, a headed section
+ * becomes its own `section` node wrapping its chunks.
+ */
 function fileToNode(root: string, absPath: string): TreeNode {
 	const relPath = relative(root, absPath);
 	const source = readFileSync(absPath, "utf-8");
@@ -92,6 +110,14 @@ function fileToNode(root: string, absPath: string): TreeNode {
 	};
 }
 
+/** @prose
+ * # One folder's node
+ *
+ * Recurses into subfolders and files, skipping `SKIP_DIRS` (tooling/VCS folders no project
+ * wants walked) and anything dotfile-named. A folder with no prose and no children (an empty
+ * subtree) is dropped rather than shown as a dead end — only folders that actually have
+ * something to say make it into the tree.
+ */
 function folderToNode(root: string, dir: string, name: string): TreeNode {
 	const relPath = relative(root, dir);
 	const readme = readReadme(dir);
@@ -119,10 +145,14 @@ function folderToNode(root: string, dir: string, name: string): TreeNode {
 	};
 }
 
-/**
+/** @prose
+ * # Cross-cutting docs at L3
+ *
  * `prose/*.md` (except `remarks.md`) are cross-cutting project prose (spec §3.4), surfaced at
  * L3 rather than nested as an ordinary folder — `prose` itself stays in `SKIP_DIRS` so the
- * recursive walk never turns it into a folder node.
+ * recursive walk never turns it into a folder node. Reuses `fileToNode` for each one, so a
+ * `prose/*.md` document gets exactly the same frontmatter-stripping and summary treatment as any
+ * other `.md` file — the only special thing about it is *where* it gets attached in the tree.
  */
 function proseDocs(root: string): TreeNode[] {
 	const dir = join(root, "prose");
@@ -138,7 +168,11 @@ function proseDocs(root: string): TreeNode[] {
 		.map((entry) => fileToNode(root, join(dir, entry)));
 }
 
-/** Builds the L3→L0 hierarchy (spec §4) for the project rooted at `root`. */
+/** @prose
+ * The project node is just the root folder's node, relabeled — `folderToNode` already does
+ * everything a folder needs (README prose, recursive children); the only project-specific step
+ * is prepending the cross-cutting `prose/*.md` docs ahead of the folder tree.
+ */
 export function buildTree(root: string): TreeNode {
 	const projectNode = folderToNode(root, root, "project");
 	projectNode.kind = "project";
@@ -147,7 +181,9 @@ export function buildTree(root: string): TreeNode {
 	return projectNode;
 }
 
-/** Finds the node at `path` within `tree`, as produced by {@link buildTree}. */
+/** @prose A plain recursive search by stable path — the tree is small enough (a dev tool's own
+ *  project, not a monorepo) that an index would be premature; every `node` RPC call just walks
+ *  the tree fresh. */
 export function findNode(tree: TreeNode, path: string): TreeNode | null {
 	if (tree.path === path) return tree;
 	for (const child of tree.children) {
