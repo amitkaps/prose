@@ -25,7 +25,14 @@ const SHIKI_LANG: Record<string, string> = {
 
 let tree: TreeNode | null = null;
 
-const client = await connectDevframe();
+// `connectDevframe()` defaults to a *relative* base ("./"), resolved against the current page
+// URL — which breaks the same way an asset base does (see docs/lessons.md): visiting `/__prose`
+// without its trailing slash resolves "./__connection.json" against the parent path instead.
+// `import.meta.url` is always this script's own absolute served URL (e.g.
+// `.../__prose/assets/main-x.js`) regardless of what the address bar shows, so deriving the base
+// from it — one directory up from `assets/` — is immune to that.
+const base = new URL("../", import.meta.url).href;
+const client = await connectDevframe({ baseURL: base });
 const prose = client.scope("prose");
 
 async function loadTree(): Promise<TreeNode> {

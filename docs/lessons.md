@@ -4,7 +4,7 @@ Things learned building `@amitkaps/prose`, kept separate from `spec.md` (the des
 `plan.md` (the roadmap) because they're about *how* to build it correctly next time, not *what*
 to build.
 
-## Integrating Devframe / `@vitejs/devtools`
+## Integrating Devframe
 
 - **The client build's `base` must be the devframe's actual mount path, set absolutely — not
   relative.** A relative base (`base: "./"`) breaks the moment the route is reached without its
@@ -36,12 +36,23 @@ to build.
   script for diagnosis: a real RPC error (`[birpc] function "..." not found`, or
   `[devframe] Not authorized by the devframe server`) is a much stronger signal than guessing from
   package type declarations, and doesn't require driving an actual browser.
-- **`clientAuth` (on `@vitejs/devtools`'s `DevTools()`) defaults to on**, gating new browser
-  clients behind a terminal-approved trust handshake. It isn't a plain option on `DevTools()`
-  itself (passing `{ clientAuth: false }` there is a type error) — it's part of a separate
-  `DevToolsConfig` the hub resolves from elsewhere (not yet traced down). Still open: whether/how
-  to turn it off by default for this project's stated target of "small apps, audience of one"
-  (`spec.md` §2), where there's no second person whose access needs gating.
+- **The same relative-base bug can hide inside a library's own client, not just your build
+  config.** `devframe/client`'s `connectDevframe()` defaults to `baseURL: "./"`, resolved against
+  the *current page URL* to fetch `__connection.json` — so visiting `/__prose` (no trailing
+  slash) makes that relative fetch resolve against the parent path and 404, throwing
+  `Failed to get connection meta from ./`. This is the identical class of bug as the asset-`base`
+  one above, just one layer further from the code you wrote — the fix isn't in your Vite config
+  this time, it's passing an explicit `baseURL` to `connectDevframe()`. Deriving it from
+  `import.meta.url` (`new URL("../", import.meta.url).href`, one directory up from the script's
+  own `assets/` folder) is immune to the bug entirely, since a built script's `src` is always
+  absolute under the configured `base` regardless of what the address bar shows.
+- **`@vitejs/devtools`'s `clientAuth` defaulted to on**, gating new browser clients behind a
+  terminal-approved trust handshake, and wasn't a plain option on `DevTools()` itself (passing
+  `{ clientAuth: false }` there was a type error) — it lived in a separate `DevToolsConfig` the
+  hub resolved from elsewhere. This was one of the reasons for dropping `@vitejs/devtools` for
+  `@devframes/vite`'s `devframeViteBridge`, whose `auth` option takes a plain `false` — a real
+  fix, not a workaround, once the hub's dock/terminal/command surface turned out to be unneeded
+  for this project's "audience of one" target (`spec.md` §2).
 
 ## Working style
 
