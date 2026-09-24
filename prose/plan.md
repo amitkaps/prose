@@ -139,11 +139,29 @@ transitively through `@amitkaps/prose` — a consuming project's `vite.config.ts
       The project-wide `identifier → declaring chunk` table is built once per `buildTree` call,
       in a second pass over every chunk already in the tree (`tree.ts`'s `applySymbolChecks`),
       since "elsewhere in the project" isn't knowable file-by-file.
-      **Known gap, found by dogfooding**: identifiers declared in a file's *preamble* (the code
-      before its first `@prose` block) never enter that table, because the preamble isn't a
-      `TreeNode` yet — `client/main.ts`'s own `SHIKI_LANG` hits this. Fixing it means giving the
-      preamble a place in the tree first (§3.2's "shown collapsed"), tracked below, not a one-line
-      fix here.
+      **Fixed a second dogfooding pass in**: the user pointed at real false positives in
+      `examples/base` — `` `marked` `` and `` `Set` `` both flagged unresolved in
+      `src/lib/docs.ts`'s prose. Neither was noise to dismiss:
+      1. `declaredIdentifiers` never parsed `import` statements at all — a project's own imported
+         bindings (`import { marked } from "marked"`) didn't count as "declared," so anything
+         imported and only referenced in prose (not redeclared in every chunk) came back
+         unresolved. Fixed by adding default/namespace/named-import parsing, aliases included.
+      2. That import lives in `docs.ts`'s *preamble* — the code before its first `@prose` block —
+         which wasn't part of the tree at all (a real gap, previously just documented as a known
+         limitation here). Fixed by storing `preamble` on the file `TreeNode` and threading its
+         declared identifiers down to every chunk in that file as a `fileScope` set (`tree.ts`'s
+         `collectChunks`) — resolves as `local`, since it's usable by any chunk in the file, not a
+         same-file `linked` link to nowhere.
+      3. `Set` is a real, if incomplete, gap: `marked`'s prose says `` `marked` `` (the npm
+         package's name), not `` `Marked` `` (the class actually imported) — a project can't
+         "declare" a package name as an identifier, so a `BUILTIN_GLOBALS` list (like the keyword
+         skip-list) wasn't the right fix for `marked` specifically; `Set` *is* a JS builtin and
+         got the `BUILTIN_GLOBALS` treatment, but `marked`-the-package needed a different check:
+         `tree.ts`'s `readPackageNames` reads `package.json`'s own dependency names once per
+         `buildTree` call, and `checkSymbols` skips any span matching one — a project's own
+         manifest is exactly its record of "this external name is really part of this project."
+      All three verified against `examples/base`'s real dev server (RPC round trip, not just unit
+      tests) before and after — 5 more tests (52 total).
 - [x] **Staleness check** (`src/git.ts` + `src/checks.ts`): one `git blame --porcelain` per file
       (not per chunk — cached across a file's chunks), comparing the newest timestamp in the
       prose block's own line range against the newest in its trailing code's range (§5.2).

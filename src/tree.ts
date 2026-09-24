@@ -27,6 +27,11 @@ export interface TreeNode {
 	pending?: boolean;
 	prose?: string | null;
 	code?: string;
+	/** File-only: the code before its first `@prose` block (spec §3.2). Not shown by the client
+	 *  yet (§6.1's "flagged, shown collapsed" is still open) — kept here so the symbol check
+	 *  (§5.1) can resolve a chunk's prose against names this file imports/declares up top, e.g.
+	 *  an `import { marked } from "marked"` that no individual chunk's own code repeats. */
+	preamble?: string;
 	/** Chunk-only: inline code spans from this chunk's own prose, resolved per spec §5.1. */
 	symbols?: Symbol[];
 	/** This node's own warnings (chunks only, for now — §5 doesn't define file/folder-level checks). */
@@ -139,6 +144,7 @@ function fileToNode(root: string, absPath: string): TreeNode {
 		path: relPath,
 		summary: parsed.fileProse ? firstParagraph(parsed.fileProse) : "undocumented",
 		prose: parsed.fileProse,
+		preamble: parsed.preamble,
 		warningCount: sumWarnings(children),
 		children,
 	};
@@ -209,9 +215,21 @@ function proseDocs(root: string): TreeNode[] {
 		.map((entry) => fileToNode(root, join(dir, entry)));
 }
 
-function collectChunks(node: TreeNode, acc: TreeNode[]): void {
-	if (node.kind === "chunk") acc.push(node);
-	for (const child of node.children) collectChunks(child, acc);
+interface ChunkRef {
+	chunk: TreeNode;
+	/** Identifiers declared in the containing file's preamble — its imports and any module-level
+	 *  code above the first `@prose` block. Every chunk in that file shares this scope, even
+	 *  though it's not repeated in any one chunk's own code. */
+	fileScope: ReadonlySet<string>;
+}
+
+/** Walks the tree carrying the *current file's* preamble scope down to each chunk beneath it —
+ *  re-derived only when a `file` node is entered, since a chunk's own file never changes as the
+ *  walk descends into its sections. */
+function collectChunks(node: TreeNode, fileScope: ReadonlySet<string>, acc: ChunkRef[]): void {
+	const scope = node.kind === "file" ? declaredIdentifiers(node.preamble ?? "") : fileScope;
+	if (node.kind === "chunk") acc.push({ chunk: node, fileScope: scope });
+	for (const child of node.children) collectChunks(child, scope, acc);
 }
 
 /** @prose
@@ -221,31 +239,56 @@ function collectChunks(node: TreeNode, acc: TreeNode[]): void {
  * needs that one file's own blame. The symbol check can't work that way — "declared elsewhere in
  * the project" is only knowable once every chunk's code has been seen — so this runs once, after
  * the whole tree exists: first build one project-wide `identifier → declaring chunk` table, then
- * resolve every chunk's prose spans against it.
- *
- * **Known gap**: a file's preamble (the code before its first `@prose` block) isn't a chunk —
- * `fileToNode` parses it but never turns it into a `TreeNode` — so an identifier declared only in
- * the preamble (e.g. a module-level constant above the first prose block) never enters this
- * table, and prose elsewhere that names it reads as unresolved. Real example: `client/main.ts`'s
- * `SHIKI_LANG` is declared in its preamble and gets flagged this way. Fixing it means giving the
- * preamble a place in the tree first (spec §3.2 already calls for showing it, collapsed) — not a
- * one-line change here.
+ * resolve every chunk's prose spans against it, plus each chunk's own file-scope preamble names
+ * (found by dogfooding: `examples/base`'s `docs.ts` names its own `import { marked } from
+ * "marked"` in prose, and a preamble-only import wasn't visible to any chunk until this scope was
+ * threaded through — see `checkSymbols`'s `fileScope` parameter).
  */
-function applySymbolChecks(root: TreeNode): void {
-	const chunks: TreeNode[] = [];
-	collectChunks(root, chunks);
+/** @prose
+ * `package.json`'s own declared dependency names — read once per `buildTree` call, the same way
+ * `git blame` is read once per file, not once per chunk. Missing or unparseable `package.json` is
+ * just "no known packages," not an error (a project without one, or with a malformed one, still
+ * gets a working symbol check — it just won't recognize library names as such).
+ */
+function readPackageNames(root: string): Set<string> {
+	try {
+		const raw = readFileSync(join(root, "package.json"), "utf-8");
+		const pkg = JSON.parse(raw) as Record<string, unknown>;
+		const names = new Set<string>();
+		for (const field of ["dependencies", "devDependencies", "peerDependencies"]) {
+			const deps = pkg[field];
+			if (deps && typeof deps === "object") {
+				for (const name of Object.keys(deps)) names.add(name);
+			}
+		}
+		return names;
+	} catch {
+		return new Set();
+	}
+}
+
+function applySymbolChecks(root: TreeNode, knownPackages: ReadonlySet<string>): void {
+	const chunkRefs: ChunkRef[] = [];
+	collectChunks(root, new Set(), chunkRefs);
 
 	const table = new Map<string, string>();
-	for (const chunk of chunks) {
+	for (const { chunk } of chunkRefs) {
 		if (!chunk.code) continue;
 		for (const id of declaredIdentifiers(chunk.code)) {
 			if (!table.has(id)) table.set(id, chunk.path);
 		}
 	}
 
-	for (const chunk of chunks) {
+	for (const { chunk, fileScope } of chunkRefs) {
 		if (!chunk.prose) continue;
-		const { symbols, warnings } = checkSymbols(chunk.prose, chunk.code ?? "", chunk.path, table);
+		const { symbols, warnings } = checkSymbols(
+			chunk.prose,
+			chunk.code ?? "",
+			chunk.path,
+			table,
+			fileScope,
+			knownPackages,
+		);
 		if (symbols.length > 0) chunk.symbols = symbols;
 		if (warnings.length > 0) {
 			chunk.warnings = [...(chunk.warnings ?? []), ...warnings];
@@ -273,7 +316,7 @@ export function buildTree(root: string): TreeNode {
 	projectNode.kind = "project";
 	projectNode.path = ".";
 	projectNode.children = [...proseDocs(root), ...projectNode.children];
-	applySymbolChecks(projectNode);
+	applySymbolChecks(projectNode, readPackageNames(root));
 	rerollWarnings(projectNode);
 	return projectNode;
 }

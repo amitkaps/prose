@@ -28,6 +28,10 @@ describe("extractCodeSpans", () => {
 	it("skips import.meta forms, which are syntax rather than a declared identifier", () => {
 		expect(extractCodeSpans("Reads `import.meta.url` and `import.meta.glob`.")).toEqual([]);
 	});
+
+	it("skips standard-library globals, which no project 'declares'", () => {
+		expect(extractCodeSpans("Uses a `Set` and a `Promise` and `console`.")).toEqual([]);
+	});
 });
 
 describe("declaredIdentifiers", () => {
@@ -42,6 +46,19 @@ describe("declaredIdentifiers", () => {
 		`;
 		expect([...declaredIdentifiers(code)].sort()).toEqual(
 			["Id", "Store", "Todo", "addTodo", "count", "total"].sort(),
+		);
+	});
+
+	it("finds default, namespace, and named import bindings, including aliases and type-only", () => {
+		const code = `
+			import marked from "marked";
+			import * as fs from "node:fs";
+			import { readFile, writeFile as write } from "node:fs/promises";
+			import type { RendererObject } from "marked";
+			import defaultExport, { named } from "pkg";
+		`;
+		expect([...declaredIdentifiers(code)].sort()).toEqual(
+			["RendererObject", "defaultExport", "fs", "marked", "named", "readFile", "write"].sort(),
 		);
 	});
 });
@@ -87,6 +104,33 @@ describe("checkSymbols", () => {
 				message: "`addTod0` isn't declared anywhere in this project.",
 			},
 		]);
+	});
+
+	it("skips a span matching a known package dependency name, e.g. naming a library by its npm name", () => {
+		const knownPackages = new Set(["marked"]);
+		const { symbols, warnings } = checkSymbols(
+			"Uses `marked`'s renderer hook.",
+			"",
+			"docs.ts#top-chunk-0",
+			new Map(),
+			new Set(),
+			knownPackages,
+		);
+		expect(symbols).toEqual([]);
+		expect(warnings).toEqual([]);
+	});
+
+	it("resolves a symbol declared only in the file's preamble as local, via fileScope", () => {
+		const fileScope = new Set(["marked"]);
+		const { symbols, warnings } = checkSymbols(
+			"Uses `marked`'s renderer hook.",
+			"",
+			"docs.ts#top-chunk-0",
+			new Map(),
+			fileScope,
+		);
+		expect(symbols).toEqual([{ text: "marked", status: "local" }]);
+		expect(warnings).toEqual([]);
 	});
 
 	it("doesn't flag a symbol declared in this same chunk via the project table (self-reference isn't 'elsewhere')", () => {

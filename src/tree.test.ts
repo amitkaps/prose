@@ -173,6 +173,22 @@ describe("buildTree: checks (spec §5)", () => {
 		expect(tree.warningCount).toBe(0);
 	});
 
+	it("resolves a symbol imported only in the file's preamble, shared across every chunk in that file", () => {
+		const dir = makeProject({
+			"docs.ts": [
+				"/** @prose File. */",
+				'import { marked } from "marked";',
+				"",
+				"/** @prose Uses `marked` to render docs. */",
+				"export function render() {}",
+			].join("\n"),
+		});
+		const tree = buildTree(dir);
+		const chunk = findNode(tree, "docs.ts#top-chunk-0");
+		expect(chunk?.symbols).toEqual([{ text: "marked", status: "local" }]);
+		expect(chunk?.warningCount).toBe(0);
+	});
+
 	it("has no warnings for a project with no git repo and no unresolved symbols", () => {
 		const dir = makeProject({
 			"main.js": "/** @prose File. */\n\n/** @prose A plain chunk, no symbols. */\nconst a = 1;\n",
