@@ -444,7 +444,7 @@ function shiftBlock(
 /** @prose
  * # Scanning `.svelte` files
  *
- * Each part follows its own language's rule (spec §3.3) — `<script>` and `<style>` bodies as
+ * Each part follows its own language's rule (spec §3.1) — `<script>` and `<style>` bodies as
  * JS/TS/CSS, everything else as HTML — and the blocks are merged back in source order. Each
  * block also carries a `partEnd`: the end of its own part, so a chunk's trailing code is clipped
  * there instead of running past a `</script>`/`<style>` tag into the next part's code. Without
@@ -593,3 +593,20 @@ export function firstParagraph(text: string): string {
 	const paragraph = withoutTitle.split(/\n\s*\n/)[0] ?? "";
 	return paragraph.trim();
 }
+
+/** @prose
+ * # Content-derived anchors (spec §3.2)
+ *
+ * Planned. Replace `chunkAnchor`'s positional slugs with the spec's order: the first name the
+ * chunk's code declares, then the heading slug, then position; repeats get a numeric suffix.
+ * Anchors must survive a block being inserted above them (a metamorphic test checks that).
+ */
+
+/** @prose
+ * # Comments from oxc for JS and TS (spec §3.1)
+ *
+ * Planned. Take JS/TS comments and their depth from oxc-parser instead of the hand tokenizer,
+ * which removes the regex-literal misread; keep the scanner for CSS, HTML, YAML and TOML. A
+ * block below depth 0 becomes a warning on its file instead of being dropped silently. `@note`
+ * comments are collected at every depth, since line notes (spec §6.2) sit inside function bodies.
+ */

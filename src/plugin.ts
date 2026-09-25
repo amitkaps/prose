@@ -13,13 +13,16 @@ import type { TreeNode } from "./tree.js";
  *
  * A dev-only route at `/__prose/`, built on Devframe (spec §6).
  *
- * `devframeVitePlugin` serves the built client SPA at `/__prose/`; `devframeViteBridge` mounts
- * the RPC/WebSocket backend the SPA connects to, on the same origin. Both are plain Vite
- * plugins with no dependency on `@vitejs/devtools` — see spec.md §6 for why: this tool targets
- * one developer on one machine, not the DevTools hub's dock/terminal/command surface. The
- * bridge's RPC endpoint gates behind an OTP by default; `auth: false` below skips that, since
- * the dev server's own loopback binding is already the trust boundary for a local,
- * single-developer tool (spec §2).
+ * `devframeVitePlugin` serves the built client SPA at `/__prose/` (Devframe's default mount for
+ * a hosted devframe, `/__<id>/`); `devframeViteBridge` mounts the RPC/WebSocket backend the SPA
+ * connects to, on the same origin. Both come from `@devframes/vite/single` and go straight into
+ * the app's own dev server, with no dependency on `@vitejs/devtools`: the DevTools hub's
+ * dock/terminal/command surface and default trust handshake are more than one developer on one
+ * machine needs (`prose/lessons.md` has how that was found). If Prose ever needs to dock beside
+ * other tooling, `@vitejs/devtools-kit`'s `createPluginFromDevframe` is the way in. The bridge's
+ * RPC endpoint gates behind an OTP by default; `auth: false` below skips that, since the dev
+ * server's own loopback binding is the trust boundary for a local, single-developer tool
+ * (spec §6, "Trust boundary", which also lists the guards writes still need).
  */
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 

@@ -55,6 +55,16 @@ Found by dogfooding on the plugin's own source; `examples/single` and `examples/
 - **A chunk shown alone doesn't make sense**, so the tree stops at files and blocks hang off the file node (`blocks`, each with its comment's byte `span`). The page lays the source out around those spans, dropping the comment text and rendering it as prose in its place, which shows the whole file with nothing repeated. Exact offsets beat line ranges here; the `.svelte` part-clipping had already shown that per-chunk code slices lose the tags between parts.
 - **Checking file prose adds noise, so scope it.** Once the file prose became a checked block, about 20 new warnings appeared. Two were structural: its "code" is only the preamble, so a staleness comparison against imports means nothing (skipped), and its prose describes the whole file, so it resolves against everything the file declares, not just the imports. The rest are the usual symbol-check false positives on external names.
 
+## Design review (2026-09-25)
+
+Found by reading the spec against the code rather than by running either; `prose/review.md` has the full list.
+
+- **A write path that builds comments from user text must escape the delimiter.** `formatNote` put note text inside `/** … */` verbatim, so a note containing `*/` closed the comment and the rest became live code, run by HMR. Every round-trip test used friendly text. Detect with property tests over arbitrary note text, not examples (spec §6.2).
+- **An address built from position isn't stable, whatever the spec calls it.** The spec promised `#addTodo`; the code produced `top-chunk-2`, which moves when a block is inserted above. Re-parsing the file fresh on every write didn't help, because the address itself had moved. Derive anchors from content and guard writes with a content hash (spec §3.2).
+- **`git blame` can't tell who wrote a line when the human makes every commit.** Author-based ideas (agent notes vs human notes) fail in a one-person-plus-agents workflow. Put anything that needs an author in the text itself.
+- **Don't assume work gets committed.** Sessions run long and uncommitted; blame-based checks see all of it as "newest". Anything the view needs within a session has to compare against the working tree or the review baseline the browser keeps (spec §2, §6.5).
+- **Section references drift like any other reference.** Code prose cited §6.4 for the RPC handlers (§6.3) and §3.3 for rules in §3.1. Check them (plan step 7a) and don't renumber sections casually; add new ones at the end of their chapter.
+
 ## Working style
 
 - **Read the installed `.d.ts` files, not a summarized doc fetch.** `WebFetch` ran pages through a smaller model that lost specifics (no concrete `action`/`event`/state examples, and it omitted "mounts inside `@vitejs/devtools`", which changed the cost of adopting it). Install into a scratch directory and grep `dist/*.d.ts`.
