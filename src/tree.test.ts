@@ -1,6 +1,6 @@
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { buildTree, findNode } from "./tree.js";
 
@@ -27,6 +27,7 @@ describe("buildTree", () => {
 		});
 		const tree = buildTree(dir);
 		expect(tree.kind).toBe("project");
+		expect(tree.name).toBe(basename(dir));
 		expect(tree.children).toHaveLength(1);
 		expect(tree.children[0].path).toBe("main.js");
 		expect(tree.children[0].summary).toBe("File summary.");
@@ -66,8 +67,31 @@ describe("buildTree", () => {
 			"main.js": "/** @prose File. */\n\n/** @prose Plan item. */\n",
 		});
 		const tree = buildTree(dir);
-		const chunk = tree.children[0].children[0];
-		expect(chunk.pending).toBe(true);
+		const chunk = findNode(tree, "main.js#top-chunk-0");
+		expect(chunk?.pending).toBe(true);
+	});
+
+	it("makes a file the leaf: its blocks (file prose first) hang off it, not off children", () => {
+		const dir = makeProject({
+			"main.js":
+				"/** @prose File. */\nimport x from 'y';\n\n/** @prose A chunk. */\nconst a = 1;\n",
+		});
+		const file = buildTree(dir).children[0];
+		expect(file.children).toEqual([]);
+		expect(file.blocks?.map((b) => b.path)).toEqual(["main.js#file", "main.js#top-chunk-0"]);
+		// spans are the comment's exact byte range in the source, so a view can lay code around it
+		const [first, second] = file.blocks!;
+		expect(file.source!.slice(...first.span!)).toBe("/** @prose File. */");
+		expect(file.source!.slice(...second.span!)).toBe("/** @prose A chunk. */");
+	});
+
+	it("carries a note left on the file prose block", () => {
+		const dir = makeProject({
+			"main.js": "/** @prose File. */\n/** @note\n * Split this up.\n */\nconst a = 1;\n",
+		});
+		const file = buildTree(dir).children[0];
+		expect(findNode(buildTree(dir), "main.js#file")?.note).toBe("Split this up.");
+		expect(file.blocks?.[0].note).toBe("Split this up.");
 	});
 
 	it("skips node_modules, dist and other generated directories", () => {
@@ -100,7 +124,38 @@ describe("buildTree", () => {
 			"config.toml": "port = 8080\n",
 		});
 		const tree = buildTree(dir);
-		expect(tree.children.map((n) => n.name)).toEqual(["config.toml"]);
+		// `package.json` is a raw file now, so it stays; the lockfile is the one excluded.
+		expect(tree.children.map((n) => n.name)).toEqual(["config.toml", "package.json"]);
+	});
+});
+
+describe("buildTree: file source", () => {
+	it("carries the whole file's text, documented or not", () => {
+		const dir = makeProject({
+			"a.js": "/** @prose\n * Doc.\n */\nconst a = 1;\n",
+			"b.js": "const b = 2;\n",
+			"c.md": "Prose only.\n",
+		});
+		const byPath = Object.fromEntries(buildTree(dir).children.map((n) => [n.path, n]));
+		expect(byPath["a.js"].source).toBe("/** @prose\n * Doc.\n */\nconst a = 1;\n");
+		expect(byPath["b.js"].source).toBe("const b = 2;\n");
+		expect(byPath["c.md"].source).toBeUndefined();
+	});
+});
+
+describe("buildTree: raw files", () => {
+	it("shows JSON files as raw nodes carrying their text, with no chunks or warnings", () => {
+		const dir = makeProject({ "package.json": '{ "name": "x" }\n', "main.ts": "const a = 1;\n" });
+		const raw = buildTree(dir).children.find((n) => n.path === "package.json");
+		expect(raw?.kind).toBe("raw");
+		expect(raw?.code).toBe('{ "name": "x" }\n');
+		expect(raw?.children).toEqual([]);
+		expect(raw?.warningCount).toBe(0);
+	});
+
+	it("still excludes generated lockfiles", () => {
+		const dir = makeProject({ "package-lock.json": "{}", "main.ts": "const a = 1;\n" });
+		expect(buildTree(dir).children.map((n) => n.path)).toEqual(["main.ts"]);
 	});
 });
 
@@ -118,15 +173,6 @@ describe("buildTree: prose/ cross-cutting docs (spec §3.4)", () => {
 			"src",
 		]);
 		expect(tree.children[0].prose).toBe("Architecture body.");
-	});
-
-	it("excludes remarks.md from the surfaced docs", () => {
-		const dir = makeProject({
-			"prose/remarks.md": "## some/file.ts\n\n- [ ] a remark",
-			"prose/lessons.md": "Lessons body.",
-		});
-		const tree = buildTree(dir);
-		expect(tree.children.map((n) => n.path)).toEqual(["prose/lessons.md"]);
 	});
 
 	it("never turns prose itself into an ordinary folder node", () => {

@@ -12,12 +12,12 @@
 		".": "./dist/index.mjs"
 	},
 	"scripts": {
-		"build": "tsdown && vite build --config vite.client.config.ts && node scripts/check-client-bundle.mjs",
+		"build": "tsdown && vite build --config client/vite.config.ts && node scripts/check-client-bundle.mjs",
 		"dev": "tsdown --watch",
 		"dev:prose": "vite dev --config vite.prose.config.ts",
 		"fmt": "vp fmt",
 		"lint": "vp lint",
-		"check": "vp check",
+		"check": "vp check && svelte-check --workspace client --tsconfig ./tsconfig.json",
 		"test": "vp test --run"
 	},
 	"dependencies": {
@@ -30,9 +30,12 @@
 		"shiki": "^1.24.0"
 	},
 	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "^7.3.1",
 		"@types/node": "^22.0.0",
+		"svelte": "^5.57.1",
+		"svelte-check": "^4.7.6",
 		"tsdown": "^0.23.0",
-		"typescript": "^7.0.2",
+		"typescript": "^6.0.3",
 		"vite": "^8.3.0",
 		"vite-plus": "1.0.0-rc.0"
 	},

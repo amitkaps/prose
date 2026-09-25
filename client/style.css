@@ -1,371 +1,719 @@
+/* Dark only: the one shiki theme loaded (client/main.ts) is github-dark, so the palette is built
+   around it — --code-bg is that theme's own background, so inline code and code blocks match. */
+@layer reset, base, components;
+
+/* Tokens */
 :root {
-	--bg: #fafafa;
-	--pane-bg: #ffffff;
-	--text: #18181b;
-	--muted: #71717a;
-	--border: #e4e4e7;
-	--accent: #4f46e5;
-	--pending: #d97706;
-	--warning: #dc2626;
-	--note: #2563eb;
-	--code-bg: #f4f4f5;
-	--font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-	--font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	color-scheme: light dark;
+	--bg: #0a0a0a;
+	--pane-bg: #111113;
+	--text: #fafafa;
+	--muted: #a1a1aa;
+	--border: #27272a;
+	--accent: #818cf8;
+	--pending: #fbbf24;
+	--warning: #f87171;
+	--note: #60a5fa;
+	--code-bg: #24292e;
+	--on-accent: #0a0a0a;
+	--icon-folder: #dcb67a;
+	--hover: color-mix(in srgb, var(--text) 8%, transparent);
+	--selected: color-mix(in srgb, var(--accent) 28%, transparent);
+
+	--font-sans: ui-sans-serif, system-ui, sans-serif;
+	--font-mono: ui-monospace, monospace;
+
+	--text-base: 1rem;
+	--text-rail: 0.8125rem; /* a step below --text-base: the rail is navigation, not reading */
+	--text-small: 0.85rem;
+	--text-badge: 0.7rem;
+
+	--radius-sm: 3px;
+	--radius: 4px;
+	--radius-lg: 6px;
+
+	color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		--bg: #0a0a0a;
-		--pane-bg: #111113;
-		--text: #fafafa;
-		--muted: #a1a1aa;
-		--border: #27272a;
-		--accent: #818cf8;
-		--pending: #fbbf24;
-		--warning: #f87171;
-		--note: #60a5fa;
-		--code-bg: #1c1c1f;
+@layer reset {
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
+
+	body {
+		margin: 0;
+	}
+
+	ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	button,
+	textarea {
+		font: inherit;
+		color: inherit;
 	}
 }
 
-* {
-	box-sizing: border-box;
+@layer base {
+	body {
+		font-family: var(--font-sans);
+		font-size: var(--text-base);
+		color: var(--text);
+		background: var(--bg);
+	}
+
+	/* Inline code spans in rendered prose — global, since markdown-exit renders `x` the same way
+	   everywhere and #pane is the only place prose renders. */
+	code {
+		font-family: var(--font-mono);
+		background: var(--code-bg);
+		border-radius: var(--radius-sm);
+		padding: 0.1em 0.3em;
+		font-size: 0.9em;
+	}
+
+	a {
+		color: var(--accent);
+	}
 }
 
-body {
-	margin: 0;
-	font-family: var(--font-sans);
-	color: var(--text);
-	background: var(--bg);
-}
+@layer components {
+	/* Layout */
+	#app {
+		display: grid;
+		grid-template-columns: 280px 1fr;
+		min-height: 100dvh;
+	}
 
-#app {
-	display: grid;
-	grid-template-columns: 280px 1fr;
-	min-height: 100dvh;
-}
+	/* Rail */
+	#rail {
+		position: sticky;
+		top: 0;
+		height: 100dvh;
+		border-right: 1px solid var(--border);
+		padding: 0.75rem 0.5rem;
+		overflow-y: auto;
+		font-size: var(--text-rail);
+	}
 
-#rail {
-	border-right: 1px solid var(--border);
-	padding: 1rem 0.5rem;
-	overflow-y: auto;
-}
+	#rail .jump {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		margin-bottom: 0.5rem;
+		padding: 0.3rem 0.5rem;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		background: transparent;
+		color: var(--muted);
+		cursor: pointer;
+	}
 
-#rail ul {
-	list-style: none;
-	margin: 0;
-	padding-left: 1rem;
-}
+	#rail .jump:hover {
+		border-color: var(--muted);
+	}
 
-#rail > ul {
-	padding-left: 0;
-}
+	kbd {
+		font-family: var(--font-mono);
+		font-size: var(--text-badge);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		padding: 0 0.3rem;
+	}
 
-#rail a {
-	display: block;
-	padding: 0.15rem 0.5rem;
-	border-radius: 4px;
-	color: var(--text);
-	text-decoration: none;
-	font-size: 0.875rem;
-}
+	/* One explorer-style row: chevron, icon and label share a baseline, the whole row is the target */
+	.rail-row {
+		display: flex;
+		align-items: center;
+		min-height: 1.5rem;
+		padding-right: 0.4rem;
+		border-radius: var(--radius-sm);
+		color: var(--text);
+		text-decoration: none;
+	}
 
-#rail a:hover {
-	background: var(--border);
-}
+	.rail-row:hover {
+		background: var(--hover);
+	}
 
-#rail a.active {
-	background: var(--accent);
-	color: white;
-}
+	.rail-row.active {
+		background: var(--selected);
+	}
 
-#rail .pending::after {
-	content: "pending";
-	margin-left: 0.4rem;
-	font-size: 0.7rem;
-	color: var(--pending);
-	border: 1px solid var(--pending);
-	border-radius: 3px;
-	padding: 0 0.3rem;
-}
+	.rail-row.raw {
+		color: var(--muted);
+	}
 
-.warning-badge {
-	display: inline-block;
-	margin-left: 0.4rem;
-	font-size: 0.7rem;
-	line-height: 1.3;
-	color: white;
-	background: var(--warning);
-	border-radius: 50%;
-	min-width: 1.1em;
-	text-align: center;
-	padding: 0 0.3rem;
-}
+	.rail-label {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 
-#pane {
-	padding: 2rem 3rem;
-	max-width: 860px;
-	background: var(--pane-bg);
-}
+	/* Chevron: points right, turns down when open. Leaves keep the same-width spacer so icons align. */
+	.twisty {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 1em;
+		height: 1em;
+		margin-right: 0.15em;
+		color: var(--muted);
+	}
 
-#pane h1 {
-	margin-top: 0;
-}
+	.twisty svg {
+		width: 100%;
+		height: 100%;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.5;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		transition: transform 0.1s;
+	}
 
-#pane .breadcrumb {
-	font-size: 0.8rem;
-	color: var(--muted);
-	margin-bottom: 1rem;
-}
+	[aria-expanded="true"] > .twisty svg {
+		transform: rotate(90deg);
+	}
 
-#pane .children {
-	list-style: none;
-	padding: 0;
-	margin-top: 2rem;
-	border-top: 1px solid var(--border);
-}
+	/* Icons are text-sized: 1em, so they scale with whatever list they sit in */
+	.icon {
+		flex: none;
+		width: 1em;
+		height: 1em;
+		margin-right: 0.4em;
+		color: var(--muted);
+	}
 
-#pane .children li {
-	padding: 0.9rem 0;
-	border-bottom: 1px solid var(--border);
-}
+	.icon-folder,
+	.icon-project {
+		color: var(--icon-folder);
+	}
 
-#pane .children a {
-	color: var(--text);
-	font-weight: 600;
-	text-decoration: none;
-}
+	/* Badges: one pill shape for everything that needs attention */
+	.badges {
+		display: inline-flex;
+		gap: 0.25rem;
+		margin-left: 0.4rem;
+		vertical-align: middle;
+	}
 
-#pane .children p {
-	margin: 0.25rem 0 0;
-	color: var(--muted);
-	font-size: 0.9rem;
-}
+	.badge {
+		display: inline-block;
+		font-size: var(--text-badge);
+		line-height: 1.4;
+		padding: 0 0.35rem;
+		border-radius: 999px;
+		border: 1px solid currentColor;
+		white-space: nowrap;
+	}
 
-#pane .undocumented {
-	font-style: italic;
-	color: var(--muted);
-}
+	.badge-pending {
+		color: var(--pending);
+	}
 
-#pane .warnings {
-	list-style: none;
-	margin: 0 0 1.5rem;
-	padding: 0;
-}
+	.badge-warning {
+		color: var(--warning);
+	}
 
-#pane .warnings .warning {
-	font-size: 0.85rem;
-	color: var(--warning);
-	border: 1px solid var(--warning);
-	border-radius: 4px;
-	padding: 0.4rem 0.6rem;
-	margin-bottom: 0.4rem;
-}
+	.badge-note {
+		color: var(--note);
+	}
 
-#pane code.symbol-unresolved {
-	color: var(--warning);
-	border: 1px solid var(--warning);
-}
+	/* Loading and error states */
+	.skeleton {
+		display: grid;
+		gap: 0.6rem;
+	}
 
-#pane code.symbol-local {
-	border: 1px solid var(--accent);
-}
+	.skeleton span {
+		height: 1rem;
+		border-radius: var(--radius);
+		background: var(--border);
+		animation: pulse 1.2s ease-in-out infinite;
+	}
 
-#pane a.symbol-link code {
-	border: 1px solid var(--accent);
-	color: var(--accent);
-}
+	.skeleton span:nth-child(odd) {
+		width: 70%;
+	}
 
-#pane .pending-badge {
-	display: inline-block;
-	margin-left: 0.5rem;
-	font-size: 0.7rem;
-	color: var(--pending);
-	border: 1px solid var(--pending);
-	border-radius: 3px;
-	padding: 0 0.3rem;
-	vertical-align: middle;
-}
+	@keyframes pulse {
+		50% {
+			opacity: 0.4;
+		}
+	}
 
-#pane pre.shiki,
-#pane pre.plain-code {
-	padding: 1rem;
-	border-radius: 6px;
-	font-size: 0.85rem;
-	font-family: var(--font-mono);
-	border: 1px solid var(--border);
-	white-space: pre-wrap;
-	overflow-wrap: anywhere;
-	tab-size: 2;
-	-moz-tab-size: 2;
-}
+	@media (prefers-reduced-motion: reduce) {
+		.skeleton span {
+			animation: none;
+		}
+	}
 
-/* Inline code spans in rendered prose — deliberately global (markdown-exit renders `` `x` ``
-   the same way everywhere), not scoped under #pane, since #pane is the only place prose ever
-   renders anyway. */
-code {
-	font-family: var(--font-mono);
-	background: var(--code-bg);
-	border-radius: 3px;
-	padding: 0.1em 0.3em;
-	font-size: 0.9em;
-}
+	.load-error {
+		color: var(--warning);
+	}
 
-/* Undo the inline-code styling above for code inside a syntax-highlighted block — shiki/plain-code
-   already wrap their own <code>, and without this reset that <code> picked up the inline span's
-   padding and background on top of the block's own, showing as a stray gap before the first
-   token (and a mismatched background fighting the theme's). */
-#pane pre.shiki code,
-#pane pre.plain-code code {
-	background: none;
-	padding: 0;
-	border-radius: 0;
-	font-size: inherit;
-}
+	.load-error button {
+		font-size: 0.8rem;
+		cursor: pointer;
+		border-radius: var(--radius);
+		padding: 0.25rem 0.6rem;
+		border: 1px solid currentColor;
+		background: transparent;
+	}
 
-/* Markdown prose styling (markdown-exit output — spec §3.1's rendered @prose bodies) */
-#pane h2,
-#pane h3,
-#pane h4 {
-	margin: 1.75rem 0 0.75rem;
-	line-height: 1.3;
-}
+	/* Pane */
+	#pane {
+		padding: 2rem 3rem;
+		max-width: 860px;
+		background: var(--pane-bg);
+	}
 
-#pane h2 {
-	font-size: 1.3rem;
-}
+	#pane h1 {
+		margin-top: 0;
+	}
 
-#pane h3 {
-	font-size: 1.1rem;
-}
+	.breadcrumb {
+		font-size: var(--text-small);
+		color: var(--muted);
+		margin-bottom: 1rem;
+	}
 
-#pane h4 {
-	font-size: 1rem;
-}
+	.breadcrumb a {
+		color: var(--muted);
+	}
 
-#pane p {
-	line-height: 1.6;
-}
+	.breadcrumb a:hover {
+		color: var(--text);
+	}
 
-#pane ul,
-#pane ol {
-	line-height: 1.6;
-	padding-left: 1.5rem;
-}
+	.crumb-kind {
+		margin-right: 0.5rem;
+		text-transform: uppercase;
+		font-size: var(--text-badge);
+		letter-spacing: 0.04em;
+	}
 
-#pane li + li {
-	margin-top: 0.25rem;
-}
+	.crumb-sep {
+		margin: 0 0.3rem;
+	}
 
-#pane blockquote {
-	margin: 1rem 0;
-	padding: 0.25rem 1rem;
-	border-left: 3px solid var(--border);
-	color: var(--muted);
-}
+	.copy-link {
+		border: 0;
+		background: none;
+		color: var(--muted);
+		font: inherit;
+		font-size: var(--text-small);
+		cursor: pointer;
+		opacity: 0;
+		transition: opacity 0.1s;
+	}
 
-#pane hr {
-	border: none;
-	border-top: 1px solid var(--border);
-	margin: 2rem 0;
-}
+	h1:hover .copy-link,
+	.child-head:hover .copy-link,
+	.copy-link:focus-visible {
+		opacity: 1;
+	}
 
-#pane table {
-	border-collapse: collapse;
-	width: 100%;
-	margin: 1rem 0;
-	font-size: 0.9rem;
-}
+	#pane .children {
+		list-style: none;
+		padding: 0;
+		margin-top: 2rem;
+		border-top: 1px solid var(--border);
+	}
 
-#pane th,
-#pane td {
-	border: 1px solid var(--border);
-	padding: 0.4rem 0.6rem;
-	text-align: left;
-}
+	#pane .children li {
+		padding: 0.9rem 0;
+		border-bottom: 1px solid var(--border);
+	}
 
-#pane th {
-	background: var(--code-bg);
-	font-weight: 600;
-}
+	#pane .children a {
+		color: var(--text);
+		font-weight: 600;
+		text-decoration: none;
+	}
 
-#pane a {
-	color: var(--accent);
-}
+	#pane .children .summary p,
+	#pane .children > li > p {
+		margin: 0.25rem 0 0;
+		color: var(--muted);
+		font-size: 0.9rem;
+	}
 
-#pane a:hover {
-	text-decoration: none;
-}
+	.child-head {
+		display: flex;
+		align-items: center;
+	}
 
-/* @note (spec §6.3-equivalent — an in-situ direction or question, not part of the prose itself) */
-.note-block {
-	margin: 0 0 1.5rem;
-	padding: 0.6rem 0.8rem;
-	border: 1px solid var(--note);
-	border-radius: 6px;
-	background: color-mix(in srgb, var(--note) 8%, transparent);
-}
+	#pane .children .copy-link {
+		margin-left: 0.5rem;
+	}
 
-.note-block.note-empty {
-	border-style: dashed;
-	background: none;
-	padding: 0.4rem 0.8rem;
-}
+	/* Preamble, health panel */
+	details.source {
+		margin: 1rem 0;
+	}
 
-.note-actions {
-	display: flex;
-	gap: 0.5rem;
-}
+	details.source > summary {
+		cursor: pointer;
+		color: var(--muted);
+		font-size: var(--text-small);
+	}
 
-.note-label {
-	font-size: 0.7rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.03em;
-	color: var(--note);
-	margin-bottom: 0.3rem;
-}
+	.health {
+		margin-top: 2rem;
+	}
 
-.note-block p:last-of-type {
-	margin-bottom: 0;
-}
+	.tiles {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+		gap: 0.75rem;
+	}
 
-.note-block button {
-	font: inherit;
-	font-size: 0.8rem;
-	cursor: pointer;
-	border-radius: 4px;
-	padding: 0.25rem 0.6rem;
-	border: 1px solid var(--note);
-	background: transparent;
-	color: var(--note);
-}
+	.tile {
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 0.6rem 0.75rem;
+	}
 
-.note-block button:hover {
-	background: var(--note);
-	color: var(--pane-bg);
-}
+	.tile.bad {
+		border-color: var(--warning);
+	}
 
-.note-block textarea {
-	width: 100%;
-	font: inherit;
-	font-size: 0.85rem;
-	padding: 0.5rem;
-	margin-bottom: 0.5rem;
-	border: 1px solid var(--border);
-	border-radius: 4px;
-	background: var(--pane-bg);
-	color: var(--text);
-	resize: vertical;
-}
+	.tile.bad .tile-value {
+		color: var(--warning);
+	}
 
-.note-badge {
-	display: inline-block;
-	margin-left: 0.4rem;
-	width: 0.5em;
-	height: 0.5em;
-	border-radius: 50%;
-	background: var(--note);
-	vertical-align: middle;
+	.tile.attention .tile-value {
+		color: var(--pending);
+	}
+
+	.tile-value {
+		font-size: 1.5rem;
+		font-weight: 600;
+	}
+
+	.tile-label,
+	.muted {
+		font-size: var(--text-small);
+		color: var(--muted);
+	}
+
+	.thin {
+		padding-left: 1.25rem;
+	}
+
+	/* Quick-jump palette */
+	dialog.palette {
+		width: min(36rem, calc(100vw - 2rem));
+		margin: 12vh auto 0;
+		padding: 0;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		background: var(--pane-bg);
+		color: var(--text);
+	}
+
+	dialog.palette::backdrop {
+		background: rgb(0 0 0 / 0.6);
+	}
+
+	dialog.palette input {
+		width: 100%;
+		padding: 0.75rem 1rem;
+		border: 0;
+		border-bottom: 1px solid var(--border);
+		background: transparent;
+		outline: none;
+	}
+
+	dialog.palette ul {
+		max-height: 50vh;
+		overflow-y: auto;
+		padding: 0.25rem;
+	}
+
+	dialog.palette li {
+		display: flex;
+		align-items: center;
+		padding: 0.35rem 0.6rem;
+		border-radius: var(--radius);
+		cursor: pointer;
+	}
+
+	dialog.palette li.selected {
+		background: var(--selected);
+	}
+
+	.palette-name {
+		margin-right: 0.6rem;
+	}
+
+	.palette-path {
+		margin-left: auto;
+		font-size: var(--text-small);
+		opacity: 0.7;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.palette-empty {
+		color: var(--muted);
+		cursor: default;
+	}
+
+	#pane .undocumented {
+		font-style: italic;
+		color: var(--muted);
+	}
+
+	/* Warnings and symbol-check states (spec §5) */
+	#pane .warnings {
+		list-style: none;
+		padding: 0;
+		margin: 0 0 1.5rem;
+	}
+
+	#pane .warnings .warning {
+		font-size: var(--text-small);
+		color: var(--warning);
+		border: 1px solid var(--warning);
+		border-radius: var(--radius);
+		padding: 0.4rem 0.6rem;
+		margin-bottom: 0.4rem;
+	}
+
+	#pane code.symbol-unresolved {
+		color: var(--warning);
+		border: 1px solid var(--warning);
+	}
+
+	#pane code.symbol-local {
+		border: 1px solid var(--accent);
+	}
+
+	#pane a.symbol-link code {
+		border: 1px solid var(--accent);
+		color: var(--accent);
+	}
+
+	/* Markdown prose (markdown-exit output — spec §3.1's rendered @prose bodies) */
+	#pane h2,
+	#pane h3,
+	#pane h4 {
+		margin: 1.75rem 0 0.75rem;
+		line-height: 1.3;
+	}
+
+	#pane h2 {
+		font-size: 1.3rem;
+	}
+
+	#pane h3 {
+		font-size: 1.1rem;
+	}
+
+	#pane h4 {
+		font-size: 1rem;
+	}
+
+	#pane p {
+		line-height: 1.6;
+	}
+
+	#pane ul,
+	#pane ol {
+		line-height: 1.6;
+		padding-left: 1.5rem;
+	}
+
+	#pane ul {
+		list-style: disc;
+	}
+
+	#pane li + li {
+		margin-top: 0.25rem;
+	}
+
+	#pane blockquote {
+		margin: 1rem 0;
+		padding: 0.25rem 1rem;
+		border-left: 3px solid var(--border);
+		color: var(--muted);
+	}
+
+	#pane hr {
+		border: none;
+		border-top: 1px solid var(--border);
+		margin: 2rem 0;
+	}
+
+	#pane table {
+		border-collapse: collapse;
+		width: 100%;
+		margin: 1rem 0;
+		font-size: 0.9rem;
+	}
+
+	#pane th,
+	#pane td {
+		border: 1px solid var(--border);
+		padding: 0.4rem 0.6rem;
+		text-align: left;
+	}
+
+	#pane th {
+		background: var(--code-bg);
+		font-weight: 600;
+	}
+
+	/* Code blocks */
+	#pane pre.shiki,
+	#pane pre.plain-code {
+		padding: 1rem;
+		border-radius: var(--radius-lg);
+		font-size: var(--text-small);
+		font-family: var(--font-mono);
+		border: 1px solid var(--border);
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		tab-size: 2;
+		-moz-tab-size: 2;
+	}
+
+	/* Undo the inline-code styling in `base` for code inside a highlighted block — shiki/plain-code
+	   already wrap their own <code>, and without this reset it picked up the inline span's padding
+	   and background on top of the block's own, showing as a stray gap before the first token. */
+	#pane pre.shiki code,
+	#pane pre.plain-code code {
+		background: none;
+		padding: 0;
+		border-radius: 0;
+		font-size: inherit;
+	}
+
+	/* A file page: its prose blocks in place between the code (spec §3.2, §6.1) */
+	.block {
+		margin: 1.25rem 0;
+		padding-left: 1rem;
+		border-left: 3px solid var(--border);
+	}
+
+	.block.focused {
+		border-left-color: var(--accent);
+	}
+
+	.block h1 {
+		font-size: 1.35rem;
+		margin: 0 0 0.5rem;
+	}
+
+	.block-tools {
+		display: flex;
+		justify-content: flex-end;
+		height: 1.25rem;
+	}
+
+	.block-tools .copy-link {
+		opacity: 0;
+	}
+
+	.block:hover .block-tools .copy-link,
+	.block-tools .copy-link:focus-visible {
+		opacity: 1;
+	}
+
+	.file-view pre.shiki,
+	.file-view pre.plain-code {
+		margin: 0.75rem 0;
+	}
+
+	/* @note — an in-situ direction or question, not part of the prose itself (spec §6.2) */
+	.note-block {
+		margin: 0 0 1.5rem;
+		padding: 0.6rem 0.8rem;
+		border: 1px solid var(--note);
+		border-radius: var(--radius-lg);
+		background: color-mix(in srgb, var(--note) 8%, transparent);
+	}
+
+	.note-block.note-empty {
+		border: 0;
+		background: none;
+		padding: 0;
+		margin: 0 0 0.5rem;
+	}
+
+	.note-block.note-empty > button:not(:disabled) {
+		border-color: transparent;
+		color: var(--muted);
+	}
+
+	.block:hover .note-block.note-empty > button,
+	.note-block.note-empty > button:focus-visible {
+		border-color: var(--muted);
+	}
+
+	.note-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.note-label {
+		font-size: var(--text-badge);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		color: var(--note);
+		margin-bottom: 0.3rem;
+	}
+
+	.note-block p:last-of-type {
+		margin-bottom: 0;
+	}
+
+	.note-error {
+		color: var(--warning);
+		font-size: var(--text-small);
+	}
+
+	.note-block button:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+
+	.note-block button {
+		font-size: 0.8rem;
+		cursor: pointer;
+		border-radius: var(--radius);
+		padding: 0.25rem 0.6rem;
+		border: 1px solid var(--note);
+		background: transparent;
+		color: var(--note);
+	}
+
+	.note-block button:hover {
+		background: var(--note);
+		color: var(--on-accent);
+	}
+
+	.note-block textarea {
+		width: 100%;
+		font-size: var(--text-small);
+		padding: 0.5rem;
+		margin-bottom: 0.5rem;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		background: var(--pane-bg);
+		color: var(--text);
+		resize: vertical;
+	}
 }

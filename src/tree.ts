@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 import {
 	checkStaleness,
 	checkSymbols,
@@ -8,7 +8,14 @@ import {
 	type Warning,
 } from "./checks.js";
 import { blameFile } from "./git.js";
-import { chunkAnchor, type FileParse, firstParagraph, parseFile } from "./parser.js";
+import {
+	chunkAnchor,
+	FILE_ANCHOR,
+	type FileParse,
+	firstParagraph,
+	parseFile,
+	type ProseChunk,
+} from "./parser.js";
 
 /** @prose
  * # Building the hierarchy
@@ -21,7 +28,7 @@ import { chunkAnchor, type FileParse, firstParagraph, parseFile } from "./parser
  */
 export interface TreeNode {
 	name: string;
-	kind: "project" | "folder" | "file" | "section" | "chunk";
+	kind: "project" | "folder" | "file" | "raw" | "chunk";
 	path: string;
 	summary: string;
 	pending?: boolean;
@@ -32,6 +39,16 @@ export interface TreeNode {
 	 *  (§5.1) can resolve a chunk's prose against names this file imports/declares up top, e.g.
 	 *  an `import { marked } from "marked"` that no individual chunk's own code repeats. */
 	preamble?: string;
+	/** File-only (not `.md`): the whole file's text, so the view can always show the code, whether or
+	 *  not the file has any `@prose` (spec §6.1). */
+	source?: string;
+	/** File-only: every prose block in the file, the file prose first, in source order. A file is
+	 *  the smallest unit the view navigates to (spec §3.2), so its blocks are laid out in place on
+	 *  its page instead of being tree children — `children` is always empty for a file. */
+	blocks?: TreeNode[];
+	/** Chunk-only: the byte range `[start, end)` of this block's comment in the file's `source`, so
+	 *  the view can put the rendered prose where the comment was and show the code around it. */
+	span?: [number, number];
 	/** Chunk-only: an `@note` left directly on this chunk — a direction or question for whoever
 	 *  touches it next, not part of its prose (`src/notes.ts` writes/removes these). */
 	note?: string;
@@ -60,8 +77,10 @@ const SOURCE_EXTENSIONS = new Set([
 	"yml",
 	"toml",
 ]);
-// The one name inside `prose/` with special meaning (spec §3.4/§6.3) — not a document itself.
-const RESERVED_PROSE_FILES = new Set(["remarks.md"]);
+// Structure a human orienting in `/__prose/` wants to see (dependencies, scripts, compiler
+// options), but JSON has no comment syntax for `@prose` to attach to — shown as `raw` nodes.
+const RAW_EXTENSIONS = new Set(["json", "jsonc"]);
+const RAW_MAX_BYTES = 200_000;
 // Generated, never authored — a package manager's own record, not something a project "writes
 // prose about." Excluded by filename rather than left to fall out of the extension allowlist,
 // since `.yaml`/`.toml` are otherwise fair game (spec §2's "In" list doesn't name these, but the
@@ -105,66 +124,55 @@ function fileToNode(root: string, absPath: string): TreeNode {
 		ext === "md"
 			? {
 					fileProse: source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim(),
+					fileBlock: null,
 					preamble: "",
 					sections: [],
 				}
 			: SOURCE_EXTENSIONS.has(ext)
 				? parseFile(source, ext)
-				: { fileProse: null, preamble: source.trim(), sections: [] };
+				: { fileProse: null, fileBlock: null, preamble: source.trim(), sections: [] };
 
 	// One blame read per file, reused across every chunk in it (spec §5.2) — computed lazily,
 	// only if there's actually a chunk with code to compare, since `git blame` is a subprocess call.
-	const hasCode = parsed.sections.some((s) => s.chunks.some((c) => !c.pending));
+	const hasCode =
+		Boolean(parsed.fileBlock?.code) ||
+		parsed.sections.some((s) => s.chunks.some((c) => !c.pending));
 	const blame = hasCode ? blameFile(root, relPath) : null;
 
-	function chunkNode(
-		chunk: FileParse["sections"][number]["chunks"][number],
-		path: string,
-	): TreeNode {
-		const warnings = chunk.pending
-			? []
-			: checkStaleness(
-					blame,
-					chunk.startLine,
-					chunk.proseEndLine,
-					chunk.proseEndLine,
-					chunk.endLine,
-				);
+	function chunkNode(chunk: ProseChunk, anchor: string): TreeNode {
+		// The file block's "code" is only the preamble (imports), which its prose doesn't describe,
+		// so comparing their ages would only produce noise: no staleness check for it.
+		const warnings =
+			chunk.pending || !chunk.code || anchor === FILE_ANCHOR
+				? []
+				: checkStaleness(
+						blame,
+						chunk.startLine,
+						chunk.proseEndLine,
+						chunk.proseEndLine,
+						chunk.endLine,
+					);
 		return {
 			name: chunk.heading ?? chunk.slug,
 			kind: "chunk",
-			path,
+			path: `${relPath}#${anchor}`,
 			summary: firstParagraph(chunk.prose),
 			pending: chunk.pending,
 			prose: chunk.prose,
 			code: chunk.code,
 			note: chunk.note,
 			codeLang: chunk.codeLang,
+			span: [chunk.startIndex, chunk.endIndex],
 			warnings,
 			warningCount: warnings.length,
 			children: [],
 		};
 	}
 
-	const children: TreeNode[] = [];
+	const blocks: TreeNode[] = [];
+	if (parsed.fileBlock) blocks.push(chunkNode(parsed.fileBlock, FILE_ANCHOR));
 	for (const section of parsed.sections) {
-		if (section.heading === null) {
-			for (const chunk of section.chunks) {
-				children.push(chunkNode(chunk, `${relPath}#${chunkAnchor(section, chunk)}`));
-			}
-			continue;
-		}
-		const sectionChildren = section.chunks.map((chunk) =>
-			chunkNode(chunk, `${relPath}#${chunkAnchor(section, chunk)}`),
-		);
-		children.push({
-			name: section.heading,
-			kind: "section",
-			path: `${relPath}#${section.slug}`,
-			summary: firstParagraph(section.chunks[0]?.prose ?? ""),
-			warningCount: sectionChildren.reduce((sum, c) => sum + c.warningCount, 0),
-			children: sectionChildren,
-		});
+		for (const chunk of section.chunks) blocks.push(chunkNode(chunk, chunkAnchor(section, chunk)));
 	}
 
 	return {
@@ -174,8 +182,32 @@ function fileToNode(root: string, absPath: string): TreeNode {
 		summary: parsed.fileProse ? firstParagraph(parsed.fileProse) : "undocumented",
 		prose: parsed.fileProse,
 		preamble: parsed.preamble,
-		warningCount: sumWarnings(children),
-		children,
+		source: ext === "md" ? undefined : source,
+		blocks: ext === "md" ? undefined : blocks,
+		warningCount: sumWarnings(blocks),
+		children: [],
+	};
+}
+
+/** @prose
+ * # Raw files
+ *
+ * A `raw` node is a file that can't carry prose (JSON has no comments): its text is shown
+ * highlighted, with no chunks, symbols or warnings, and it counts as neither documented nor
+ * undocumented. Oversized files are skipped, since the whole tree is pushed to the client.
+ */
+function rawToNode(root: string, absPath: string): TreeNode | null {
+	if (statSync(absPath).size > RAW_MAX_BYTES) return null;
+	const relPath = relative(root, absPath);
+	return {
+		name: relPath,
+		kind: "raw",
+		path: relPath,
+		summary: "",
+		prose: null,
+		code: readFileSync(absPath, "utf-8"),
+		warningCount: 0,
+		children: [],
 	};
 }
 
@@ -208,6 +240,9 @@ function folderToNode(root: string, dir: string, name: string): TreeNode {
 			if (sub.children.length > 0 || sub.prose) children.push(sub);
 		} else if (SOURCE_EXTENSIONS.has(extensionOf(entry))) {
 			children.push(fileToNode(root, absPath));
+		} else if (RAW_EXTENSIONS.has(extensionOf(entry))) {
+			const raw = rawToNode(root, absPath);
+			if (raw) children.push(raw);
 		}
 	}
 
@@ -225,7 +260,7 @@ function folderToNode(root: string, dir: string, name: string): TreeNode {
 /** @prose
  * # Cross-cutting docs at L3
  *
- * `prose/*.md` (except `remarks.md`) are cross-cutting project prose (spec §3.4), surfaced at
+ * Every `prose/*.md` is cross-cutting project prose (spec §3.4), surfaced at
  * L3 rather than nested as an ordinary folder — `prose` itself stays in `SKIP_DIRS` so the
  * recursive walk never turns it into a folder node. Reuses `fileToNode` for each one, so a
  * `prose/*.md` document gets exactly the same frontmatter-stripping and summary treatment as any
@@ -240,7 +275,7 @@ function proseDocs(root: string): TreeNode[] {
 		return [];
 	}
 	return entries
-		.filter((entry) => extensionOf(entry) === "md" && !RESERVED_PROSE_FILES.has(entry))
+		.filter((entry) => extensionOf(entry) === "md")
 		.sort()
 		.map((entry) => fileToNode(root, join(dir, entry)));
 }
@@ -253,13 +288,27 @@ interface ChunkRef {
 	fileScope: ReadonlySet<string>;
 }
 
-/** Walks the tree carrying the *current file's* preamble scope down to each chunk beneath it —
- *  re-derived only when a `file` node is entered, since a chunk's own file never changes as the
- *  walk descends into its sections. */
-function collectChunks(node: TreeNode, fileScope: ReadonlySet<string>, acc: ChunkRef[]): void {
-	const scope = node.kind === "file" ? declaredIdentifiers(node.preamble ?? "") : fileScope;
-	if (node.kind === "chunk") acc.push({ chunk: node, fileScope: scope });
-	for (const child of node.children) collectChunks(child, scope, acc);
+/** Gathers every block in the tree with its file's preamble scope — re-derived once per `file`
+ *  node, since a block's own file never changes. Blocks live on file nodes (`blocks`), not in
+ *  `children`. */
+function collectChunks(node: TreeNode, acc: ChunkRef[]): void {
+	if (node.kind === "file") {
+		const blocks = node.blocks ?? [];
+		const fileScope = declaredIdentifiers(node.preamble ?? "");
+		// The file prose describes the whole file, so it resolves against everything the file declares.
+		const wholeFile = new Set(fileScope);
+		for (const b of blocks) {
+			for (const id of declaredIdentifiers(b.code ?? "", b.codeLang)) wholeFile.add(id);
+		}
+		for (const chunk of blocks) {
+			acc.push({
+				chunk,
+				fileScope: chunk.path.endsWith(`#${FILE_ANCHOR}`) ? wholeFile : fileScope,
+			});
+		}
+		return;
+	}
+	for (const child of node.children) collectChunks(child, acc);
 }
 
 /** @prose
@@ -299,11 +348,13 @@ function readPackageNames(root: string): Set<string> {
 
 function applySymbolChecks(root: TreeNode, knownPackages: ReadonlySet<string>): void {
 	const chunkRefs: ChunkRef[] = [];
-	collectChunks(root, new Set(), chunkRefs);
+	collectChunks(root, chunkRefs);
 
 	const table = new Map<string, string>();
 	for (const { chunk } of chunkRefs) {
-		if (!chunk.code) continue;
+		// The file block's "code" is the preamble: imports it holds are file scope, not declarations
+		// another file's prose should link to.
+		if (!chunk.code || chunk.path.endsWith(`#${FILE_ANCHOR}`)) continue;
 		for (const id of declaredIdentifiers(chunk.code, chunk.codeLang)) {
 			if (!table.has(id)) table.set(id, chunk.path);
 		}
@@ -331,7 +382,10 @@ function applySymbolChecks(root: TreeNode, knownPackages: ReadonlySet<string>): 
 /** Recomputes every ancestor's `warningCount` bottom-up — needed after `applySymbolChecks` adds
  *  warnings to chunks *after* `fileToNode`/`folderToNode` already summed the staleness-only counts. */
 function rerollWarnings(node: TreeNode): number {
-	if (node.kind === "chunk") return node.warningCount;
+	if (node.kind === "file") {
+		node.warningCount = sumWarnings(node.blocks ?? []);
+		return node.warningCount;
+	}
 	node.warningCount = node.children.reduce((sum, child) => sum + rerollWarnings(child), 0);
 	return node.warningCount;
 }
@@ -343,7 +397,7 @@ function rerollWarnings(node: TreeNode): number {
  * symbol check's cross-file pass and re-rolling warning counts up from it (§5).
  */
 export function buildTree(root: string): TreeNode {
-	const projectNode = folderToNode(root, root, "project");
+	const projectNode = folderToNode(root, root, basename(resolve(root)));
 	projectNode.kind = "project";
 	projectNode.path = ".";
 	projectNode.children = [...proseDocs(root), ...projectNode.children];
@@ -357,6 +411,7 @@ export function buildTree(root: string): TreeNode {
  *  the tree fresh. */
 export function findNode(tree: TreeNode, path: string): TreeNode | null {
 	if (tree.path === path) return tree;
+	for (const block of tree.blocks ?? []) if (block.path === path) return block;
 	for (const child of tree.children) {
 		const found = findNode(child, path);
 		if (found) return found;

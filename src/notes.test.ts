@@ -17,6 +17,29 @@ function makeFile(relPath: string, content: string): string {
 	return root;
 }
 
+describe("notes on the file prose", () => {
+	it("adds, replaces and resolves a note on the file's own @prose block", () => {
+		makeFile("main.js", ["/** @prose File. */", "const a = 1;", ""].join("\n"));
+		addNote(root, "main.js#file", "Too big?");
+		expect(readFileSync(join(root, "main.js"), "utf-8")).toBe(
+			["/** @prose File. */", "/** @note", " * Too big?", " */", "const a = 1;", ""].join("\n"),
+		);
+		addNote(root, "main.js#file", "Split it.");
+		expect(parseFile(readFileSync(join(root, "main.js"), "utf-8"), "js").fileBlock?.note).toBe(
+			"Split it.",
+		);
+		resolveNote(root, "main.js#file");
+		expect(readFileSync(join(root, "main.js"), "utf-8")).toBe(
+			["/** @prose File. */", "const a = 1;", ""].join("\n"),
+		);
+	});
+
+	it("refuses a file with no @prose block", () => {
+		makeFile("main.js", "const a = 1;\n");
+		expect(() => addNote(root, "main.js#file", "x")).toThrow();
+	});
+});
+
 describe("addNote", () => {
 	it("inserts a brand-new note directly after the chunk's @prose block, in JS comment style", () => {
 		makeFile(

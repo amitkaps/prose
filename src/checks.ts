@@ -104,6 +104,16 @@ const BUILTIN_GLOBALS = new Set([
 	"Response",
 	"Request",
 	"Headers",
+	// Browser globals, for projects (and this tool's own client) whose prose names them.
+	"window",
+	"document",
+	"location",
+	"navigator",
+	"localStorage",
+	"sessionStorage",
+	"HTMLElement",
+	"setTimeout",
+	"clearTimeout",
 ]);
 
 // An identifier, or a dotted chain of them (`store.subscribe`) — spec §5.1's "looks like an

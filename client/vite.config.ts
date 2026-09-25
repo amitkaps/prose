@@ -9,10 +9,17 @@
  * (`/__prose`, not `/__prose/`): the browser resolves `"./assets/x.js"` against the *parent* of
  * `"__prose"` in that case, landing on the host app's own root instead.
  */
+import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-	root: "client",
+	// No `svelte.config.js`: options go inline. Runes are forced project-wide so a component can't
+	// silently fall back to legacy reactivity. Component `<style>` blocks are avoided on purpose
+	// (they would be unlayered and beat `@layer` in `style.css`), so all styling is global. Lives in
+	// `client/` (not the repo root) because `svelte-check` finds the Svelte config in the `vite.config`
+	// of the workspace it checks; `root` is therefore this directory, not the current one.
+	plugins: [svelte({ compilerOptions: { runes: true } })],
+	root: import.meta.dirname,
 	base: "/__prose/",
 	build: {
 		outDir: "dist",

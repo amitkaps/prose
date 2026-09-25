@@ -38,6 +38,10 @@ export interface ProseChunk {
 	/** Byte offset just past this chunk's `@prose` comment — where a brand-new `@note` is
 	 *  inserted when `note` is unset. */
 	proseEndIndex: number;
+	/** Byte offset just past everything this block's comment consumes — its `@prose` block plus its
+	 *  `@note`, if any. With `startIndex` it is the comment's exact span, so a view can lay the
+	 *  file's code out around the comments (`src/tree.ts` sends these as a block's `span`). */
+	endIndex: number;
 	/** Set only when `note` is set — the exact byte span of the existing `@note` comment, so it
 	 *  can be replaced (a new note overwrites it) or removed (resolving it) precisely. */
 	noteStartIndex?: number;
@@ -52,6 +56,9 @@ export interface ProseSection {
 
 export interface FileParse {
 	fileProse: string | null;
+	/** The file prose as a block in its own right (slug `file`), so it can carry a note and be
+	 *  laid out in place like any chunk. Its `code` is the preamble. Null for a file with no block. */
+	fileBlock: ProseChunk | null;
 	preamble: string;
 	sections: ProseSection[];
 }
@@ -171,8 +178,7 @@ function extractMarkedBlock(
  * this tool writes it in) — so it's found by adjacency, not by any anchor syntax: if nothing but
  * whitespace sits between a block's end and the next block, and that next block is a `@note`, it
  * belongs to the first. A note with nowhere to attach (no preceding prose block, or real code in
- * between) has no defined position and is dropped — spec's model has no anchor for it to fall
- * back to, unlike `remarks.md`'s design.
+ * between) has no defined position and is dropped — there is no anchor for it to fall back to.
  */
 function mergeNotes(blocks: RawBlock[], source: string): ProseRawBlock[] {
 	const merged: ProseRawBlock[] = [];
@@ -489,15 +495,12 @@ export function parseFile(source: string, extension: string): FileParse {
 					: extension === "toml"
 						? scanHashComments(source, "toml")
 						: scanJsLike(source, extension === "css" ? "css" : "js");
-	// A note directly after the *file* prose block is folded in here too (mergeNotes doesn't
-	// distinguish file prose from a chunk's), but FileParse has nowhere to put it yet — file-level
-	// notes aren't supported (§6.3-equivalent scope, chunk-only for now), so `fileBlock.note` below
-	// is simply never read. Not a silent drop of anything a user wrote, since nothing writes one
-	// there yet either.
+	// `mergeNotes` folds a `@note` into whichever `@prose` block precedes it, the file prose's
+	// included, so the file block carries its own note like any chunk.
 	const blocks = mergeNotes(rawBlocks, source);
 
 	if (blocks.length === 0) {
-		return { fileProse: null, preamble: source.trim(), sections: [] };
+		return { fileProse: null, fileBlock: null, preamble: source.trim(), sections: [] };
 	}
 
 	const [fileBlock, ...rest] = blocks;
@@ -545,14 +548,37 @@ export function parseFile(source: string, extension: string): FileParse {
 			commentStyle: block.commentStyle,
 			codeLang: block.codeLang,
 			proseEndIndex: block.proseEndIndex,
+			endIndex: block.endIndex,
 			noteStartIndex: block.noteStartIndex,
 			noteEndIndex: block.noteEndIndex,
 		});
 	}
 	sections.push(currentSection);
 
-	return { fileProse: fileBlock.body, preamble, sections };
+	const fileChunk: ProseChunk = {
+		slug: FILE_ANCHOR,
+		heading: null,
+		prose: fileBlock.body,
+		code: preamble,
+		pending: false,
+		startLine: fileBlock.startLine,
+		startIndex: fileBlock.startIndex,
+		proseEndLine: lineAt(source, fileBlock.endIndex),
+		endLine: lineAt(source, preambleEnd),
+		note: fileBlock.note,
+		commentStyle: fileBlock.commentStyle,
+		codeLang: fileBlock.codeLang,
+		proseEndIndex: fileBlock.proseEndIndex,
+		endIndex: fileBlock.endIndex,
+		noteStartIndex: fileBlock.noteStartIndex,
+		noteEndIndex: fileBlock.noteEndIndex,
+	};
+	return { fileProse: fileBlock.body, fileBlock: fileChunk, preamble, sections };
 }
+
+/** The anchor of a file's own prose block: `src/store.ts#file`. No chunk can collide with it,
+ *  since an unheaded chunk is `top-chunk-N` and a headed one is `<section>/<slug>`. */
+export const FILE_ANCHOR = "file";
 
 /** The anchor half of a chunk's stable path (`tree.ts` prefixes it with `<relPath>#`) — shared
  *  with `notes.ts`, which needs to re-derive the exact same anchor from a fresh parse to find the

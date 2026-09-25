@@ -10,7 +10,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { chunkAnchor, type ProseChunk, parseFile } from "./parser.js";
+import { chunkAnchor, FILE_ANCHOR, type ProseChunk, parseFile } from "./parser.js";
 
 const SOURCE_EXTENSIONS = new Set(["js", "ts", "css", "html", "svelte", "yaml", "yml", "toml"]);
 
@@ -19,7 +19,7 @@ function extensionOf(name: string): string {
 }
 
 /** @prose
- * Splits a chunk's stable path (`src/store.ts#addTodo` or `src/store.ts#state/addTodo`) into the
+ * Splits a chunk's stable path (`src/store.ts#addTodo`, `src/store.ts#state/addTodo`, or `src/store.ts#file` for the file prose) into the
  * file it lives in and re-finds that exact chunk in a fresh parse of it — the same `chunkAnchor`
  * `tree.ts` uses to build the path in the first place, so the two can never disagree about what a
  * path means. Returns `null` for a path this module can't act on: a plain `.md` file (whole-file
@@ -28,7 +28,7 @@ function extensionOf(name: string): string {
  */
 function findChunk(root: string, path: string): { source: string; chunk: ProseChunk } | null {
 	const hashIndex = path.indexOf("#");
-	if (hashIndex === -1) return null; // file/folder/project-level nodes have no chunk to attach to
+	if (hashIndex === -1) return null; // a path with no anchor names a file, not one of its blocks
 	const relPath = path.slice(0, hashIndex);
 	const anchor = path.slice(hashIndex + 1);
 	const ext = extensionOf(relPath);
@@ -36,6 +36,7 @@ function findChunk(root: string, path: string): { source: string; chunk: ProseCh
 
 	const source = readFileSync(join(root, relPath), "utf-8");
 	const parsed = parseFile(source, ext);
+	if (anchor === FILE_ANCHOR) return parsed.fileBlock ? { source, chunk: parsed.fileBlock } : null;
 	for (const section of parsed.sections) {
 		for (const chunk of section.chunks) {
 			if (chunkAnchor(section, chunk) === anchor) return { source, chunk };
