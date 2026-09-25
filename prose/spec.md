@@ -9,9 +9,21 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 
 ## 1. Thesis
 
+**The hypothesis.** After an agent makes a few dozen meaningful changes, can the human spend five minutes in `/__prose/` and recover **what changed, why, what's still uncertain, and where to step in**? The *since* view (§6.5) answers "what changed", the prose answers "why", open `@note`s (§6.2), whoever wrote them, answer "what's uncertain", and the map of summaries (§4) shows where to step in. Everything in this spec is judged against those four questions: a feature that makes the view more impressive without improving one of them doesn't go in.
+
+The sweet spot is one human plus coding agents on a small but real app (§2 gives the size) — tiny projects don't need the ceremony, and very large ones have coordination problems this doesn't solve. It's most valuable exactly when the agent writes code faster than the human can read it.
+
 **Humans and agents work in divided worlds.** The agent works in text and code at thousands of words a minute; the human reads at a few hundred and reasons spatially and structurally. What passes between them today is thin: walls of Markdown plans, specs, and diffs. (See Maggie Appleton, [Planning with Agents](https://maggieappleton.com/planning-agents).)
 
 **Separate specs and plans drift — when they live outside the repo.** A spec in Notion or a wiki, disconnected from the commits that implement it, rots because nothing forces it to change in the same diff. Prose fixes this two ways, not one: prose that explains *a specific piece of code* lives directly in it (`@prose`, §3), so it changes in the same diff as that code or it's visibly stale (§5.2); prose that explains *across* the codebase — architecture rationale, a migration's history, engineering lessons — lives in `prose/` (§3.4), still in the same repo, same commits, same review. The failure mode isn't "a separate file"; it's a separate *system*.
+
+**`prose/` is a first-class surface of the project**, beside the code, not an appendix to it:
+
+| Folder   | Holds                                                    | Read by Prose                     |
+| -------- | -------------------------------------------------------- | --------------------------------- |
+| `src/`   | the executable implementation, with `@prose` in its comments | yes: chunks, files, folders (§3.1–§3.3) |
+| `prose/` | project understanding: prose whose subject spans more than one file or folder | yes: L3 documents (§3.4), linked to the code (§3.5) |
+| `docs/`  | published documentation, for users of the project        | no: out of scope (§2)             |
 
 **The agent writes the code, and most of the prose.** The human doesn't need to read code line by line or write all the prose. The human needs to hold the **mental model of the whole architecture**, and to give direction at any level of it.
 
@@ -24,11 +36,11 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 
 **Plan items live next to the code they're about.** A prose block with no code under it yet is a plan item. Planning = writing prose at some level; building = the agent filling the code in; reviewing = reading the view and leaving notes. Work that belongs to one file is a pending chunk in that file, not a line in a separate list. Only what spans the codebase (phases, ordering) goes in a `prose/` doc such as `plan.md`.
 
+**Two markers, on purpose.** The convention has `@prose` and `@note`, and nothing else. Plan state, sections and progress come from structure: a prose block with no code under it is a plan item, a heading is a section, filled code is done. A `@todo`, `@plan`, `@decision` or `@requirement` marker would be one more thing to keep in sync, and each would drift the way separate plans do. What's mechanically derivable from source stays derived; the same goes for summaries (§4), which aren't generated, and doc names (§5.3), which aren't declared.
+
 **Standard files, not a toolchain.** Adopting a new file type or compiler is expensive even for one person, and breaks `tsc`, the language server, oxlint, oxfmt, vite, and every other standard workflow. Prose is a convention (like JSDoc) plus a Vite plugin that is dev-only apart from one step: stripping `@prose` comments from HTML output (§6.4). JS, CSS and Svelte build output is untouched.
 
-**`@prose` isn't documentation — it's the map the agent keeps current while working.** The loop is: human gives direction → agent changes code → agent updates `@prose` in the same diff → the view reflects the new map → human reads it, in minutes, and redirects. First-paragraph summaries make the map scannable without an LLM pass (§4); the symbol and staleness checks (§5) are mechanical, not generated, so they can't hallucinate either.
-
-**The test of whether this is working:** after an agent makes a few dozen meaningful changes, can the human spend five minutes in `/__prose/` and recover what changed, why, what's still uncertain, and where to step in? The *since* view (§6.5) answers "what changed", the prose answers "why", and open `@note`s (§6.2), whoever wrote them, answer "what's uncertain". The sweet spot is one human plus coding agents on a small but real app (§2 gives the size) — tiny projects don't need the ceremony, and very large ones have coordination problems this doesn't solve. It's most valuable exactly when the agent writes code faster than the human can read it.
+**`@prose` isn't documentation — it's the map the agent keeps current while working.** The agent maintains the map while it builds the system; the human uses the map to maintain their mental model. The loop is: human gives direction → agent changes code → agent updates `@prose` in the same diff → the view reflects the new map → human reads it, in minutes, and redirects. First-paragraph summaries make the map scannable without an LLM pass (§4); the symbol and staleness checks (§5) are mechanical, not generated, so they can't hallucinate either.
 
 **It's code review without a pull request.** A team reviews an agent's work in a PR: a diff, comments on lines, replies, resolved threads, an approval. One person working with agents in long, uncommitted sessions has no PR to hang that on, so Prose does the same review in the code and the plan together:
 
@@ -187,6 +199,30 @@ prose/
 
 The tree includes the files git would track: tracked files plus untracked ones not ignored by `.gitignore`, so a brand-new file shows up before it's committed. Outside a git repository, the tree falls back to a fixed skip list (`node_modules`, `dist`, dot-folders).
 
+### 3.5 References
+
+A reference names a place in the project, and the syntax is an ordinary Markdown link, so it reads and clicks the same on GitHub:
+
+```text
+src/session.ts                     a file
+src/session.ts#createSession       a block in it, by its anchor (§3.2)
+prose/architecture.md              a prose/ doc
+prose/architecture.md#sessions     a section of it, by heading slug
+```
+
+An inline code span that names an identifier (`` `createSession` ``) is a reference too, resolved by the symbol check (§5.1).
+
+References are what turn `prose/` from a folder of Markdown into a connected model of the system. A doc about authentication links down to the code that implements it:
+
+```text
+prose/authentication.md
+  → src/auth.ts#authenticate
+  → src/session.ts#createSession
+  → src/api/client.ts#request
+```
+
+and each of those blocks shows the doc as a backlink (§4). The view turns references into navigation, backlinks and, when one stops resolving, a warning (§5.3). `docs/` isn't a target: published documentation is out of scope (§2).
+
 ## 4. Hierarchy
 
 | Level | Unit    | Prose from           | Structure from                          |
@@ -198,6 +234,10 @@ The tree includes the files git would track: tracked files plus untracked ones n
 **L3 is a small set of documents, not one.** The project view shows the root `README.md` first, then every other `prose/*.md` file as its own named section — each summarized by its own first paragraph, same as any other node. There's no ranking beyond that (alphabetical by filename); `prose/` has no prescribed taxonomy to rank by (§3.4). Each doc section also lists **backlinks**: the chunks it cites (§5.3), and each chunk lists the docs that cite it. A doc section citing nothing is pure rationale, which is fine, but visible.
 
 **Summaries are first paragraphs.** At any level, each child is shown as its name plus the first paragraph of its prose. No LLM is involved in the prototype: the agent keeps prose current (§8), and the view only selects from it. A child with no prose shows as *undocumented*.
+
+The first paragraph isn't a display convention. It's how the agent keeps the human's mental map current: it says what the node *means* (its role, its intent, how it fits), not what its code does line by line, and the agent rewrites it whenever that changes (§8). If the first paragraphs are right, the map is right.
+
+**The map is read in two directions.** Horizontally, across siblings at one level: a folder's files, each with its summary, read like a sequence (`Authentication → Sessions → Permissions → Logout`). Vertically, from intent down to implementation: project → folder → file → the chunk in place (`System → auth/ → session.ts → createSession`). The tree and its first paragraphs already give both; there is no separate narrative to write or keep current.
 
 **The architecture diagram is derived, not written.** It is the import graph between the project's modules, read from `oxc-parser`'s module records (the parser is already a dependency, §3.1). Nodes are grouped by folder, and each node links to its L1 view. It can't hallucinate.
 
@@ -230,7 +270,7 @@ This is a heuristic signal, computed on demand, with nothing stored. Editing the
 The point of the project is that cross-cutting docs stay checkable against the code, the same way chunk prose is. A `prose/*.md` file carries no marker, so the link to the code is what it cites. Every check is mechanical, produces warnings only, and generates nothing.
 
 1. **Symbol check on docs.** Inline code spans in a `prose/*.md` file resolve exactly as in §5.1, against the project-wide declaration table: linked to the declaring chunk, or flagged unresolved. Only the "in the chunk's own code" case doesn't apply.
-2. **Anchor references.** A doc or an `@prose` block can cite a chunk by its stable path, `[store](src/store.ts#addTodo)` (§6.1). An unresolved path or anchor is a warning. The reverse holds too: an `@prose` block linking to `prose/spec.md#5-checks` is checked against that doc's heading slugs, so renaming a heading breaks loudly.
+2. **Anchor references.** A doc or an `@prose` block can cite a chunk by its stable path (the forms are in §3.5), `[store](src/store.ts#addTodo)` (§6.1). An unresolved path or anchor is a warning. The reverse holds too: an `@prose` block linking to `prose/spec.md#5-checks` is checked against that doc's heading slugs, so renaming a heading breaks loudly.
    **Doc names are derived, never declared.** A doc answers to its path under `prose/` without the extension (`spec`, `feature/recommend`), plus a heading slug for a section (`spec#checks`). There is no frontmatter to keep in sync, so a rename breaks the reference instead of leaving a stale alias. Doc names are their own namespace: a code identifier of the same name is never shadowed, and the doc is reached through the link form or `` `spec$` `` rather than a bare `` `spec` ``. The bare stem works only when it is unique among docs; an ambiguous one is a warning that asks for the longer path.
 3. **Section references.** A `§5.2`-style reference resolves against the numbered headings of the doc it names; a missing section is a warning.
 4. **Doc staleness.** As §5.2, per paragraph: a doc paragraph is possibly stale when a chunk it references (via 1 or 2) has code newer than the paragraph's own newest line. Editing the paragraph clears it.
@@ -247,11 +287,14 @@ A Vite plugin that mounts a dev-only route at `/__prose/` inside the app's own V
 - A write names a file by its path in the tree. A path that resolves outside the project root (through `..`, an absolute path or a symlink), or to a file the tree doesn't contain, is refused.
 - Devframe's MCP route stays off until §10's MCP question is decided.
 
+**One model, no separate views.** Everything the route shows is the same tree of prose and code, reached by moving through it (§6.1). There are no alternative views of it to build and keep in sync. Other ways to explore the code should come from using Prose on a larger app, not be designed ahead of it. Dev tools (§7) are a different thing: instruments for the app's own problem, not views of the prose.
+
 The route's client is a small prebuilt Svelte 5 SPA (Devframe's `clientAssets`), served by Vite; it connects back over Devframe's RPC, so it can call into dev tools (§7) and read app modules through the same connection.
 
 ### 6.1 Navigation
 
 - A left rail shows the tree: project → folders → files. Files are the leaves. Branches are collapsible (deep ones collapsed by default, the path to the open node always revealed), and a `/` palette jumps to any node by fuzzy name or path.
+- The keyboard moves along both directions of the map (§4): ← and → step to the previous and next sibling, ↑ goes to the parent, and ↓ opens the first child (on a file page, the next block). It's navigation over the same pages, not a presentation mode.
 - The breadcrumb links every ancestor. Every node has a copy-link affordance.
 - The main pane shows the selected node at its level: its prose, then its children as first-paragraph summaries (§4). At L3 it also shows the diagram. At a file it shows the **whole file in source order**: each prose block rendered where it was written, the highlighted code between them, so nothing is left out. An undocumented file is just its code.
 - Every node has a stable URL, and so does every chunk: `/__prose/src/store.ts#addTodo` opens the file and scrolls to that chunk (anchors, §3.2).
@@ -261,7 +304,7 @@ The route's client is a small prebuilt Svelte 5 SPA (Devframe's `clientAssets`),
 
 ### 6.2 The annotator: `@note`
 
-`@prose` is what's documented; `@note` is what's still to do. A note annotates an issue at a spot in the code: a problem, a direction, a question, an answer. It's freeform, and there is one marker on purpose; what kind of note it is, and who it's for, is in its text.
+`@prose` is the maintained understanding of the code; `@note` is temporary: feedback, uncertainty, a question or a direction attached to it. `@prose` is durable, `@note` is conversation. When a note leads to a decision worth keeping, the agent folds it into the `@prose` block and deletes the note. A note annotates an issue at a spot in the code: a problem, a direction, a question, an answer. It's freeform, and there is one marker on purpose; what kind of note it is, and who it's for, is in its text.
 
 Notes are mainly written from the view. Reading a file woven with its prose, and leaving a note next to the block in question, is easier there than in the editor's file view, and it keeps the human out of the code while still pointing at it. A note is also plain source, so the human can write one in the editor and the agent can leave one when it's unsure or needs a decision.
 
@@ -328,7 +371,9 @@ Two limits:
 
 ### 6.5 The *since* view
 
-The five-minute test (§1) starts with "what changed". The tree is a snapshot, so a toggle in the rail shows it against a baseline instead:
+The five-minute test (§1) starts with "what changed". The tree is a snapshot, so Prose needs a temporal device: a way to see the tree against a baseline. What follows is a first design. Its final shape (a toggle, a filter to step through, something else) is decided after seeing a first version in use.
+
+The baselines:
 
 - **Since `HEAD`** (the default): everything in the working tree that differs from the last commit. In a long uncommitted session, that's the session's work.
 - **Since another commit**: a ref typed into the toggle, for reviewing across commits.
@@ -361,7 +406,8 @@ export default {
 
 The plugin ships a snippet for the project's `CLAUDE.md` / `AGENTS.md`:
 
-- Every file has file prose, and every exported declaration is in a chunk with prose. Folders have a `README.md`.
+- Every file has file prose, and every meaningful unit of it is in a chunk with prose. Trivial declarations, types, constants and mechanical helpers don't need a chunk of their own unless they carry architectural intent; a paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`.
+- Every prose block, file, folder and `prose/` doc begins with a short first paragraph that is its summary for the human (§4). It says what the node means, not what its code does. When a change alters a node's role, intent or place in the design, rewrite that paragraph in the same change.
 - Prose goes in `@prose` comments (§3.1). Ordinary comments stay for code-level notes.
 - Keep prose current in the same change as the code. Rewrite it where it has drifted; don't append.
 - Fill pending chunks as plan items. Work that belongs to one file goes in as a pending chunk there, not in a list elsewhere.
