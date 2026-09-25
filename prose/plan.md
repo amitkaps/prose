@@ -16,19 +16,11 @@ In the order it landed.
 - **Review decisions** — `prose/review.md` settled; spec, plan and code prose updated to match.
 - **Safe writes** — note text escaped per comment style; writes checked against `projectFiles` (inside the root, symlinks included) and the block hash; writes only on loopback, MCP route off; client sends the hash and keeps the draft on refusal; fast-check properties on the pure edits (`withNote`/`withoutNote`); git-aware walk with root-only `prose/` (spec §3.4, §6).
 - **Anchors** — a block's address is its first declared name, else its heading slug, else `chunk-N`, repeats suffixed (spec §3.2); property test that inserting a block never changes what an existing anchor names.
+- **Parser on oxc, and line notes** — JS/TS comments come from `oxc-parser`; a `@prose` block inside a function, class or rule is a warning on its file; `@note` is read at any depth, a note straight after a block's prose is its block note and any other a line note (`file:line`, hash of the line on add, of the note on resolve). The landing spot is the enclosing statement, element, rule or key, never inside a string, `<pre>`, attribute list or block scalar (`src/insertion.ts`); the view has a gutter button per line and shows where the note will land first. Property tests on the write path cover every language.
 
 ## Open work, in order
 
-Step 3 comes before anything that builds on anchors or writes (dev tools, `prose/` sync). Step numbers are kept as they were, since other docs cite them.
-
-### 3. Parser on oxc for JS/TS, and line notes (spec §3.1, §6.2)
-
-- [ ] Pending chunk "Comments from oxc for JS and TS" in `src/parser.ts`, including the below-depth-0 warning.
-- [ ] Line notes: `@note` found at any depth in every language; a note after a `@prose` block is a block note, any other a line note.
-- [ ] Legal insertion point for a line note: enclosing statement (oxc AST), element, CSS rule or declaration, YAML/TOML key; never inside a string, template literal, `<pre>`/`<textarea>`, attribute list or block scalar.
-- [ ] `add-note` by `file:line` + line hash; `resolve-note` by the note's own position + text hash.
-- [ ] Client: add a note from a code line's gutter, preview where it lands, show line notes inline; counts roll up with block notes.
-- [ ] Tests: the insertion cases in spec §9.2, plus the write-path property tests (`src/notes.test.ts`) extended to line notes.
+Step numbers are kept as they were, since other docs cite them.
 
 ### 4. The *since* view (spec §6.5)
 
@@ -42,7 +34,7 @@ Build the smallest version that makes it visible, use it, then decide its shape 
 
 Nothing here is decided; each is a choice to make when it starts to matter.
 
-- [ ] **Keyboard navigation** (spec §6.1): ← → siblings, ↑ parent, ↓ first child or next block. Decided; the rest of how to explore the code waits for use on a larger app.
+- [ ] **Keyboard navigation** (spec §6.1): ← → siblings, ↑ parent, ↓ first child or next block. Decided; the rest of how to explore the code waits for use on a larger app. This includes the per-line note buttons, which have no tab stop yet.
 
 - [ ] **Notes in Markdown**: READMEs and `prose/*.md` (spec §10).
 - [ ] **Per-block staleness badge** in the margin; the file badge counts them today.

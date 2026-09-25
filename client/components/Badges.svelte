@@ -13,11 +13,14 @@
 
 	const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-	const warnings = $derived((attention?.unresolved ?? 0) + (attention?.stale ?? 0));
+	const warnings = $derived(
+		(attention?.unresolved ?? 0) + (attention?.stale ?? 0) + (attention?.misplaced ?? 0),
+	);
 	const warningTitle = $derived(
 		[
 			attention?.unresolved ? plural(attention.unresolved, "unresolved symbol") : "",
 			attention?.stale ? `${attention.stale} possibly stale` : "",
+			attention?.misplaced ? `${plural(attention.misplaced, "misplaced block")}` : "",
 		]
 			.filter(Boolean)
 			.join(", "),

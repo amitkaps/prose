@@ -716,4 +716,43 @@
 		color: var(--text);
 		resize: vertical;
 	}
+
+	/* A line's gutter button: a note goes above the statement that contains the line (spec §6.2) */
+	.line-add {
+		position: absolute;
+		left: -0.95rem;
+		top: 0.2em;
+		width: 0.8rem;
+		height: 0.8rem;
+		padding: 0;
+		border: 0;
+		background: none;
+		cursor: pointer;
+		opacity: 0;
+	}
+
+	.line-add::before {
+		content: "+";
+		color: var(--note);
+		font: 700 0.8rem/0.8rem var(--font-mono);
+	}
+
+	pre.shiki .line {
+		position: relative;
+	}
+
+	pre.shiki .line:hover > .line-add,
+	.line-add:focus-visible {
+		opacity: 1;
+	}
+
+	.line-note-editor {
+		margin: 0.5rem 0 0.75rem;
+	}
+
+	.note-where {
+		margin: 0 0 0.4rem;
+		color: var(--muted);
+		font-size: var(--text-small);
+	}
 }

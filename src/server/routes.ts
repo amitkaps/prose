@@ -4,7 +4,7 @@
  * from a test or a script without spinning up Devframe at all — `plugin.ts` is the only place
  * that knows about RPC.
  */
-import { addNote, resolveNote } from "../notes.js";
+import { addNote, noteTarget, resolveNote } from "../notes.js";
 import { buildTree, findNode, type TreeNode } from "../tree.js";
 
 /** @prose The full hierarchy, with summaries — one `buildTree` walk per call, not cached,
@@ -32,12 +32,21 @@ export function handleAddNote(
 	hash: string,
 ): TreeNode | null {
 	addNote(root, path, text, hash);
-	return findNode(buildTree(root), path);
+	return findNode(buildTree(root), fileOf(path));
 }
 
 /** @prose Removes the `@note` on the chunk at `path`, then returns its fresh node — same
  *  round-trip reasoning as `handleAddNote`. */
 export function handleResolveNote(root: string, path: string, hash: string): TreeNode | null {
 	resolveNote(root, path, hash);
-	return findNode(buildTree(root), path);
+	return findNode(buildTree(root), fileOf(path));
 }
+
+/** @prose Where a line note picked at `path` (`src/store.ts:42`) would land, so the view can show
+ *  it before writing. Read-only. */
+export function handleNoteTarget(root: string, path: string, hash: string) {
+	return noteTarget(root, path, hash);
+}
+
+/** A line path (`src/store.ts:42`) names a spot in a file; the node to hand back is the file. */
+const fileOf = (path: string) => path.replace(/:\d+$/, "");

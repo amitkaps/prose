@@ -59,11 +59,8 @@ describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
 	});
 
 	it("does not let a backtick inside a regex literal corrupt depth tracking for the rest of the file", () => {
-		// scanJsLike doesn't disambiguate a regex literal from a template string; a bare
-		// backtick in a regex (e.g. `/\`/g`) is treated as opening a template literal that only
-		// "closes" at the next backtick anywhere later in the source, permanently miscounting
-		// `{`/`}` depth from that point on. Found dogfooding this file's own slugify() (`prose/
-		// lessons.md`), which used to write this trap directly.
+		// The old hand tokenizer read a bare backtick in a regex (e.g. `/\`/g`) as a template literal
+		// and miscounted depth for the rest of the file (`prose/lessons.md`). oxc reads it right.
 		const source = [
 			"const RE = /`/g;",
 			"function useless() { const x = 1; }",
@@ -359,5 +356,59 @@ describe("anchors (spec §3.2)", () => {
 				},
 			),
 		);
+	});
+});
+
+describe("misplaced blocks (spec §3.1)", () => {
+	it("reports a @prose block inside a function or a rule, and does not make it a block", () => {
+		const js = "/** @prose File. */\nfunction f() {\n  /** @prose Inside. */\n  g();\n}\n";
+		const parsed = parseFile(js, "ts");
+		expect(parsed.misplaced).toEqual([3]);
+		expect(parsed.sections.flatMap((s) => s.chunks)).toEqual([]);
+		const css = "/** @prose File. */\n.a {\n  /** @prose Inside. */\n  color: red;\n}\n";
+		expect(parseFile(css, "css").misplaced).toEqual([3]);
+	});
+
+	it("does not report a top-level block after a function, or an object literal's comment that isn't a block", () => {
+		const s =
+			"/** @prose File. */\nfunction f() {}\n/** @prose Next. */\nconst a = { /** doc */ b: 1 };\n";
+		const parsed = parseFile(s, "ts");
+		expect(parsed.misplaced).toEqual([]);
+		expect(parsed.sections[0].chunks).toHaveLength(1);
+	});
+});
+
+describe("line notes (spec §6.2)", () => {
+	it("makes a note straight after a @prose block its block note, and any other a line note", () => {
+		const s = [
+			"/** @prose File. */",
+			"/** @prose A chunk. */",
+			"/** @note Block note. */",
+			"/** @note Second, so a line note. */",
+			"function f() {",
+			"  /** @note In the body. */",
+			"  g();",
+			"}",
+		].join("\n");
+		const parsed = parseFile(s, "ts");
+		expect(parsed.sections[0].chunks[0].note).toBe("Block note.");
+		expect(parsed.lineNotes.map((n) => [n.startLine, n.text])).toEqual([
+			[4, "Second, so a line note."],
+			[6, "In the body."],
+		]);
+	});
+
+	it("finds a note in a file with no @prose block at all", () => {
+		const parsed = parseFile("const a = 1;\n/** @note Alone. */\nconst b = 2;\n", "ts");
+		expect(parsed.fileBlock).toBeNull();
+		expect(parsed.lineNotes.map((n) => n.text)).toEqual(["Alone."]);
+	});
+
+	it("reads an indented YAML note, but not an indented @prose", () => {
+		const s =
+			"# @prose\n# File.\na:\n  # @note\n  # Deep.\n  b: 1\n  # @prose\n  # Ignored.\n  c: 2\n";
+		const parsed = parseFile(s, "yaml");
+		expect(parsed.lineNotes.map((n) => n.text)).toEqual(["Deep."]);
+		expect(parsed.sections.flatMap((s) => s.chunks)).toEqual([]);
 	});
 });

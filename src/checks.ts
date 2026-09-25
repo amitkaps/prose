@@ -10,7 +10,8 @@ import { type BlameLine, newestTime } from "./git.js";
 
 export type Warning =
 	| { kind: "unresolved-symbol"; message: string; symbol: string }
-	| { kind: "stale"; message: string };
+	| { kind: "stale"; message: string }
+	| { kind: "misplaced-block"; message: string };
 
 export interface Symbol {
 	text: string;

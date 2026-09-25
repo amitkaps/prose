@@ -7,17 +7,20 @@
 	 * the highlighted code, with each `@prose` block rendered as prose exactly where its comment was.
 	 * A file with no `@prose` at all is just its code. A chunk URL (`file.ts#addTodo`) lands here and
 	 * scrolls to that block; it does so only when the URL changes, never on a live update, so an edit
-	 * elsewhere doesn't yank the page.
+	 * elsewhere doesn't yank the page. Line notes (spec §6.2) appear where their comments sat, and
+	 * the file's own warnings (a `@prose` block in a function, say) list at the top.
 	 */
 	import { tick, untrack } from "svelte";
 	import Block from "./Block.svelte";
 	import Code from "./Code.svelte";
+	import Note from "./Note.svelte";
 	import { segments, type TreeNode } from "../nav.js";
 	import { store } from "../store.svelte.js";
 
 	let { node }: { node: TreeNode } = $props();
 
-	const parts = $derived(segments(node.source ?? "", node.blocks ?? []));
+	const parts = $derived(segments(node.source ?? "", node.blocks ?? [], node.lineNotes ?? []));
+	const noteable = $derived(store.tree?.writable !== false);
 
 	$effect(() => {
 		const target = store.focus;
@@ -34,11 +37,20 @@
 </script>
 
 <div class="file-view">
+	{#if node.warnings?.length}
+		<ul class="warnings">
+			{#each node.warnings as warning (warning.message)}
+				<li class="warning">{warning.message}</li>
+			{/each}
+		</ul>
+	{/if}
 	{#each parts as part, i (i)}
 		{#if part.kind === "block"}
 			<Block block={part.block} />
+		{:else if part.kind === "note"}
+			<Note node={{ path: part.note.path, hash: part.note.hash, note: part.note.text }} />
 		{:else}
-			<Code code={part.text} path={node.path} />
+			<Code code={part.text} path={node.path} startLine={part.line} {noteable} />
 		{/if}
 	{/each}
 </div>

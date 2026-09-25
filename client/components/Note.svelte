@@ -14,13 +14,14 @@
 	 * was being typed (an agent edited it, or a block inserted above moved this one), the server
 	 * refuses, the draft stays, and the page already shows the fresh block from the live tree. The
 	 * next save is against that fresh block, since the human has now seen it. When the dev server
-	 * isn't on loopback (spec §6, "Trust boundary") the note shows without its controls.
+	 * isn't on loopback (spec §6, "Trust boundary") the note shows without its controls. A line note
+	 * (`file:line`, spec §6.2) is shown through the same component, with its own text hash.
 	 */
 	import { renderMarkdown } from "../markdown.js";
 	import type { TreeNode } from "../nav.js";
 	import { addNote, resolveNote, store } from "../store.svelte.js";
 
-	let { node }: { node: TreeNode } = $props();
+	let { node }: { node: Pick<TreeNode, "path" | "hash" | "note"> } = $props();
 	let editing = $state(false);
 	let draft = $state("");
 	let busy = $state(false);

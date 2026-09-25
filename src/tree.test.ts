@@ -312,3 +312,16 @@ describe("buildTree: checks (spec §5)", () => {
 		expect(tree.warningCount).toBe(0);
 	});
 });
+
+describe("buildTree: file-level findings", () => {
+	it("warns on a misplaced block and lists line notes on the file", () => {
+		const dir = makeProject({
+			"main.js":
+				"/** @prose File. */\nfunction f() {\n  /** @prose Lost. */\n  /** @note Look. */\n  g();\n}\n",
+		});
+		const file = findNode(buildTree(dir), "main.js");
+		expect(file?.warnings?.map((w) => w.kind)).toEqual(["misplaced-block"]);
+		expect(file?.warningCount).toBe(1);
+		expect(file?.lineNotes?.map((n) => [n.path, n.text])).toEqual([["main.js:4", "Look."]]);
+	});
+});

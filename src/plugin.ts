@@ -6,7 +6,13 @@ import type { DevframeNodeContext } from "devframe/types";
 import { isLoopbackAddress } from "devframe/utils/origin";
 import type { SharedState } from "devframe/utils/shared-state";
 import type { Plugin } from "vite";
-import { handleAddNote, handleNode, handleResolveNote, handleTree } from "./server/routes.js";
+import {
+	handleAddNote,
+	handleNode,
+	handleNoteTarget,
+	handleResolveNote,
+	handleTree,
+} from "./server/routes.js";
 import type { TreeNode } from "./tree.js";
 
 /** @prose
@@ -140,6 +146,14 @@ async function registerRpc(ctx: DevframeNodeContext, shared: ProseShared): Promi
 				refreshTree(shared);
 				return node;
 			},
+		}),
+	);
+	ctx.rpc.register(
+		defineRpcFunction({
+			name: "prose:note-target",
+			type: "query",
+			jsonSerializable: true,
+			handler: (path: string, hash: string) => handleNoteTarget(ctx.workspaceRoot, path, hash),
 		}),
 	);
 	ctx.rpc.register(

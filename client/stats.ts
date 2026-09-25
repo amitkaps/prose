@@ -15,16 +15,20 @@ export interface Attention {
 	unresolved: number;
 	stale: number;
 	notes: number;
+	/** `@prose` blocks inside a function or rule, which the parser ignores (spec §3.1). */
+	misplaced: number;
 }
 
-const none = (): Attention => ({ pending: 0, unresolved: 0, stale: 0, notes: 0 });
+const none = (): Attention => ({ pending: 0, unresolved: 0, stale: 0, notes: 0, misplaced: 0 });
 
 const own = (node: TreeNode): Attention => {
 	const a = none();
 	if (node.pending) a.pending += 1;
 	if (node.note) a.notes += 1;
+	a.notes += node.lineNotes?.length ?? 0;
 	for (const w of node.warnings ?? []) {
 		if (w.kind === "stale") a.stale += 1;
+		else if (w.kind === "misplaced-block") a.misplaced += 1;
 		else a.unresolved += 1;
 	}
 	return a;
@@ -35,6 +39,7 @@ const add = (into: Attention, from: Attention) => {
 	into.unresolved += from.unresolved;
 	into.stale += from.stale;
 	into.notes += from.notes;
+	into.misplaced += from.misplaced;
 };
 
 /** Attention at every node, summed over its subtree. A file's own count is its blocks' (blocks live
@@ -95,7 +100,7 @@ export function health(tree: TreeNode): Health {
 		blocks: blocks.length,
 		pending: attention.pending,
 		stale: attention.stale,
-		warnings: attention.stale + attention.unresolved,
+		warnings: attention.stale + attention.unresolved + attention.misplaced,
 		notes: attention.notes,
 		symbols,
 		codeLines: { median: lines[Math.floor(lines.length / 2)] ?? 0, max: lines.at(-1) ?? 0 },
