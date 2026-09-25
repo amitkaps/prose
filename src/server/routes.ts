@@ -1,5 +1,5 @@
 /** @prose
- * The `prose:*` RPC handlers registered by `plugin.ts` (spec §6.4). Kept as plain functions
+ * The `prose:*` RPC handlers registered by `plugin.ts` (spec §6.3). Kept as plain functions
  * of `(root, ...)` rather than closures over a devframe context, so they're callable directly
  * from a test or a script without spinning up Devframe at all — `plugin.ts` is the only place
  * that knows about RPC.

@@ -17,6 +17,7 @@ pnpm 12 and Cloudflare quirks this project already worked through.
 - Every file has file prose, and every exported declaration is in a chunk with prose. Folders have a `README.md`.
 - Prose goes in `@prose` comments. Ordinary comments stay for code-level notes.
 - Keep prose current in the same change as the code. Rewrite it where it has drifted; don't append.
-- Fill pending chunks as plan items.
-- When asked to "handle notes": find every `@note` (`grep -rn "@note"`), address it, and delete it — folding anything worth remembering into the `@prose` block it sat next to.
-- Resolve unresolved-symbol and possibly-stale warnings before finishing. `/__prose/` surfaces them as you work.
+- Fill pending chunks as plan items. Work that belongs to one file goes in as a pending chunk there, not in a list elsewhere.
+- When unsure, or when a decision is the human's, leave a `@note` after the relevant `@prose` block instead of guessing.
+- When asked to "handle notes": find every `@note` (`grep -rn "@note"`), address the ones you can act on, and delete them — folding anything worth remembering into the `@prose` block each sat next to. Leave the ones waiting on the human, including your own questions.
+- Resolve unresolved-symbol warnings before finishing. Treat a possibly-stale warning as a prompt to reread the prose against the code, not as something to clear with a token edit. `/__prose/` surfaces both as you work.

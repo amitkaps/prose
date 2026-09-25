@@ -1,5 +1,5 @@
 /** @prose
- * # Writing `@note`s back into source (spec §6.3-equivalent)
+ * # Writing `@note`s back into source (spec §6.2–§6.3)
  *
  * The write side of the annotator: given a chunk's stable path and some text, insert or replace
  * the `@note` comment attached to that chunk's own `@prose` block, or remove it entirely when
@@ -114,3 +114,15 @@ export function resolveNote(root: string, path: string): void {
 	const next = source.slice(0, start) + source.slice(end);
 	writeFileSync(join(root, path.slice(0, path.indexOf("#"))), next, "utf-8");
 }
+
+/** @prose
+ * # Safe writes (spec §6.2, §6.3)
+ *
+ * Planned. Three guards on every write, so the one write the view has can't damage source:
+ * note text is escaped so it can never close its comment or start a new block; the path from
+ * `findChunk` must resolve inside the root, to a file the tree contains; and the client sends
+ * the target block's content hash, so a write to a block that changed underneath it is refused
+ * instead of landing on the wrong block or overwriting an agent's edit. Property tests cover it:
+ * add then resolve round-trips byte-identical for any note text, and every other block is
+ * untouched.
+ */

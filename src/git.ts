@@ -81,3 +81,10 @@ export function newestTime(blame: BlameLine[], startLine: number, endLine: numbe
 	}
 	return max;
 }
+
+/** @prose
+ * # Ignoring reformats (spec §5.2)
+ *
+ * Planned. Run blame with `-w`, and pass `.git-blame-ignore-revs` when the repo has one, so a
+ * whitespace-only reformat neither flags a chunk as stale nor clears it.
+ */

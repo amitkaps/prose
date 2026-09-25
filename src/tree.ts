@@ -20,8 +20,8 @@ import {
 /** @prose
  * # Building the hierarchy
  *
- * Walks a project root into the L3→L0 tree (spec §4): project → folders → files → sections →
- * chunks. Each level's prose and structure come from a different place — a folder's `README.md`,
+ * Walks a project root into the L3→L1 tree (spec §4): project → folders → files, each file
+ * carrying its blocks. Each level's prose and structure come from a different place — a folder's `README.md`,
  * a file's first `@prose` block, a chunk's own block — so this module is mostly about combining
  * `parser.ts`'s per-file output with the filesystem's own folder structure into one shape the
  * client can render generically at any level.
@@ -109,7 +109,7 @@ function readReadme(dir: string): string | null {
  * # One file's node
  *
  * A `.md` file that isn't a `README.md` skips `parser.ts` entirely — the whole file (frontmatter
- * stripped) is its prose, no chunking, since spec §3.3 treats a plain Markdown file as already
+ * stripped) is its prose, no chunking, since spec §3.1 treats a plain Markdown file as already
  * being prose. Every other recognized extension goes through `parseFile`, whose sections/chunks
  * become this file's children: an unheaded section's chunks attach directly, a headed section
  * becomes its own `section` node wrapping its chunks.
@@ -118,7 +118,7 @@ function fileToNode(root: string, absPath: string): TreeNode {
 	const relPath = relative(root, absPath);
 	const source = readFileSync(absPath, "utf-8");
 	const ext = extensionOf(absPath);
-	// A plain .md file is prose by convention (spec §3.3) — no @prose marker or chunking needed.
+	// A plain .md file is prose by convention (spec §3.1) — no @prose marker or chunking needed.
 	// YAML frontmatter, if present, is metadata rather than prose, so it's stripped here too.
 	const parsed: FileParse =
 		ext === "md"
@@ -418,3 +418,12 @@ export function findNode(tree: TreeNode, path: string): TreeNode | null {
 	}
 	return null;
 }
+
+/** @prose
+ * # A git-aware walk (spec §3.4)
+ *
+ * Planned. List files the way git would (tracked, plus untracked files `.gitignore` doesn't
+ * exclude) instead of walking every folder minus `SKIP_DIRS`, so `coverage/` and similar
+ * build output stay out. Skip `prose/` only at the root, so a `src/prose/` folder is an
+ * ordinary folder. Outside a git repo, fall back to the fixed skip list.
+ */
