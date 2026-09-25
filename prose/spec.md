@@ -43,7 +43,7 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 | The `@note` annotator, in source | A separate remarks file; live channel to an agent session |
 | Mounting agent-written dev tools | Anything in production builds |
 
-Target: small apps, audience of one. Concretely: up to about 500 source files, with a full tree rebuild under 200 ms on a laptop. A benchmark over synthetic trees of 200, 500 and 1,000 files tracks this. Past that budget the design would need incremental re-parsing and patched pushes, which are out of scope.
+Target: small apps, audience of one, for personal use. Up to about 500 source files. Past that, the design would need incremental re-parsing and patched pushes, which are out of scope.
 
 The workflow it assumes is one person working in sessions with agents, often for a long time before committing. So nothing may depend on work having been committed: notes are added and resolved within a session, and the *since* view (§6.5) compares against the working tree, not only against commits.
 
@@ -244,7 +244,9 @@ The route's client is a small prebuilt Svelte 5 SPA (Devframe's `clientAssets`),
 
 ### 6.2 The annotator: `@note`
 
-`@prose` is what's documented; `@note` is what's still to do. A note is freeform: a direction, a question, an answer, a doubt. Either side writes one, the human through the view or in source, the agent in source when it's unsure or needs a decision. There is one marker on purpose; who wrote a note and what kind it is are in its text.
+`@prose` is what's documented; `@note` is what's still to do. A note annotates an issue at a spot in the code: a problem, a direction, a question, an answer. It's freeform, and there is one marker on purpose; what kind of note it is, and who it's for, is in its text.
+
+Notes are mainly written from the view. Reading a file woven with its prose, and leaving a note next to the block in question, is easier there than in the editor's file view, and it keeps the human out of the code while still pointing at it. A note is also plain source, so the human can write one in the editor and the agent can leave one when it's unsure or needs a decision.
 
 A note is about a specific spot, so it lives with the code (§1), not in a separate file with its own anchors. It is written immediately after the `@prose` block it's about — same delimiters, same gutter convention (§3.1), found by adjacency rather than by an anchor:
 
@@ -389,6 +391,7 @@ Verify:
 - **Anchors beyond JS/TS.** CSS, HTML and YAML chunks have no declared name, so they fall back to a heading or position (§3.2). A CSS chunk's first selector, or an HTML chunk's first `id`, could serve.
 - **Live agent channel.** Send a note to a running session directly instead of it waiting to be found by a grep or a "handle notes" request. Devframe ships an MCP adapter (`prose mcp`, once there's a standalone CLI) that could expose tree/node/notes to an agent directly — not wired up in the prototype, which still reaches the agent only through the source files it already reads (§6.2, §8).
 - **Notes without a `@prose` block.** An undocumented file, a folder or the project can't take a note, since there is no comment to sit after. Options: a `@note` marker usable on its own at the top of a file, or a comment convention inside `README.md`.
+- **Notes in Markdown.** READMEs and `prose/*.md` docs can't take a note today. An HTML comment, `<!-- @note … -->`, after the paragraph or heading it's about would follow the same adjacency rule; GitHub doesn't render it.
 - **Problem-layer tools as plan items.** Could a pending chunk reference a dev tool that shows the options being decided between?
 - **Docs in subfolders of `prose/`.** A medium project will want `prose/feature/recommend.md` beside `prose/spec.md`. Derived names already handle it (path under `prose/`), but the tree walker reads only the top level today, and L3 needs a rule for nesting: show `prose/` subfolders as groups, or flatten to path-named sections. Also open: whether a folder's docs should instead sit next to the code as its `README.md` (§3.3), with `prose/` kept for what spans folders.
 - **Coarser doc staleness.** Optional `covers: [src/tree.ts, …]` frontmatter, so a doc that describes a module without naming symbols goes stale when any covered file changes after it. Only if §5.3's citation-based checks leave gaps.

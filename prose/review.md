@@ -16,14 +16,14 @@ Every item is decided and written into the spec and plan. What's left is code; t
 | 1d | Same content-hash guard as 1b | spec §6.3; plan step 1 |
 | 2a | Hybrid: single-file work is a pending chunk in its file; `plan.md` keeps ordering and cross-file items | spec §1, §8; `plan.md` intro |
 | 2b | Checklist item rewritten: a note asks for the feature, the agent adds the pending chunk | spec §9.2 |
-| 2c | `prose check` removed from §8 until it exists | spec §8; plan step 7 |
+| 2c | `prose check` removed from §8 until it exists | spec §8; plan step 6 |
 | 2d | `tree` described as shared state | spec §6.3 |
 | 2e | §6.4 names `@note` too, and states the SvelteKit `app.html` limit | spec §6.4 |
-| 2f | Import graph from `oxc-parser` | spec §4; plan step 7 |
-| 2g | Drifted references fixed in code prose; `§N` checking moved to the front of the `prose/` sync | `src/`; plan step 8a |
-| 2h | Small apps with a budget: ~500 files, rebuild < 200 ms, benchmarked in CI | spec §2; plan step 5 |
+| 2f | Import graph from `oxc-parser` | spec §4; plan step 6 |
+| 2g | Drifted references fixed in code prose; `§N` checking moved to the front of the `prose/` sync | `src/`; plan step 7a |
+| 2h | Personal use, small repos: up to ~500 files; no timing budget | spec §2; plan "Testing" |
 | 3.1–3.3 | New *since* view (vs `HEAD`, a ref, or last visit) answers "what changed"; staleness is secondary, uses `blame -w` + ignore-revs, and its limits are stated | spec §1, §5.2, §6.5; plan step 4 |
-| 3.4 | One freeform `@note`, either direction; no author marker, no `@question` | spec §6.2, §8 |
+| 3.4 | One freeform `@note` annotating an issue, mainly written from the view; the agent may leave one too; no author marker, no `@question`. Notes in Markdown later | spec §6.2, §8, §10 |
 | 3.5 | Resolved notes shown by the *since* view, which works before anything is committed | spec §6.2, §6.5 |
 | 3.6 | Blocks below depth 0 become a warning | spec §3.1; plan step 3 |
 | 3.7 | JS/TS comments from `oxc-parser`; scanner kept for CSS/HTML/YAML/TOML | spec §3.1; plan step 3 |

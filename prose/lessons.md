@@ -63,7 +63,7 @@ Found by reading the spec against the code rather than by running either; `prose
 - **An address built from position isn't stable, whatever the spec calls it.** The spec promised `#addTodo`; the code produced `top-chunk-2`, which moves when a block is inserted above. Re-parsing the file fresh on every write didn't help, because the address itself had moved. Derive anchors from content and guard writes with a content hash (spec §3.2).
 - **`git blame` can't tell who wrote a line when the human makes every commit.** Author-based ideas (agent notes vs human notes) fail in a one-person-plus-agents workflow. Put anything that needs an author in the text itself.
 - **Don't assume work gets committed.** Sessions run long and uncommitted; blame-based checks see all of it as "newest". Anything the view needs within a session has to compare against the working tree or the browser's own last view (spec §2, §6.5).
-- **Section references drift like any other reference.** Code prose cited §6.4 for the RPC handlers (§6.3) and §3.3 for rules in §3.1. Check them (plan step 8a) and don't renumber sections casually; add new ones at the end of their chapter.
+- **Section references drift like any other reference.** Code prose cited §6.4 for the RPC handlers (§6.3) and §3.3 for rules in §3.1. Check them (plan step 7a) and don't renumber sections casually; add new ones at the end of their chapter.
 
 ## Working style
 

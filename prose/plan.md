@@ -42,15 +42,11 @@ Steps 1–3 come before anything that builds on anchors or writes (dev tools, `p
 - [ ] Client: rail toggle (`HEAD` / ref / last visit); last-visit baseline as per-block hashes and open notes in browser storage; badges roll up.
 - [ ] Staleness ignores reformats: pending chunk in `src/git.ts`.
 
-### 5. Size budget (spec §2)
-
-- [ ] Benchmark `buildTree` time and tree payload size on synthetic trees of 200, 500 and 1,000 files; run it in CI and fail past the budget.
-
-### 6. Polish on the file view
+### 5. Polish on the file view
 
 Nothing here is decided; each is a choice to make when it starts to matter.
 
-- [ ] **Notes where there is no `@prose` block** (spec §10).
+- [ ] **Notes where there is no `@prose` block**, and **notes in Markdown** (spec §10).
 - [ ] **Per-block staleness badge** in the margin; the file badge counts them today.
 - [ ] **Inline view for `.svelte`**: highlight each code run by the language of the part it sits in.
 - [ ] **Symbol-check noise on file prose** (about 20 warnings in this repo, mostly external names): ignore list, `package.json`/imports as known (partly done), or a per-block opt-out. Label them true/false first and track the false-positive rate.
@@ -60,14 +56,14 @@ Nothing here is decided; each is a choice to make when it starts to matter.
 - [ ] **Size signal**: line and block counts per file, feeding the "ask for a split with a `@note`" workflow (§3.2).
 - [ ] **Folding**: collapse the file prose or blocks on long files.
 
-### 7. Dev tools, diagram, CLI/MCP (spec §4, §7, §8, §10)
+### 6. Dev tools, diagram, CLI/MCP (spec §4, §7, §8, §10)
 
 - [ ] `dev/*.tool.ts` discovery via `import.meta.glob`, listed under **Tools**; then `dev/docs.tool.ts` and one pending chunk in `examples/base`.
 - [ ] Import graph from `oxc-parser`'s module records, grouped by folder, linked to L1 views.
 - [ ] `prose check` CLI for the §5 warnings (Devframe's `cac` adapter). Add it to the §8 snippet only once it exists.
 - [ ] Evaluate Devframe's MCP adapter to expose `tree`/`node`/notes to an agent (§10).
 
-### 8. Sync `prose/` with `@prose` (spec §5.3)
+### 7. Sync `prose/` with `@prose` (spec §5.3)
 
 Ordered by cost. Needs step 2's anchors.
 
@@ -84,6 +80,7 @@ Ordered by cost. Needs step 2's anchors.
 - [ ] Build check in CI: `examples/*` built with the plugin on and off, `dist/` diffed; no `@prose`/`@note` in built HTML.
 - [ ] Playwright against `dev:prose` and `examples/base`: navigate, add a note and check the file on disk, edit a file and see the view update, `/__prose` without the trailing slash.
 - [ ] Git fixture repos for staleness: code-only, prose-only, both, uncommitted, reformat-only, rebase, squash.
+- [ ] Open the view on a ~500-file repo once and check it stays usable (spec §2).
 - [ ] Parser over a corpus of real repos: never throws; reassembling blocks, code and notes gives the original bytes.
 - [ ] The §1 five-minute test, run for real: an agent makes ~30 changes to `examples/base`, then answer the four questions from `/__prose/` alone and from `git log -p` alone, and compare.
 
