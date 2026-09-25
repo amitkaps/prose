@@ -65,6 +65,13 @@ Found by reading the spec against the code rather than by running either; `prose
 - **Don't assume work gets committed.** Sessions run long and uncommitted; blame-based checks see all of it as "newest". Anything the view needs within a session has to compare against the working tree or the review baseline the browser keeps (spec §2, §6.5).
 - **Section references drift like any other reference.** Code prose cited §6.4 for the RPC handlers (§6.3) and §3.3 for rules in §3.1. Check them (plan step 7a) and don't renumber sections casually; add new ones at the end of their chapter.
 
+## Safe writes
+
+- **Devframe's origin check lets through clients that send no `Origin` header.** It refuses browser pages on non-loopback origins, but it treats a connection with no `Origin` as a native tool and allows it. So with `vite --host`, anything on the network could call `add-note`. The loopback check on the HTTP server's own bound address (`isLoopbackAddress` from `devframe/utils/origin`) is what closes that. Verified with a headless client against a `--host` server; reading the origin module alone suggested the boundary was already covered.
+- **Property tests found a CRLF bug that no example had.** The parser kept the `\r` of a CRLF line inside comment text, and the `#`-style scanner's `endIndex` sat between `\r` and `\n`, so a note inserted in a CRLF YAML/TOML file would have split a line ending. Fixture variants (LF, CRLF, no final newline) cost one line each in the generator.
+- **Property-test the pure edit, not the file write.** Going through `addNote` put `git ls-files`, a tree build and file I/O in every run, and 100 runs timed out. Splitting out `withNote`/`withoutNote` (source in, source out) gave 500 runs per comment style in about a second, leaving the path guard to ordinary example tests.
+- **A mechanical rename across a test file also renamed the helper it introduced.** Replacing `addNote(root, ` with `add(` turned `add`'s own body into `add(…)`, which recursed with a tree build at each level. It looked like slow property tests, not a bug. When a run hangs, time one test at a time (`-t`) before tuning the slow-looking one.
+
 ## Working style
 
 - **Read the installed `.d.ts` files, not a summarized doc fetch.** `WebFetch` ran pages through a smaller model that lost specifics (no concrete `action`/`event`/state examples, and it omitted "mounts inside `@vitejs/devtools`", which changed the cost of adopting it). Install into a scratch directory and grep `dist/*.d.ts`.

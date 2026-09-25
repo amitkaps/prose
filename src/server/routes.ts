@@ -23,15 +23,21 @@ export function handleNode(root: string, path: string): TreeNode | null {
 
 /** @prose Writes (or replaces) the `@note` on the chunk at `path`, then returns its fresh node —
  *  same round trip as `handleNode`, so the client can just swap in the response without a second
- *  RPC call to see its own write reflected. */
-export function handleAddNote(root: string, path: string, text: string): TreeNode | null {
-	addNote(root, path, text);
+ *  RPC call to see its own write reflected. `hash` is the block's hash from the caller's tree;
+ *  a mismatch refuses the write (spec §6.3). */
+export function handleAddNote(
+	root: string,
+	path: string,
+	text: string,
+	hash: string,
+): TreeNode | null {
+	addNote(root, path, text, hash);
 	return findNode(buildTree(root), path);
 }
 
 /** @prose Removes the `@note` on the chunk at `path`, then returns its fresh node — same
  *  round-trip reasoning as `handleAddNote`. */
-export function handleResolveNote(root: string, path: string): TreeNode | null {
-	resolveNote(root, path);
+export function handleResolveNote(root: string, path: string, hash: string): TreeNode | null {
+	resolveNote(root, path, hash);
 	return findNode(buildTree(root), path);
 }

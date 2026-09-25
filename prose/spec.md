@@ -242,9 +242,10 @@ A Vite plugin that mounts a dev-only route at `/__prose/` inside the app's own V
 
 **Trust boundary.** The RPC endpoint runs without authentication (`auth: false`), because the dev server listening only on loopback is the boundary for a single-developer tool. The route can write source files (§6.2), so the boundary has to hold:
 
-- Writes are refused when the dev server listens on a non-loopback address (`vite --host`); the view stays read-only there.
-- WebSocket connections from another origin are refused.
-- A write names a file by its path in the tree. A path that resolves outside the project root, or to a file the tree doesn't contain, is refused.
+- Writes are refused when the dev server listens on a non-loopback address (`vite --host`); the view stays read-only there. This is what covers native clients: Devframe lets a connection with no `Origin` header through.
+- WebSocket connections from a browser page on a non-loopback origin are refused (Devframe's default). A page on another localhost port is let through: it runs on the same machine, which is inside the boundary.
+- A write names a file by its path in the tree. A path that resolves outside the project root (through `..`, an absolute path or a symlink), or to a file the tree doesn't contain, is refused.
+- Devframe's MCP route stays off until §10's MCP question is decided.
 
 The route's client is a small prebuilt Svelte 5 SPA (Devframe's `clientAssets`), served by Vite; it connects back over Devframe's RPC, so it can call into dev tools (§7) and read app modules through the same connection.
 
@@ -310,7 +311,7 @@ The server exposes Devframe RPC functions, namespaced under the `prose` devframe
 - `tree` (shared state): the full hierarchy, with summaries, warnings, and notes. Not a call: the server owns it and pushes the whole new tree to every client when a file changes (§6.1).
 - `node` (`query`): one node's prose, code, warnings, and note, given its path. For agents and scripts: the dev route's own client doesn't call it, since the tree it already holds carries every node in full.
 - `add-note` (`action`): insert or replace a `@note`. A block note is addressed by the block's path (`src/store.ts#addTodo`, or `src/store.ts#file` for the file prose) and its content hash; a line note by the file and line (`src/store.ts:42`) and a hash of that line's text.
-- `resolve-note` (`action`): remove a `@note` entirely, addressed by the note itself: its file, its line, and a hash of its text.
+- `resolve-note` (`action`): remove a `@note` entirely, addressed by the note itself: its file, its line, and a hash of its text. (Until line notes land, plan step 3, a block note is resolved by its block's path and hash, which covers the note's text.)
 
 `query` functions are reads that can change over time; `action` functions are the writes. Both are typed end to end by Devframe's RPC layer — no hand-rolled request/response shapes. Every write re-reads and re-parses the target file fresh rather than trusting the client's in-memory tree — the file on disk is the only truth. If the addressed block's hash no longer matches (an agent or an editor changed it since the client's tree was pushed), the write is refused and the client shows the fresh block, so a note never lands on the wrong block or overwrites someone else's edit.
 

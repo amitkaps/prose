@@ -132,15 +132,18 @@ let prose: Awaited<ReturnType<typeof connect>> | null = null;
  * # Notes
  *
  * The two write calls (Devframe actions) behind the annotator (spec §6.2): write, or remove, the `@note` on one
- * chunk. Neither result is used: the server recomputes the tree after every write, and that arrives
- * as a normal live update, which is what re-renders the pane and the rail's badges.
+ * chunk. Each sends the block's `hash` as the client last saw it, and the server refuses the write
+ * if the block on disk has changed since (spec §6.3); the error comes back as a rejected promise
+ * with a message meant for the page. Neither result is used: the server recomputes the tree after
+ * every write, and that arrives as a normal live update, which is what re-renders the pane and the
+ * rail's badges.
  */
-export async function addNote(path: string, text: string): Promise<void> {
-	await prose?.rpc.call("add-note", path, text);
+export async function addNote(path: string, text: string, hash: string): Promise<void> {
+	await prose?.rpc.call("add-note", path, text, hash);
 }
 
-export async function resolveNote(path: string): Promise<void> {
-	await prose?.rpc.call("resolve-note", path);
+export async function resolveNote(path: string, hash: string): Promise<void> {
+	await prose?.rpc.call("resolve-note", path, hash);
 }
 
 /** @prose
