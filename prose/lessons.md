@@ -1,218 +1,61 @@
 # Lessons
 
-Things learned building `@amitkaps/prose`, kept separate from `spec.md` (the design) and
-`plan.md` (the roadmap) because they're about *how* to build it correctly next time, not *what*
-to build.
+How to build `@amitkaps/prose` correctly next time. `spec.md` is the design, `plan.md` the remaining work; this file is for gotchas and bug classes. Each entry: symptom, cause, fix, how to detect it.
 
 ## Integrating Devframe
 
-- **The client build's `base` must be the devframe's actual mount path, set absolutely — not
-  relative.** A relative base (`base: "./"`) breaks the moment the route is reached without its
-  trailing slash (`/__prose` instead of `/__prose/`): the browser resolves `./assets/x.js`
-  against the *parent* of the last path segment, landing back on the host app's own root instead
-  of the devframe's static host. Devframe's default mount for a hosted (`vite`/`embedded`)
-  devframe is `/__<id>/`, so hardcode `base: "/__<id>/"` in the client's Vite config to match —
-  don't rely on a relative base just because the exact mount path "isn't known at build time" (it
-  is, unless the consuming app overrides `basePath`/`base` explicitly, which is rare).
-- **This failure mode is easy to misdiagnose as a caching or server problem** because the
-  symptoms are inconsistent per request: some asset requests come back a real 404, others come
-  back 200 with the *wrong* content-type (the host app's own `index.html`, served by its SPA
-  fallback for an unmatched path). `curl -sD - -o /dev/null <url>` on the actual asset URL,
-  checking `content-type` and `content-length` against the real built file, cuts through this
-  fast — status code alone (`curl -o /dev/null -w "%{http_code}"`) is not enough verification,
-  since the wrong content can still return `200`. That gap in verification (checking only status
-  codes) is exactly what let this bug ship past Phase 1's own "verified" checklist item.
-- **RPC function names must be registered fully-qualified, matching how the client calls them.**
-  `client.scope("prose").rpc.call("tree")` auto-prefixes the outgoing call to `"prose:tree"`, but
-  `ctx.rpc.register(defineRpcFunction({ name: "tree", ... }))` registers the *literal* string
-  given — it does not auto-prefix on the server side. The two sides only agree if the server
-  registers `"prose:tree"` explicitly (matching Devframe's own quickstart example's
-  `name: 'my-devframe:hello'` pattern). The resulting error
-  (`[birpc] function "prose:tree" not found`) is specific enough to point at the fix directly,
-  once you know to look at exact-name-on-both-sides rather than at auth or asset-serving.
-- **Devframe's browser client (`devframe/client`) isn't headless-friendly out of the box** — it
-  touches `location` unconditionally, so a plain Node script needs
-  `globalThis.location = new URL(...)` before importing it. Once polyfilled, it's usable from a
-  script for diagnosis: a real RPC error (`[birpc] function "..." not found`, or
-  `[devframe] Not authorized by the devframe server`) is a much stronger signal than guessing from
-  package type declarations, and doesn't require driving an actual browser.
-- **The same relative-base bug can hide inside a library's own client, not just your build
-  config.** `devframe/client`'s `connectDevframe()` defaults to `baseURL: "./"`, resolved against
-  the *current page URL* to fetch `__connection.json` — so visiting `/__prose` (no trailing
-  slash) makes that relative fetch resolve against the parent path and 404, throwing
-  `Failed to get connection meta from ./`. This is the identical class of bug as the asset-`base`
-  one above, just one layer further from the code you wrote — the fix isn't in your Vite config
-  this time, it's passing an explicit `baseURL` to `connectDevframe()`. Deriving it from
-  `import.meta.url` (`new URL("../", import.meta.url).href`, one directory up from the script's
-  own `assets/` folder) is immune to the bug entirely, since a built script's `src` is always
-  absolute under the configured `base` regardless of what the address bar shows.
-- **`new URL(<string literal>, import.meta.url)` is not a plain runtime call in Vite — it's a
-  special static-asset pattern.** The fix above (`new URL("../", import.meta.url)`, to get an
-  absolute base directory) built without error and worked in every Node-based headless check, but
-  broke in a real browser with `Uncaught Error: Failed to get connection meta from
-  data:text/javascript;base64,...`. Vite's build specially recognizes the exact shape
-  `new URL(<literal>, import.meta.url)` as a request to resolve a static asset relative to *this
-  source file*, at *build time* — not a plain runtime URL join against the deployed page's URL.
-  Resolving `"../"` (a directory, not a file) from `client/main.ts` at build time walked up to the
-  repo root and picked up its `dist/index.js` (this project's own server-side entry point,
-  `export { prose } from "./plugin.js";`), then inlined its tiny contents as a base64 data URL —
-  completely unrelated content, silently substituted for the literal string argument. The fix:
-  never use that call shape for a "give me a directory" computation; do plain string slicing on
-  `import.meta.url` instead (`url.lastIndexOf("/")`, twice, to walk up two segments). Headless
-  Node checks didn't catch this because Node doesn't run the code through Vite's asset-URL
-  static analysis at all — only an actual Vite production build, inspected for it, would show it
-  (`grep -c "data:text/javascript" client/dist/assets/*.js` is now part of that check).
-- **`@vitejs/devtools`'s `clientAuth` defaulted to on**, gating new browser clients behind a
-  terminal-approved trust handshake, and wasn't a plain option on `DevTools()` itself (passing
-  `{ clientAuth: false }` there was a type error) — it lived in a separate `DevToolsConfig` the
-  hub resolved from elsewhere. This was one of the reasons for dropping `@vitejs/devtools` for
-  `@devframes/vite`'s `devframeViteBridge`, whose `auth` option takes a plain `false` — a real
-  fix, not a workaround, once the hub's dock/terminal/command surface turned out to be unneeded
-  for this project's "audience of one" target (`spec.md` §2).
+- **Set the client build's `base` absolutely to the mount path, and pass `connectDevframe()` an explicit `baseURL`.** The same relative-path bug lives at two layers. (1) `base: "./"` in the client's Vite config breaks when the route is hit without its trailing slash (`/__prose`): `./assets/x.js` resolves against the parent path and lands on the host app. Hardcode `base: "/__<id>/"`, Devframe's default mount for a hosted devframe. (2) `connectDevframe()` defaults to `baseURL: "./"`, so `__connection.json` 404s the same way (`Failed to get connection meta from ./`). Derive `baseURL` from `import.meta.url` by string slicing (`lastIndexOf("/")`, twice), not `new URL("../", import.meta.url)` (next entry).
+- **`new URL(<string literal>, import.meta.url)` is a build-time asset pattern in Vite, not a runtime join.** With `"../"` it resolved to the repo's `dist/index.js` and inlined it as a `data:text/javascript;base64,…` URL, so the browser failed with `Failed to get connection meta from data:text/javascript…`. Node-based checks never run Vite's asset analysis and passed. Detect with `grep -c "data:text/javascript" client/dist/assets/*.js`; `scripts/check-client-bundle.mjs` now does this as the last `pnpm build` step.
+- **Register RPC names fully qualified on the server.** `client.scope("prose").rpc.call("tree")` prefixes to `prose:tree`, but `ctx.rpc.register(defineRpcFunction({ name: "tree" }))` registers the literal string. Register `"prose:tree"`. The error `[birpc] function "prose:tree" not found` points straight at it.
+- **Verify asset serving by content, not status.** A wrong base can return `200` with the host app's `index.html`. Use `curl -sD - -o /dev/null <url>` and compare `content-type` and `content-length` with the built file.
+- **`SharedState` can resolve before it is populated.** `sharedState("tree")` with no client `initialValue` takes an internal trusted branch that resolves at once; `.value()` is `undefined` for a tick, then the real data arrives as an ordinary `"updated"` event. `client/main.ts`'s `firstTreeValue()` reads `.value()` and falls back to awaiting the first `"updated"`. Found with a live headless script, not by reading source.
+- **Devframe's node context does not expose Vite's watcher** (its own doc comment says it is narrower than `ViteDevServer`). Watch files in a plain `configureServer` plugin and share one closure-scoped object with `registerRpc`'s `setup(ctx)`, not a module-level global, so multiple `prose()` instances can't collide.
+- **Headless clients:** `devframe/client` reads `location` unconditionally, so a Node script needs `globalThis.location = new URL(...)` first. Use `transport: "websocket"`; forcing `"sse"` hung every RPC call in this environment (not root-caused). A real RPC error from a script beats guessing from `.d.ts`.
+- **`@vitejs/devtools` was the wrong host.** Its `clientAuth` defaulted on, gated by a terminal-approved handshake and not a plain option on `DevTools()`, and it brings a dock/terminal/command surface a one-developer tool doesn't need. `@devframes/vite`'s `devframeViteBridge` takes `auth: false` directly. See spec §6.
 
-## The parser's own tokenizer (found by dogfooding)
+## The parser and scanner
 
-Annotating `src/*.ts` and `client/*.ts` with `@prose` — the plugin's own implementation, not just
-the examples — surfaced two real gaps in `scanJsLike` that no amount of testing against
-`examples/single`/`examples/base` had hit, simply because neither happened to write a regex
-literal with a brace, quote, or backtick inside it, or a `@prose` comment inside an inline
-callback. Dogfooding a tool against its own source finds exactly this class of bug: real code has
-more variety than two curated examples.
+Found by dogfooding on the plugin's own source; `examples/single` and `examples/base` hadn't hit them. Real code has more variety than two curated examples.
 
-- **A `@prose` comment inside an object literal passed to a function call is silently dropped,**
-  even though it *looks* just as top-level as any other comment. `defineDevframe({ ...,
-  setup(ctx) { /** @prose */ ... } })` puts the comment inside `setup`'s function body, which
-  itself is inside the object literal's braces — depth 2, not depth 0. The depth-0 rule (spec
-  §3.1) is intentional, not a bug, but a comment sitting right next to code that's clearly
-  "inside something" doesn't visually signal that it won't be read. The fix, once noticed, is
-  structural: pull the callback out to a named top-level function so its own doc comment can sit
-  at depth 0. `src/plugin.ts`'s `registerRpc` is that fix, in this repo.
-- **A regex literal is not a string, and `scanJsLike` used to treat every `` ` ``, `"`, or `'` the
-  same way regardless of context.** `slugify()`'s own `.replace(/\`/g, "")` — a regex matching a
-  literal backtick — made the tokenizer read that backtick as opening a template literal, which
-  then only "closed" at the next backtick anywhere later in the file, silently corrupting `{}`
-  depth tracking for everything after it. No error, no crash — `@prose` comments after that point
-  just stopped being detected, which is a much harder failure mode to notice than a thrown
-  exception. The real fix was giving `scanJsLike` actual regex-literal awareness
-  (`skipRegexLiteral`): the standard heuristic (a `/` after an operator/opening-bracket/start-of-
-  file is a regex; after an identifier/`)`/`]`/closed-string is division) that every JS tokenizer
-  uses, short of full keyword lookback (`return /x/` is still misread as division — a known,
-  documented limitation, not silently wrong in a new way). Worth remembering generally: a
-  from-scratch tokenizer that handles strings and comments but not regex literals is not "mostly
-  right" — it's one common construct away from corrupting everything downstream of it, silently.
+- **A `@prose` block inside a callback or object literal is silently dropped.** `defineDevframe({ setup(ctx) { /** @prose */ } })` is at depth 2, not 0. The depth-0 rule (spec §3.1) is intentional but gives no visual hint. Pull the callback out to a named top-level function (`registerRpc` in `src/plugin.ts`).
+- **A tokenizer that handles strings and comments but not regex literals is one construct from silent corruption.** `.replace(/\`/g, "")` read the backtick as a template-literal opener, which "closed" at the next backtick in the file and broke `{}` depth for everything after. No error, comments just stopped being found. `scanJsLike` now has `skipRegexLiteral` (the last-significant-token heuristic); `return /x/` is still misread as division, a documented limitation.
+- **A scanner with no closing delimiter must let the marker define the boundary.** YAML/TOML `#` comments: collecting every contiguous `#` line and checking only the first for a marker merged a `@prose` and its back-to-back `@note`. A block now runs from a marker line to the next marker line or the first non-`#` line. Ask "what happens when two blocks touch," not just "what happens at the end." Caught by writing that test case directly.
+- **Measure a block's indentation from its opening line, not its closing one.** A multi-line block's closing line is `" */"`, with the gutter's own leading space, so every inserted `@note` was one space too deep. `ProseChunk.startIndex` fixes it. A single-line block can't reproduce this; only a live round trip against `examples/base` and a multi-line regression test show it.
 
-## The symbol check's parser (found via a real bug report, twice)
+## The symbol check
 
-- **Reimplementing scope analysis with regexes fails one construct at a time, predictably.**
-  `declaredIdentifiers` started as a regex for `function`/`class`/`const`/`interface`/`type`
-  declarations. A real bug (`examples/base`'s own `import { marked } from "marked"` not
-  resolving) added import parsing. The very next real bug (a function's own parameter, `` `html`
-  `` in `headingId(html: string)`) needed parameters too — and a parameter list can't be found
-  with a flat regex at all (`heading(this: { parser: { parseInline: (tokens: Tokens.Generic[]) =>
-  string } }, token)` nests parens and braces for its type annotations). Each fix covered exactly
-  the shape whoever wrote it happened to think of; destructuring, class members, and generics were
-  all still one bug report away. The actual fix was structural, not another regex: swap in a real
-  parser (`oxc-parser`) so the "what does this code declare" question is answered by parsing, not
-  pattern-matching text — this closes the whole class of bugs at once (destructuring, nested
-  functions, aliasing, all handled correctly by construction) instead of one instance at a time.
-- **The obvious first choice (`typescript`, already a dependency) turned out not to work at all** —
-  worth checking directly before assuming an API exists. This project deliberately runs
-  **TypeScript 7**, the new native/Go-ported compiler ("tsgo"): its installed package's default
-  entry point resolves to `version.cjs`, not a JS-facing AST API. There's no `ts.createSourceFile`
-  here — confirmed by trying it and getting `Cannot read properties of undefined (reading
-  'Latest')`, not by reading changelogs. TypeScript 7.1 is expected to add a WASM-exposed
-  compiler API of its own; if that lands and gives the same AST access `oxc-parser` does now, it's
-  worth a second look — pure-JS with no native binary is a real advantage for a package that ships
-  inside every consuming project's own dependency tree, if the API is actually there when checked.
-  Until then, this is a real, working choice, not a placeholder waiting to be replaced.
-- **A parser that tolerates invalid input gracefully — instead of throwing — matters when the same
-  code path has to handle multiple languages.** `oxc-parser`, fed CSS text from a `.svelte` file's
-  `<style>` block, doesn't throw: it returns an empty `program.body` and an `errors` array,
-  confirmed directly with a real CSS snippet before relying on it. That's exactly the behavior the
-  symbol check needs for chunks whose code isn't JS/TS at all — checked empirically rather than
-  assumed, since a stricter build-oriented parser could reasonably have chosen to hard-fail
-  instead. `codeLang`, threaded through `parser.ts` (per-chunk, since a `.svelte` file's `<script>`
-  and `<style>` blocks share the same comment-scanning path but not the same code language), gates
-  the parse attempt at the file/part level anyway — CSS/HTML chunks skip parsing entirely rather
-  than leaning on this tolerance as the only safety net.
+- **Don't reimplement scope analysis with regexes.** `declaredIdentifiers` grew one construct per bug report: imports (`marked`), then parameters (`html` in `headingId(html: string)`, whose nested parens and braces no flat regex can find), with destructuring and class members still pending. The fix was structural: parse with `oxc-parser` (the engine oxlint, oxfmt and tsdown already use) and walk the AST. Keep parameters (`declaredParameters`) local-only so they never enter the cross-file table.
+- **Check that an API exists before choosing it.** `typescript` is TS 7 here (the native port); its package entry resolves to `version.cjs`, with no `ts.createSourceFile` (`Cannot read properties of undefined (reading 'Latest')`). Revisit if 7.1's WASM compiler API arrives, since pure JS has no native binary to ship.
+- **A tolerant parser matters when one path serves several languages.** `oxc-parser` on CSS returns an empty `program.body` plus `errors`, no throw (checked with a real snippet). `codeLang` per chunk gates the parse anyway, since a `.svelte` file's `<script>` and `<style>` share the comment-scanning path.
+- **Real false positives come from real projects.** Package names in prose (`` `marked` ``), JS builtins (`Set`), file names (`README.md`), reserved words (`return`, `import`) and `import.meta.*` were all flagged. Fixes: `package.json` dependency names, `BUILTIN_GLOBALS`, filename-shaped spans and a longer keyword list skipped; the file's preamble scope shared by all its chunks.
+
+## Build and tooling
+
+- **A `200` or a clean startup is not "the feature works."** Every early check passed until a browser hit three unrelated bugs (asset base, RPC naming, `location`). Verify a client/server integration with a browser or a headless client that calls the RPC layer end to end.
+- **No standalone tests meant one-off scripts, written and thrown away, which is how the `new URL` bug shipped.** Now: `vp test` for parser, tree, checks, notes; `vp check` (oxfmt + type-aware oxlint) on `src/`, `client/` and root config; `check-client-bundle.mjs` for the one bug class no Node test can see.
+- **`oxlint`'s type-aware mode (`tsgolint`) is the type check** for `.ts`, not a separate `tsc --noEmit`; it caught a real `no-floating-promises` at once. It does not read `.svelte`, so `svelte-check` covers those (next section).
+- **Import shiki through `shiki/core`, not the main entry.** The main `codeToHtml` resolves `lang` by name at runtime, so Rollup kept all ~200 grammars as lazy chunks (321 files in `client/dist`). Explicit `@shikijs/langs/*` imports plus `createHighlighterCore` gave 14 assets, ~1.5 MB; keep the highlighter lazy and memoized.
+- **SvelteKit's `vite build` never runs `transformIndexHtml`** (it warns "not supported"). The HTML strip (spec §6.4) is skipped there. Harmless today, but a `@prose` in `app.html` on a SvelteKit host would ship to production with no error, only that easy-to-miss warning. Not something this plugin can detect.
+- **A global `code { padding }` rule for inline spans also hit shiki's `<pre><code>`,** adding a stray space before every block's first token. Copying the text came out clean, since padding is box model, not content. Fix with a `pre code` reset.
+
+## The Svelte client
+
+`examples/base` (`src/content/lessons.md`) had already worked through most of this.
+
+- **Stay on TypeScript 6.x.** TS 7 (the native port) breaks `svelte-check`, which still expects the 6.x JS API. The repo was on 7.0.2 and is back on 6.0.3. Re-test when svelte-check supports the native port.
+- **`svelte-check` finds the Svelte config in the `vite.config` of the workspace it checks**, and `vp check` doesn't read `.svelte` at all. The root `vite.config.ts` is the `vite-plus` tooling config with no Svelte plugin, so the client build config lives at `client/vite.config.ts` (with `root: import.meta.dirname`) and `check` runs `svelte-check --workspace client`. Symptom otherwise: `No Svelte configuration found in vite config`.
+- **`client/tsconfig.json` needs `types: ["node", …]`** because the client imports the `TreeNode` type from `src/tree.ts`, which uses `node:fs`. Type-only import: the server module must never be bundled into the browser.
+- **Component `<style>` blocks are unlayered and beat `@layer`**, so styling stays in the global `style.css`.
+- **Force runes** (`compilerOptions: { runes: true }`) so a component can't fall back to legacy reactivity. Reactive class fields (`$state`, `$derived`) require a `.svelte.ts` module; keep logic that Node tests must reach (`nav.ts`, `stats.ts`, `fuzzy.ts`) in plain `.ts`.
+- **Derive the current node from the pushed tree instead of fetching it.** The tree already carries every node's prose, code and note, so a lookup by path is local, live updates re-render for free, and there's no async flash. The old client fetched `node` per navigation and rebuilt `innerHTML` wholesale, which also wiped a half-typed note whenever a file changed.
+- **Found by dogfooding again:** the symbol check flagged browser globals (`sessionStorage`) named in the client's prose. `BUILTIN_GLOBALS` now lists the common ones.
+
+## The file as the leaf
+
+- **A chunk shown alone doesn't make sense**, so the tree stops at files and blocks hang off the file node (`blocks`, each with its comment's byte `span`). The page lays the source out around those spans, dropping the comment text and rendering it as prose in its place, which shows the whole file with nothing repeated. Exact offsets beat line ranges here; the `.svelte` part-clipping had already shown that per-chunk code slices lose the tags between parts.
+- **Checking file prose adds noise, so scope it.** Once the file prose became a checked block, about 20 new warnings appeared. Two were structural: its "code" is only the preamble, so a staleness comparison against imports means nothing (skipped), and its prose describes the whole file, so it resolves against everything the file declares, not just the imports. The rest are the usual symbol-check false positives on external names.
 
 ## Working style
 
-- **When integrating an unfamiliar package, read the installed `.d.ts` files directly** rather
-  than relying only on doc-summary fetches (`WebFetch` here ran the actual page through a
-  smaller model, which lost or garbled specifics — e.g. it couldn't produce concrete `action`/
-  `event`/state examples that the type declarations answered directly). Installing the package
-  into a scratch directory and grepping its `dist/*.d.ts` gave ground truth on exact function
-  signatures, default values, and — critically — the "mounts inside `@vitejs/devtools`" detail
-  the doc-summary omitted entirely, which changed the actual cost of adopting it.
-- **A "server responds 200/starts cleanly" check is not the same as "the feature works."** Every
-  verification step in this session that only checked HTTP status codes or that the dev server
-  booted without throwing passed, right up until a real browser hit three separate, unrelated-
-  looking bugs (asset base path, then RPC naming). Full verification of a client/server RPC
-  integration needs either a real browser or a headless client that actually calls the RPC layer
-  end to end, not just proxies for it (status codes, startup logs).
-- **Stray background dev-server processes silently serve stale code and make a real fix look like
-  it didn't work.** Across this session, `pkill -f "vp dev --port 5198"` (or similar) repeatedly
-  failed to kill the actual `vite-plus-core` child process the CLI spawns — the pattern matched
-  the wrapper, not the process holding the port — leaving 2-3 old servers running simultaneously.
-  The *oldest* one keeps the port; a fresh rebuild + restart attempt actually starts a new server
-  on a different port while the stale one keeps answering `curl`. Symptom: a fix verified correct
-  by direct unit testing (`buildTree()` called straight from a script) still shows the old, wrong
-  behavior over RPC — which reads exactly like "the fix didn't propagate," and burned real time
-  investigating the wrong layer (parser logic) before `ps aux | grep vite` showed multiple
-  listeners. Fix: `ps aux | grep -i vite`, kill by literal PID, confirm the process list is
-  actually empty before starting one fresh instance — don't trust a `pkill` pattern match without
-  checking what's left running.
-- **Measuring "this block's indentation" from its closing delimiter line is wrong when the
-  delimiter has its own leading whitespace.** `notes.ts`'s first version measured a `@prose`
-  block's indent from the position right after its own `*/` — but for a multi-line block, that
-  line is `" */"` (the ` * ` gutter's own single leading space), not the block's real column.
-  Every note this wrote came out indented one space further than the code around it. The fix
-  needed the block's *opening* line's indentation instead, which meant adding a new byte-offset
-  field (`ProseChunk.startIndex`) that hadn't been needed before this feature. Caught by a live
-  round trip against `examples/base` (not by unit tests against synthetic single-line fixtures,
-  which can't reproduce it — a single-line block's opening and closing positions read the same
-  indent by coincidence); locked in afterward with a regression test using a deliberately
-  multi-line block.
-
-## Live updates: Devframe's `SharedState`
-
-- **A comment-syntax scanner without a closing delimiter needs the *marker* to define block
-  boundaries, not "a maximal run of comment lines."** YAML/TOML's `#` has no closing delimiter the
-  way `/** */` or `<!-- -->` does, so the naive version of `scanHashComments` (collect every
-  contiguous `#`-line into one block, then check only the first line for a marker) silently merged
-  a `@prose` block and its immediately-following `@note` into one block whenever they sat back-to-
-  back with no blank line — exactly the adjacency case `@note` is supposed to support natively
-  (spec §6.2, matching the JS/HTML styles). The fix treats a marker line itself as the boundary: a
-  block runs from a marker line through following `#`-lines *up to the next marker line or the
-  first non-`#` line*, whichever comes first. Caught by writing the back-to-back test case
-  directly, not found live — worth remembering as a general shape: any block scanner with no
-  closing delimiter needs to ask "what happens when two blocks touch," not just "what happens at
-  the end."
-- **Devframe's `SharedState` client can resolve before it's actually populated — verified
-  directly, not assumed.** Calling `scope.rpc.sharedState("tree")` with no client-side
-  `initialValue` takes an internal code path that can resolve the returned handle immediately
-  (an "isTrusted" branch) before the server round trip that fills it in completes; `.value()`
-  reads back empty for one tick, and the real data arrives moments later as an ordinary
-  `"updated"` event — not a second, different kind of event, the same one every later mutation
-  fires. Confirmed with a live headless script (`devframe/client`, real dev server, real file
-  edit) before writing the fix, not inferred from reading the source alone. `client/main.ts`'s
-  `firstTreeValue()` checks `.value()` first and only falls back to awaiting the next `"updated"`
-  event if it's empty — cheap, and correct in both the raced and non-raced case, since a real
-  empty tree is never a valid state for this app (every project has at least a root node).
-- **`devframe/client`'s transport resolution reads the browser-global `location` unconditionally**
-  — a headless Node verification script needs `globalThis.location = new URL(...)` set before
-  calling `connectDevframe`, for both the WebSocket and SSE transport paths. Separately (and not
-  yet root-caused, so noted rather than fixed): forcing `transport: "sse"` made *every* RPC call
-  hang indefinitely in this Node environment, including plain `query` calls unrelated to shared
-  state, while `transport: "websocket"` worked correctly for the same calls against the same
-  server. Treat `sse` as untested for headless Node scripts in this project until that's
-  understood; `websocket` is the one to reach for.
-- **SvelteKit's own `vite build` does not run a plugin's `transformIndexHtml` hook at all** —
-  confirmed via the explicit warning it prints (`"transformIndexHtml hook which is not
-  supported"`), not inferred. Harmless today (`examples/base` has no `@prose` in any `.html`
-  output path — Svelte's compiler already strips markup comments from `.svelte` files before this
-  hook would ever see them), but real: a `@prose` comment added directly to `app.html` on a
-  SvelteKit host would ship to production unstripped, with the build giving no error, only an
-  easy-to-miss warning. Worth remembering as a host-specific gap in §6.4's build-strip step, not
-  something this plugin can currently detect or work around.
+- **Read the installed `.d.ts` files, not a summarized doc fetch.** `WebFetch` ran pages through a smaller model that lost specifics (no concrete `action`/`event`/state examples, and it omitted "mounts inside `@vitejs/devtools`", which changed the cost of adopting it). Install into a scratch directory and grep `dist/*.d.ts`.
+- **Stale dev servers make a correct fix look broken.** `pkill -f "vp dev --port …"` matched the wrapper, not the child `vite-plus-core` holding the port; the oldest server kept answering while a new one started elsewhere. A fix verified by a direct `buildTree()` call still failed over RPC, which burned time in the parser. `ps aux | grep -i vite`, kill by PID, and confirm the list is empty before starting one.

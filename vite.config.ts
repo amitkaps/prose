@@ -1,7 +1,7 @@
 /** @prose
  * Drives `vp fmt` / `vp lint` / `vp test` for the plugin's own source — not `vp build`: the
  * library builds via `tsdown` (`tsdown.config.ts`) and the client SPA via
- * `vite build --config vite.client.config.ts`, so `plugins` stays empty here. `examples/**`
+ * `vite build --config client/vite.config.ts`, so `plugins` stays empty here. `examples/**`
  * each have their own `vite-plus` config and style; running `vp` from the repo root must not
  * reach into them, which is why `ignored` excludes them explicitly rather than relying on
  * per-project config discovery.
@@ -23,6 +23,7 @@ export default defineConfig({
 	fmt: {
 		useTabs: true,
 		printWidth: 100,
+		svelte: { indentScriptAndStyle: true },
 		ignorePatterns: ignored,
 	},
 
@@ -36,6 +37,6 @@ export default defineConfig({
 	test: {
 		expect: { requireAssertions: true },
 		environment: "node",
-		include: ["src/**/*.test.ts"],
+		include: ["src/**/*.test.ts", "client/**/*.test.ts"],
 	},
 });
