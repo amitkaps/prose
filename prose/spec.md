@@ -30,6 +30,22 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 
 **The test of whether this is working:** after an agent makes a few dozen meaningful changes, can the human spend five minutes in `/__prose/` and recover what changed, why, what's still uncertain, and where to step in? The *since* view (§6.5) answers "what changed", the prose answers "why", and open `@note`s (§6.2), whoever wrote them, answer "what's uncertain". The sweet spot is one human plus coding agents on a small but real app (§2 gives the size) — tiny projects don't need the ceremony, and very large ones have coordination problems this doesn't solve. It's most valuable exactly when the agent writes code faster than the human can read it.
 
+**It's code review without a pull request.** A team reviews an agent's work in a PR: a diff, comments on lines, replies, resolved threads, an approval. One person working with agents in long, uncommitted sessions has no PR to hang that on, so Prose does the same review in the code and the plan together:
+
+| PR review                          | Prose                                                                 |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| The diff against the base branch   | The *since* view against `HEAD` (§6.5): the uncommitted session is the PR |
+| Line comments                      | Line notes (§6.2)                                                     |
+| General review comments            | Block notes, on the `@prose` block they're about                      |
+| A reply in the thread              | The agent changes the code or prose and deletes the note; the change is the answer |
+| Resolve conversation               | The note is deleted, and shows as resolved in the *since* view        |
+| "Outdated" comments                | None: a note moves with the code it sits beside                       |
+| Submit review                      | Asking the agent to "handle notes" (§8)                               |
+| Approve, "changes since last review" | **Mark reviewed**, the *since* view's baseline (§6.5)               |
+| PR description                     | The `@prose` blocks, kept current rather than written once            |
+
+Two things it does that a PR review can't. A pending chunk (§3.2) can be reviewed before any code exists, so the plan gets the same review as the code. And the review lives in the source, so the agent reads it without an API and it moves with the code.
+
 **What the mechanical checks can't do.** The checks (§5) catch prose that names something that doesn't exist, or that wasn't touched when its code was. They can't catch prose that was rewritten in the same change and is simply wrong. That is what the human's reading is for, and why the view is built around reading, not around a score.
 
 ## 2. Scope of the prototype
@@ -315,7 +331,7 @@ The five-minute test (§1) starts with "what changed". The tree is a snapshot, s
 
 - **Since `HEAD`** (the default): everything in the working tree that differs from the last commit. In a long uncommitted session, that's the session's work.
 - **Since another commit**: a ref typed into the toggle, for reviewing across commits.
-- **Since my last visit**: the tree as this browser last saw it, kept in the browser's own storage as a content hash per block and the set of open notes. Nothing is written to the project.
+- **Since last reviewed**: the tree as it was when the human last pressed **Mark reviewed**, kept in the browser's own storage as a content hash per block and the set of open notes. Nothing is written to the project. Opening a page doesn't move this baseline, since looking isn't reviewing; only the explicit action does, like "changes since your last review" in a PR. The view shows when the baseline was set.
 
 In the since view, blocks whose prose or code changed are marked, new pending chunks are listed, and notes that were open at the baseline and are gone now appear as **resolved**. That list is the trail of resolved notes (§6.2), and it works before anything is committed. Badges roll up to folders the same way warnings do.
 

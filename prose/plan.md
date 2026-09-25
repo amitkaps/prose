@@ -44,7 +44,7 @@ Steps 1–3 come before anything that builds on anchors or writes (dev tools, `p
 ### 4. The *since* view (spec §6.5)
 
 - [ ] Server: diff the working tree against `HEAD` or a given ref, per block (changed prose, changed code, new pending, removed notes).
-- [ ] Client: rail toggle (`HEAD` / ref / last visit); last-visit baseline as per-block hashes and open notes in browser storage; badges roll up.
+- [ ] Client: rail toggle (`HEAD` / ref / last reviewed); a **Mark reviewed** action stores the baseline (per-block hashes and open notes) in browser storage; opening a page never moves it; badges roll up.
 - [ ] Staleness ignores reformats: pending chunk in `src/git.ts`.
 
 ### 5. Polish on the file view
