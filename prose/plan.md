@@ -36,6 +36,8 @@ Steps 2–3 come before anything that builds on anchors or writes (dev tools, `p
 
 ### 4. The *since* view (spec §6.5)
 
+Build the smallest version that makes it visible, use it, then decide its shape (spec §6.5). Start with `HEAD` only; add a ref and **Mark reviewed** once the first version has been seen.
+
 - [ ] Server: diff the working tree against `HEAD` or a given ref, per block (changed prose, changed code, new pending, removed notes).
 - [ ] Client: rail toggle (`HEAD` / ref / last reviewed); a **Mark reviewed** action stores the baseline (per-block hashes and open notes) in browser storage; opening a page never moves it; badges roll up.
 - [ ] Staleness ignores reformats: pending chunk in `src/git.ts`.
@@ -43,6 +45,8 @@ Steps 2–3 come before anything that builds on anchors or writes (dev tools, `p
 ### 5. Polish on the file view
 
 Nothing here is decided; each is a choice to make when it starts to matter.
+
+- [ ] **Keyboard navigation** (spec §6.1): ← → siblings, ↑ parent, ↓ first child or next block. Decided; the rest of how to explore the code waits for use on a larger app.
 
 - [ ] **Notes in Markdown**: READMEs and `prose/*.md` (spec §10).
 - [ ] **Per-block staleness badge** in the margin; the file badge counts them today.
