@@ -68,7 +68,7 @@ describe("buildTree", () => {
 			"main.js": "/** @prose File. */\n\n/** @prose Plan item. */\n",
 		});
 		const tree = buildTree(dir);
-		const chunk = findNode(tree, "main.js#top-chunk-0");
+		const chunk = findNode(tree, "main.js#chunk-1");
 		expect(chunk?.pending).toBe(true);
 	});
 
@@ -79,7 +79,7 @@ describe("buildTree", () => {
 		});
 		const file = buildTree(dir).children[0];
 		expect(file.children).toEqual([]);
-		expect(file.blocks?.map((b) => b.path)).toEqual(["main.js#file", "main.js#top-chunk-0"]);
+		expect(file.blocks?.map((b) => b.path)).toEqual(["main.js#file", "main.js#a"]);
 		// spans are the comment's exact byte range in the source, so a view can lay code around it
 		const [first, second] = file.blocks!;
 		expect(file.source!.slice(...first.span!)).toBe("/** @prose File. */");
@@ -240,7 +240,7 @@ describe("findNode", () => {
 			"main.js": "/** @prose File. */\n\n/** @prose A chunk. */\nconst a = 1;\n",
 		});
 		const tree = buildTree(dir);
-		const found = findNode(tree, "main.js#top-chunk-0");
+		const found = findNode(tree, "main.js#a");
 		expect(found?.kind).toBe("chunk");
 		expect(found?.prose).toBe("A chunk.");
 	});
@@ -258,7 +258,7 @@ describe("buildTree: checks (spec §5)", () => {
 			"main.js": "/** @prose File. */\n\n/** @prose Calls `doesNotExist`. */\nconst a = 1;\n",
 		});
 		const tree = buildTree(dir);
-		const chunk = findNode(tree, "main.js#top-chunk-0");
+		const chunk = findNode(tree, "main.js#a");
 		expect(chunk?.symbols).toEqual([{ text: "doesNotExist", status: "unresolved" }]);
 		expect(chunk?.warnings).toEqual([
 			{
@@ -280,9 +280,9 @@ describe("buildTree: checks (spec §5)", () => {
 			"main.js": "/** @prose File. */\n\n/** @prose Calls `addTodo`. */\nconst a = 1;\n",
 		});
 		const tree = buildTree(dir);
-		const chunk = findNode(tree, "main.js#top-chunk-0");
+		const chunk = findNode(tree, "main.js#a");
 		expect(chunk?.symbols).toEqual([
-			{ text: "addTodo", status: "linked", target: "store.ts#top-chunk-0" },
+			{ text: "addTodo", status: "linked", target: "store.ts#addTodo" },
 		]);
 		expect(chunk?.warningCount).toBe(0);
 		expect(tree.warningCount).toBe(0);
@@ -299,7 +299,7 @@ describe("buildTree: checks (spec §5)", () => {
 			].join("\n"),
 		});
 		const tree = buildTree(dir);
-		const chunk = findNode(tree, "docs.ts#top-chunk-0");
+		const chunk = findNode(tree, "docs.ts#render");
 		expect(chunk?.symbols).toEqual([{ text: "marked", status: "local" }]);
 		expect(chunk?.warningCount).toBe(0);
 	});

@@ -7,8 +7,11 @@
  * text with comment syntax, and that's all this needs to find.
  */
 import { createHash } from "node:crypto";
+import { declaredIdentifiers } from "./checks.js";
 export interface ProseChunk {
-	slug: string;
+	/** Content-derived address within the file (spec §3.2): `file`, the first declared name, the
+	 *  heading slug, or `chunk-N`; unique per file. Set by `parseFile`. */
+	anchor: string;
 	heading: string | null;
 	prose: string;
 	code: string;
@@ -535,12 +538,8 @@ export function parseFile(source: string, extension: string): FileParse {
 			hasOpenedSection = true;
 		}
 
-		const chunkSlug = headingMatch
-			? currentSection.slug
-			: `${currentSection.slug}-chunk-${currentSection.chunks.length}`;
-
 		currentSection.chunks.push({
-			slug: chunkSlug,
+			anchor: "",
 			heading: headingMatch ? currentSection.heading : null,
 			prose: block.body,
 			code,
@@ -560,8 +559,10 @@ export function parseFile(source: string, extension: string): FileParse {
 	}
 	sections.push(currentSection);
 
+	assignAnchors(sections);
+
 	const fileChunk: ProseChunk = {
-		slug: FILE_ANCHOR,
+		anchor: FILE_ANCHOR,
 		heading: null,
 		prose: fileBlock.body,
 		code: preamble,
@@ -581,15 +582,43 @@ export function parseFile(source: string, extension: string): FileParse {
 	return { fileProse: fileBlock.body, fileBlock: fileChunk, preamble, sections };
 }
 
-/** The anchor of a file's own prose block: `src/store.ts#file`. No chunk can collide with it,
- *  since an unheaded chunk is `top-chunk-N` and a headed one is `<section>/<slug>`. */
+/** The anchor of a file's own prose block: `src/store.ts#file`. Reserved: a chunk whose name
+ *  would be `file` becomes `file-2`. */
 export const FILE_ANCHOR = "file";
 
-/** The anchor half of a chunk's stable path (`tree.ts` prefixes it with `<relPath>#`) — shared
- *  with `notes.ts`, which needs to re-derive the exact same anchor from a fresh parse to find the
- *  chunk a note write targets, without duplicating this slug logic a second time. */
-export function chunkAnchor(section: ProseSection, chunk: ProseChunk): string {
-	return section.heading === null ? chunk.slug : `${section.slug}/${chunk.slug}`;
+/** The anchor half of a chunk's stable path (`tree.ts` prefixes it with `<relPath>#`), shared
+ *  with `notes.ts` so a write re-derives the same anchor from a fresh parse. */
+export function chunkAnchor(chunk: Pick<ProseChunk, "anchor">): string {
+	return chunk.anchor;
+}
+
+/** @prose
+ * # Content-derived anchors (spec §3.2)
+ *
+ * In order: the first name the chunk's code declares (JS and TS only, through
+ * `declaredIdentifiers`), then the slug of its heading, then `chunk-N` by position, the only kind
+ * that moves when a block is inserted above. A repeat within the file takes `-2`, `-3` in source
+ * order, and `file` is taken from the start. Names are not lowercased or otherwise rewritten, so
+ * `#addTodo` reads as the code does.
+ */
+function assignAnchors(sections: ProseSection[]): void {
+	const used = new Set([FILE_ANCHOR]);
+	const seen = new Map<string, number>();
+	let position = 0;
+	for (const section of sections) {
+		for (const chunk of section.chunks) {
+			position++;
+			const declared =
+				chunk.codeLang === "js" ? [...declaredIdentifiers(chunk.code)][0] : undefined;
+			const base = declared ?? (chunk.heading ? slugify(chunk.heading) : `chunk-${position}`);
+			let n = seen.get(base) ?? 1;
+			let anchor = n === 1 && !used.has(base) ? base : `${base}-${++n}`;
+			while (used.has(anchor)) anchor = `${base}-${++n}`;
+			seen.set(base, n);
+			used.add(anchor);
+			chunk.anchor = anchor;
+		}
+	}
 }
 
 /** @prose
@@ -612,14 +641,6 @@ export function firstParagraph(text: string): string {
 	const paragraph = withoutTitle.split(/\n\s*\n/)[0] ?? "";
 	return paragraph.trim();
 }
-
-/** @prose
- * # Content-derived anchors (spec §3.2)
- *
- * Planned. Replace `chunkAnchor`'s positional slugs with the spec's order: the first name the
- * chunk's code declares, then the heading slug, then position; repeats get a numeric suffix.
- * Anchors must survive a block being inserted above them (a metamorphic test checks that).
- */
 
 /** @prose
  * # Comments from oxc for JS and TS (spec §3.1)

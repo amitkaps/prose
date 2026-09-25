@@ -56,7 +56,7 @@ function safeFile(root: string, relPath: string): string {
 }
 
 /** @prose
- * Splits a chunk's stable path (`src/store.ts#addTodo`, `src/store.ts#state/addTodo`, or
+ * Splits a chunk's stable path (`src/store.ts#addTodo` or
  * `src/store.ts#file` for the file prose) into the file it lives in and the anchor within it.
  * Only files that can hold a note get this far; a plain `.md` file is whole-file prose, with no
  * block to attach one to yet.
@@ -89,7 +89,7 @@ function locateChunk(
 	if (anchor === FILE_ANCHOR) chunk = parsed.fileBlock;
 	else {
 		for (const section of parsed.sections) {
-			for (const c of section.chunks) if (chunkAnchor(section, c) === anchor) chunk ??= c;
+			for (const c of section.chunks) if (chunkAnchor(c) === anchor) chunk ??= c;
 		}
 	}
 	if (!chunk || blockHash(chunk) !== expectedHash) {

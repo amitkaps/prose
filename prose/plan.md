@@ -15,15 +15,11 @@ In the order it landed.
 - **CI** — `check`, `test`, `build` on every PR (#2).
 - **Review decisions** — `prose/review.md` settled; spec, plan and code prose updated to match.
 - **Safe writes** — note text escaped per comment style; writes checked against `projectFiles` (inside the root, symlinks included) and the block hash; writes only on loopback, MCP route off; client sends the hash and keeps the draft on refusal; fast-check properties on the pure edits (`withNote`/`withoutNote`); git-aware walk with root-only `prose/` (spec §3.4, §6).
+- **Anchors** — a block's address is its first declared name, else its heading slug, else `chunk-N`, repeats suffixed (spec §3.2); property test that inserting a block never changes what an existing anchor names.
 
 ## Open work, in order
 
-Steps 2–3 come before anything that builds on anchors or writes (dev tools, `prose/` sync). Step numbers are kept as they were, since other docs cite them.
-
-### 2. Anchors (spec §3.2)
-
-- [ ] Content-derived anchors: pending chunk in `src/parser.ts`. Update `client/nav.ts` and the examples' links to the new form.
-- [ ] Metamorphic test: inserting a block anywhere at top level never changes which block an existing anchor resolves to.
+Step 3 comes before anything that builds on anchors or writes (dev tools, `prose/` sync). Step numbers are kept as they were, since other docs cite them.
 
 ### 3. Parser on oxc for JS/TS, and line notes (spec §3.1, §6.2)
 
