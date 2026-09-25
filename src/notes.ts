@@ -16,6 +16,8 @@
  */
 import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
+import { lineHash } from "./hash.js";
+import { landing, NoAnchorError } from "./insertion.js";
 import { blockHash, chunkAnchor, FILE_ANCHOR, type ProseChunk, parseFile } from "./parser.js";
 import { projectFiles } from "./tree.js";
 
@@ -56,20 +58,28 @@ function safeFile(root: string, relPath: string): string {
 }
 
 /** @prose
- * Splits a chunk's stable path (`src/store.ts#addTodo` or
- * `src/store.ts#file` for the file prose) into the file it lives in and the anchor within it.
- * Only files that can hold a note get this far; a plain `.md` file is whole-file prose, with no
- * block to attach one to yet.
+ * Splits a path into the file and what the note is about. A block is `src/store.ts#addTodo`
+ * (or `#file` for the file prose): the anchor. A line is `src/store.ts:42`: the 1-based line,
+ * for an add the line the human picked, for a resolve the note's own first line. Only files that
+ * can hold a note get this far; a plain `.md` file is whole-file prose, with no block to attach
+ * one to yet.
  */
-function splitPath(path: string): { relPath: string; anchor: string; ext: string } {
+type Target =
+	| { relPath: string; ext: string; anchor: string; line?: undefined }
+	| { relPath: string; ext: string; line: number; anchor?: undefined };
+
+function splitPath(path: string): Target {
 	const hashIndex = path.indexOf("#");
-	if (hashIndex === -1) throw new NoteWriteError(`"${path}" names a file, not a block.`);
-	const relPath = path.slice(0, hashIndex);
+	const lineMatch = hashIndex === -1 ? /^(.+):(\d+)$/.exec(path) : null;
+	if (hashIndex === -1 && !lineMatch)
+		throw new NoteWriteError(`"${path}" names a file, not a block.`);
+	const relPath = lineMatch ? lineMatch[1] : path.slice(0, hashIndex);
 	const ext = extensionOf(relPath);
 	if (!SOURCE_EXTENSIONS.has(ext)) {
 		throw new NoteWriteError(`"${relPath}" can't hold a note yet (spec §10).`);
 	}
-	return { relPath, anchor: path.slice(hashIndex + 1), ext };
+	if (lineMatch) return { relPath, ext, line: Number(lineMatch[2]) };
+	return { relPath, ext, anchor: path.slice(hashIndex + 1) };
 }
 
 /** @prose
@@ -222,20 +232,153 @@ export function withoutNote(
 }
 
 /** @prose
+ * # Line notes (spec §6.2)
+ *
+ * `withLineNote` writes a note above a line of code. `expectedHash` is `lineHash` of the line as
+ * the client saw it, so a file that changed underneath refuses the write. The note goes where
+ * `landing` says (above the whole statement, element, rule or key), not on the exact line. Two
+ * cases share their spot with something that exists:
+ *
+ * - A note already directly above the landing line is replaced: one open note per spot.
+ * - A landing line directly under a block's prose (or its note) is the block's own spot, and a
+ *   note written there would be read back as the block's note, so the write goes to the block,
+ *   replacing any note it has.
+ */
+export function withLineNote(
+	source: string,
+	ext: string,
+	line: number,
+	text: string,
+	expectedHash: string,
+): string {
+	const target = lineTarget(source, ext, line, expectedHash);
+	const parsed = parseFile(source, ext);
+	const owner = [parsed.fileBlock, ...parsed.sections.flatMap((s) => s.chunks)].find(
+		(b) => b && b.endIndex <= target.start && source.slice(b.endIndex, target.start).trim() === "",
+	);
+	if (owner) return withNote(source, ext, owner.anchor, text, blockHash(owner));
+
+	const escaped = escapeNote(text, target.style);
+	if (!escaped.trim()) throw new NoteWriteError("A note needs some text.");
+	const eol = source.includes("\r\n") ? "\r\n" : "\n";
+	const formatted = formatNote(escaped, target.indent, target.style, eol);
+	const above = parsed.lineNotes.find(
+		(n) => n.endIndex <= target.start && source.slice(n.endIndex, target.start).trim() === "",
+	);
+	if (above) {
+		const from = source.lastIndexOf("\n", above.startIndex - 1) + 1;
+		return `${source.slice(0, from)}${formatted}${source.slice(above.endIndex)}`;
+	}
+	return `${source.slice(0, target.start)}${formatted}${eol}${source.slice(target.start)}`;
+}
+
+/** Checks the line hash and finds the landing line, as offsets in `source`. */
+function lineTarget(
+	source: string,
+	ext: string,
+	line: number,
+	expectedHash: string,
+): { start: number; indent: string; style: "js" | "html" | "hash"; text: string; line: number } {
+	const lines = source.split("\n");
+	if (line < 1 || line > lines.length || lineHash(lines[line - 1]) !== expectedHash) {
+		throw new NoteWriteError(
+			`Line ${line} changed since the view loaded it, so nothing was written. Check the file and try again.`,
+		);
+	}
+	let landed: { line: number; style: "js" | "html" | "hash" };
+	try {
+		landed = landing(source, ext, line);
+	} catch (err) {
+		if (err instanceof NoAnchorError) throw new NoteWriteError(err.message);
+		throw err;
+	}
+	const start = lines.slice(0, landed.line - 1).reduce((sum, l) => sum + l.length + 1, 0);
+	const text = lines[landed.line - 1].replace(/\r$/, "");
+	return {
+		start,
+		indent: /^[ \t]*/.exec(text)![0],
+		style: landed.style,
+		text,
+		line: landed.line,
+	};
+}
+
+/** The line a note picked at `line` would land above, for the view to show before it writes,
+ *  and whether that spot is a block's own (see `withLineNote`). */
+export function previewLineNote(
+	source: string,
+	ext: string,
+	line: number,
+	expectedHash: string,
+): { line: number; text: string; block: boolean } {
+	const target = lineTarget(source, ext, line, expectedHash);
+	const parsed = parseFile(source, ext);
+	const block = [parsed.fileBlock, ...parsed.sections.flatMap((s) => s.chunks)].some(
+		(b) => b && b.endIndex <= target.start && source.slice(b.endIndex, target.start).trim() === "",
+	);
+	return { line: target.line, text: target.text.trim(), block };
+}
+
+/** Removes the line note that starts on `line` if its text still hashes to `expectedHash`. A note
+ *  sharing its line with code (`f(); /** @note x *\/`) is cut out alone, never with the code. */
+export function withoutLineNote(
+	source: string,
+	ext: string,
+	line: number,
+	expectedHash: string,
+): string {
+	const note = parseFile(source, ext).lineNotes.find((n) => n.startLine === line);
+	if (!note || note.hash !== expectedHash) {
+		throw new NoteWriteError(
+			`The note at line ${line} changed since the view loaded it, or is gone, so nothing was removed.`,
+		);
+	}
+	const lineStart = source.lastIndexOf("\n", note.startIndex - 1) + 1;
+	const eolAt = source.indexOf("\n", note.endIndex);
+	const lineEnd = eolAt === -1 ? source.length : eolAt;
+	const alone =
+		source.slice(lineStart, note.startIndex).trim() === "" &&
+		source.slice(note.endIndex, lineEnd).trim() === "";
+	if (!alone) return source.slice(0, note.startIndex) + source.slice(note.endIndex);
+	const [start, end] = wholeLineRange(source, note.startIndex, note.endIndex);
+	return source.slice(0, start) + source.slice(end);
+}
+
+/** @prose
  * The two writes the RPC calls: check the path (`safeFile`), then read, edit and write the file
  * in one synchronous step, so nothing else in this process can interleave. `expectedHash` is the
  * block's `hash` from the tree the client holds.
  */
 export function addNote(root: string, path: string, text: string, expectedHash: string): void {
-	const { relPath, anchor, ext } = splitPath(path);
-	const file = safeFile(root, relPath);
+	const target = splitPath(path);
+	const file = safeFile(root, target.relPath);
 	const source = readFileSync(file, "utf-8");
-	writeFileSync(file, withNote(source, ext, anchor, text, expectedHash), "utf-8");
+	const next =
+		target.line !== undefined
+			? withLineNote(source, target.ext, target.line, text, expectedHash)
+			: withNote(source, target.ext, target.anchor, text, expectedHash);
+	writeFileSync(file, next, "utf-8");
 }
 
 export function resolveNote(root: string, path: string, expectedHash: string): void {
-	const { relPath, anchor, ext } = splitPath(path);
-	const file = safeFile(root, relPath);
+	const target = splitPath(path);
+	const file = safeFile(root, target.relPath);
 	const source = readFileSync(file, "utf-8");
-	writeFileSync(file, withoutNote(source, ext, anchor, expectedHash), "utf-8");
+	const next =
+		target.line !== undefined
+			? withoutLineNote(source, target.ext, target.line, expectedHash)
+			: withoutNote(source, target.ext, target.anchor, expectedHash);
+	writeFileSync(file, next, "utf-8");
+}
+
+/** Where a line note picked at `path` (`src/store.ts:42`) would go; reads, never writes. */
+export function noteTarget(
+	root: string,
+	path: string,
+	expectedHash: string,
+): { line: number; text: string; block: boolean } {
+	const target = splitPath(path);
+	if (target.line === undefined) throw new NoteWriteError(`"${path}" isn't a line.`);
+	const source = readFileSync(safeFile(root, target.relPath), "utf-8");
+	return previewLineNote(source, target.ext, target.line, expectedHash);
 }

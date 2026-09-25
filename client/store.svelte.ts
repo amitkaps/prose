@@ -146,6 +146,20 @@ export async function resolveNote(path: string, hash: string): Promise<void> {
 	await prose?.rpc.call("resolve-note", path, hash);
 }
 
+/** A line note is addressed by `file:line` (spec §6.3): an add sends the hash of that line's text,
+ *  a resolve the hash of the note's. `noteTarget` asks where an add would land, so the view can
+ *  show it first; it writes nothing. */
+export async function noteTarget(
+	path: string,
+	hash: string,
+): Promise<{ line: number; text: string; block: boolean }> {
+	return (await prose?.rpc.call("note-target", path, hash)) as {
+		line: number;
+		text: string;
+		block: boolean;
+	};
+}
+
 /** @prose
  * # Bootstrapping
  *

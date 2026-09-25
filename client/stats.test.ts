@@ -37,8 +37,8 @@ const tree = node({
 describe("stats", () => {
 	it("rolls attention up to every ancestor", () => {
 		const r = rollup(tree);
-		expect(r.get("a.ts")).toEqual({ pending: 1, unresolved: 0, stale: 1, notes: 1 });
-		expect(r.get(".")).toEqual({ pending: 1, unresolved: 0, stale: 1, notes: 1 });
+		expect(r.get("a.ts")).toEqual({ pending: 1, unresolved: 0, stale: 1, notes: 1, misplaced: 0 });
+		expect(r.get(".")).toEqual({ pending: 1, unresolved: 0, stale: 1, notes: 1, misplaced: 0 });
 	});
 
 	it("summarizes project health", () => {

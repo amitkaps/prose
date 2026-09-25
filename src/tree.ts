@@ -66,12 +66,25 @@ export interface TreeNode {
 	codeLang?: "js" | "css" | "html" | "yaml" | "toml";
 	/** Chunk-only: inline code spans from this chunk's own prose, resolved per spec §5.1. */
 	symbols?: Symbol[];
-	/** This node's own warnings (chunks only, for now — §5 doesn't define file/folder-level checks). */
+	/** File-only: the `@note`s above lines of code, in source order (spec §6.2). Each is laid out in
+	 *  place by its `span`; `path` is `file:line`, its address for a resolve. */
+	lineNotes?: LineNoteNode[];
+	/** This node's own warnings (chunks, and a file's misplaced blocks — §5 doesn't define file/folder-level checks). */
 	warnings?: Warning[];
 	/** Own warnings plus every descendant's, so a badge can show at any level without the client
 	 *  walking the subtree itself (spec §6.1: "roll up to their ancestors"). */
 	warningCount: number;
 	children: TreeNode[];
+}
+
+/** A line note as the client sees it. */
+export interface LineNoteNode {
+	/** `src/store.ts:42`: the file and the line the note starts on. */
+	path: string;
+	text: string;
+	/** `noteHash` of the text: sent back with a resolve. */
+	hash: string;
+	span: [number, number];
 }
 
 /** Only used outside a git repository; inside one, `.gitignore` decides (`projectFiles`). */
@@ -136,10 +149,19 @@ function fileToNode(root: string, relPath: string): TreeNode {
 					fileBlock: null,
 					preamble: "",
 					sections: [],
+					lineNotes: [],
+					misplaced: [],
 				}
 			: SOURCE_EXTENSIONS.has(ext)
 				? parseFile(source, ext)
-				: { fileProse: null, fileBlock: null, preamble: source.trim(), sections: [] };
+				: {
+						fileProse: null,
+						fileBlock: null,
+						preamble: source.trim(),
+						sections: [],
+						lineNotes: [],
+						misplaced: [],
+					};
 
 	// One blame read per file, reused across every chunk in it (spec §5.2) — computed lazily,
 	// only if there's actually a chunk with code to compare, since `git blame` is a subprocess call.
@@ -185,6 +207,11 @@ function fileToNode(root: string, relPath: string): TreeNode {
 		for (const chunk of section.chunks) blocks.push(chunkNode(chunk, chunkAnchor(chunk)));
 	}
 
+	const misplaced: Warning[] = parsed.misplaced.map((line) => ({
+		kind: "misplaced-block",
+		message: `Line ${line}: a \`@prose\` block inside a function, class or rule is ignored. Move it to the top level.`,
+	}));
+
 	return {
 		name: relPath,
 		kind: "file",
@@ -194,7 +221,14 @@ function fileToNode(root: string, relPath: string): TreeNode {
 		preamble: parsed.preamble,
 		source: ext === "md" ? undefined : source,
 		blocks: ext === "md" ? undefined : blocks,
-		warningCount: sumWarnings(blocks),
+		lineNotes: parsed.lineNotes.map((n) => ({
+			path: `${relPath}:${n.startLine}`,
+			text: n.text,
+			hash: n.hash,
+			span: [n.startIndex, n.endIndex],
+		})),
+		warnings: misplaced,
+		warningCount: sumWarnings(blocks) + misplaced.length,
 		children: [],
 	};
 }
@@ -477,7 +511,7 @@ function applySymbolChecks(root: TreeNode, knownPackages: ReadonlySet<string>): 
  *  warnings to chunks *after* `fileToNode`/`folderToNode` already summed the staleness-only counts. */
 function rerollWarnings(node: TreeNode): number {
 	if (node.kind === "file") {
-		node.warningCount = sumWarnings(node.blocks ?? []);
+		node.warningCount = sumWarnings(node.blocks ?? []) + (node.warnings?.length ?? 0);
 		return node.warningCount;
 	}
 	node.warningCount = node.children.reduce((sum, child) => sum + rerollWarnings(child), 0);

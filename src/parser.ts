@@ -7,7 +7,9 @@
  * text with comment syntax, and that's all this needs to find.
  */
 import { createHash } from "node:crypto";
+import { parseSync } from "oxc-parser";
 import { declaredIdentifiers } from "./checks.js";
+import { noteHash } from "./hash.js";
 export interface ProseChunk {
 	/** Content-derived address within the file (spec §3.2): `file`, the first declared name, the
 	 *  heading slug, or `chunk-N`; unique per file. Set by `parseFile`. */
@@ -58,6 +60,18 @@ export interface ProseSection {
 	chunks: ProseChunk[];
 }
 
+/** A `@note` that isn't a block note: it sits above a line of code, at any depth (spec §6.2). */
+export interface LineNote {
+	text: string;
+	/** Byte span of the comment, for the view to lay the file out around it and for a resolve. */
+	startIndex: number;
+	endIndex: number;
+	/** 1-based line the comment starts on: the note's own position, and its address (`file:line`). */
+	startLine: number;
+	/** `noteHash` of the text, sent back with a resolve so a note that changed is refused. */
+	hash: string;
+}
+
 export interface FileParse {
 	fileProse: string | null;
 	/** The file prose as a block in its own right (slug `file`), so it can carry a note and be
@@ -65,6 +79,10 @@ export interface FileParse {
 	fileBlock: ProseChunk | null;
 	preamble: string;
 	sections: ProseSection[];
+	lineNotes: LineNote[];
+	/** Lines of `@prose` blocks that sit inside a function, class or rule body, where they are
+	 *  ignored (spec §3.1). `tree.ts` reports each as a warning on the file. */
+	misplaced: number[];
 }
 
 interface RawBlock {
@@ -78,6 +96,8 @@ interface RawBlock {
 	startIndex: number;
 	endIndex: number;
 	startLine: number;
+	/** A `@prose` block below the top level: reported, never a block. */
+	misplaced?: boolean;
 	/** For `.svelte` files: the end of this block's own part (script/style/markup), so its
 	 *  trailing code never bleeds across a part boundary into the next `<script>`/`<style>` tag. */
 	partEnd?: number;
@@ -113,14 +133,10 @@ function lineAt(source: string, index: number): number {
 }
 
 /** @prose
- * `.replaceAll("\`", "")`, not a `` /`/g `` regex literal — this file's own `scanJsLike` doesn't
- * disambiguate a regex literal from the start of a template string, so a bare backtick inside a
- * regex here would make it treat everything after it, up to the next backtick anywhere in the
- * file, as one unterminated template literal — corrupting the depth count this parser's own
- * prose-block detection depends on for the rest of the file. Found by dogfooding: annotating
- * this file's later functions with `@prose` silently stopped working, with no error, until this
- * one line changed. A real tokenizer would disambiguate regex literals properly; this one
- * doesn't, so the workaround is avoiding the trap in this file's own source instead.
+ * `.replaceAll("\`", "")` rather than a `` /`/g `` regex literal is a leftover of the hand tokenizer
+ * this file used to scan JS with, which misread a bare backtick in a regex as a template literal
+ * and silently lost every block after it. The JS/TS scan is `oxc-parser` now and can't be fooled
+ * that way; the plain call stays because it reads as well.
  */
 function slugify(text: string): string {
 	return (
@@ -180,24 +196,39 @@ function extractMarkedBlock(
 }
 
 /** @prose
- * # Folding a note into its prose block
+ * # Block notes and line notes (spec §6.2)
  *
- * A `@note` is only ever meaningful directly after the `@prose` block it's about (the convention
- * this tool writes it in) — so it's found by adjacency, not by any anchor syntax: if nothing but
- * whitespace sits between a block's end and the next block, and that next block is a `@note`, it
- * belongs to the first. A note with nowhere to attach (no preceding prose block, or real code in
- * between) has no defined position and is dropped — there is no anchor for it to fall back to.
+ * A `@note` is found by adjacency: if nothing but whitespace sits between a `@prose` block's end
+ * and the note, and the block has no note yet, it is that block's note. Any other `@note`, at any
+ * depth, is a line note about the code below it. A second note straight after a block note is
+ * therefore a line note too, so a block never holds two.
  */
-function mergeNotes(blocks: RawBlock[], source: string): ProseRawBlock[] {
+function mergeNotes(
+	blocks: RawBlock[],
+	source: string,
+): { merged: ProseRawBlock[]; lineNotes: LineNote[] } {
 	const merged: ProseRawBlock[] = [];
+	const lineNotes: LineNote[] = [];
 	for (const block of blocks) {
 		if (block.kind === "note") {
 			const prev = merged[merged.length - 1];
-			if (prev && source.slice(prev.endIndex, block.startIndex).trim() === "") {
+			if (
+				prev &&
+				prev.note === undefined &&
+				source.slice(prev.endIndex, block.startIndex).trim() === ""
+			) {
 				prev.note = block.body;
 				prev.noteStartIndex = block.startIndex;
 				prev.noteEndIndex = block.endIndex;
 				prev.endIndex = block.endIndex;
+			} else {
+				lineNotes.push({
+					text: block.body,
+					startIndex: block.startIndex,
+					endIndex: block.endIndex,
+					startLine: block.startLine,
+					hash: noteHash(block.body),
+				});
 			}
 			continue;
 		}
@@ -212,134 +243,89 @@ function mergeNotes(blocks: RawBlock[], source: string): ProseRawBlock[] {
 			endIndex: block.endIndex,
 		});
 	}
-	return merged;
+	return { merged, lineNotes };
 }
 
 /** @prose
- * Disambiguates a regex literal (`/pattern/flags`) from division, using the last significant
- * character seen: a value (identifier char, `)`, `]`, a closed string/regex) means `/` divides;
- * anything else (an operator, an opening bracket, start of file) means `/` opens a regex. This
- * is the standard heuristic every JS tokenizer uses, minus keyword lookback (`return /x/` is
- * misread as division, since the last char of `return` is a letter) — good enough for scanning
- * real source for comments, not a full lexer. Returns the index just past the regex and its
- * flags, or `-1` if no closing `/` appears before a newline (regex literals can't span lines),
- * in which case the caller falls back to treating the `/` as an ordinary character.
+ * # Scanning JS and TS
+ *
+ * The comments come from `oxc-parser`, the parser the symbol check already uses, so a regex
+ * literal, a template string or a comment-shaped string can't be misread as a comment. A `/**`
+ * comment counts if it starts with a marker. A `@prose` block counts only at the top level, meaning
+ * outside every top-level statement; one inside a function, class or object is flagged
+ * `misplaced` and reported, not dropped silently (spec §3.1). A `@note` counts at any depth,
+ * since a line note sits inside a function body. A file oxc can't parse at all yields no blocks.
  */
-function skipRegexLiteral(source: string, start: number, lastSignificant: string): number {
-	if (/[\w$)\]"'`]/.test(lastSignificant)) return -1;
-	let i = start + 1;
-	let inCharClass = false;
-	while (i < source.length) {
-		const c = source[i];
-		if (c === "\n") return -1;
-		if (c === "\\") {
-			i += 2;
-			continue;
-		}
-		if (c === "[") inCharClass = true;
-		else if (c === "]") inCharClass = false;
-		else if (c === "/" && !inCharClass) {
-			i++;
-			while (i < source.length && /[a-zA-Z]/.test(source[i])) i++;
-			return i;
-		}
-		i++;
+function scanJs(source: string, lang: "js" | "ts"): RawBlock[] {
+	let parsed: ReturnType<typeof parseSync>;
+	try {
+		parsed = parseSync(`file.${lang}`, source);
+	} catch {
+		return [];
 	}
-	return -1;
+	const statements = parsed.program.body.map((node) => [node.start, node.end]);
+	const blocks: RawBlock[] = [];
+	for (const comment of parsed.comments) {
+		if (comment.type !== "Block" || !comment.value.startsWith("*")) continue;
+		const text = source.slice(comment.start, comment.end);
+		const marked = extractMarkedBlock(text.slice(3, -2), true);
+		if (!marked) continue;
+		const nested = statements.some(([start, end]) => comment.start >= start && comment.end <= end);
+		blocks.push({
+			...marked,
+			commentStyle: "js",
+			codeLang: "js",
+			startIndex: comment.start,
+			endIndex: comment.end,
+			startLine: lineAt(source, comment.start),
+			misplaced: nested && marked.kind === "prose",
+		});
+	}
+	return blocks;
 }
 
 /** @prose
- * # Scanning JS/TS/CSS
+ * # Scanning CSS
  *
- * A single left-to-right pass tracking string/template-literal state, regex literals, and `{}`
- * depth, so a `/** @prose *\/`-shaped comment only counts when it sits at depth 0 — top-level,
- * not inside a function, class, or rule body (spec §3.1). That's a deliberate limitation, not
- * an oversight: `defineDevframe({ ..., setup(ctx) { /** @prose *\/ ... } })` in this very
- * package's own `plugin.ts` used to put a prose block inside that nested `setup` closure, and it
- * was silently ignored — no error, the block just never became a chunk. The fix there was moving
- * the function to the top level so its own doc comment could sit at depth 0, not changing this
- * rule.
- *
- * Regex literals need their own handling, not just strings: this file's own `slugify()` used to
- * write `/\`/g` (a regex matching a backtick) directly, and without recognizing it as a regex,
- * the scanner read that bare backtick as the start of a template literal — one that only
- * "closed" at the next backtick anywhere later in the file, permanently corrupting the depth
- * count for everything after it. Found by dogfooding this file against itself.
+ * CSS has no parser here, only a pass that skips strings and comments and counts `{}`, so a
+ * `/** @prose *\/` counts at depth 0 and is `misplaced` inside a rule (spec §3.1). A `@note`
+ * counts at any depth.
  */
-function scanJsLike(source: string, codeLang: "js" | "css" = "js"): RawBlock[] {
+function scanCss(source: string): RawBlock[] {
 	const blocks: RawBlock[] = [];
 	let i = 0;
 	let depth = 0;
-	let lastSignificant = "";
 	const n = source.length;
 	while (i < n) {
 		const c = source[i];
-		if (c === '"' || c === "'" || c === "`") {
-			const quote = c;
+		if (c === '"' || c === "'") {
 			i++;
-			while (i < n) {
-				if (source[i] === "\\") {
-					i += 2;
-					continue;
-				}
-				if (source[i] === quote) {
-					i++;
-					break;
-				}
-				i++;
-			}
-			lastSignificant = quote;
-			continue;
-		}
-		if (c === "/" && source[i + 1] === "/") {
-			i += 2;
-			while (i < n && source[i] !== "\n") i++;
-			continue;
-		}
-		if (c === "/" && source[i + 1] === "*") {
-			const start = i;
+			while (i < n && source[i] !== c && source[i] !== "\n") i += source[i] === "\\" ? 2 : 1;
+			i++;
+		} else if (c === "/" && source[i + 1] === "*") {
 			const close = source.indexOf("*/", i + 2);
 			const end = close === -1 ? n : close + 2;
-			const text = source.slice(start, end);
-			if (depth === 0 && text.startsWith("/**")) {
-				const inner = text.slice(3, text.endsWith("*/") ? text.length - 2 : text.length);
-				const marked = extractMarkedBlock(inner, true);
-				if (marked) {
-					blocks.push({
-						...marked,
-						commentStyle: "js",
-						codeLang,
-						startIndex: start,
-						endIndex: end,
-						startLine: lineAt(source, start),
-					});
-				}
+			const text = source.slice(i, end);
+			const marked = text.startsWith("/**")
+				? extractMarkedBlock(text.slice(3, text.endsWith("*/") ? -2 : undefined), true)
+				: null;
+			if (marked) {
+				blocks.push({
+					...marked,
+					commentStyle: "js",
+					codeLang: "css",
+					startIndex: i,
+					endIndex: end,
+					startLine: lineAt(source, i),
+					misplaced: depth > 0 && marked.kind === "prose",
+				});
 			}
 			i = end;
-			continue;
-		}
-		if (c === "/") {
-			const regexEnd = skipRegexLiteral(source, i, lastSignificant);
-			if (regexEnd !== -1) {
-				i = regexEnd;
-				lastSignificant = "/";
-				continue;
-			}
-		}
-		if (c === "{") {
-			depth++;
+		} else {
+			if (c === "{") depth++;
+			else if (c === "}") depth = Math.max(0, depth - 1);
 			i++;
-			lastSignificant = c;
-			continue;
 		}
-		if (c === "}") {
-			depth = Math.max(0, depth - 1);
-			i++;
-			lastSignificant = c;
-			continue;
-		}
-		if (!/\s/.test(c)) lastSignificant = c;
-		i++;
 	}
 	return blocks;
 }
@@ -355,7 +341,7 @@ function scanJsLike(source: string, codeLang: "js" | "css" = "js"): RawBlock[] {
  * blank line between them (a `@prose` block immediately followed by its own `@note`, same as the
  * JS/HTML styles support) without the second marker's lines bleeding into the first block's body.
  * Only counts as top-level when the `#` sits at column 0 — indented inside a nested
- * mapping/table it's an ordinary comment, mirroring the depth-0 rule `scanJsLike` applies to
+ * mapping/table it's an ordinary comment, mirroring the depth-0 rule `scanCss` applies to
  * braces (spec §3.1's "prose blocks... at top level").
  */
 function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[] {
@@ -372,18 +358,27 @@ function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[]
 		return MARKERS.some((m) => trimmed.startsWith(m));
 	};
 
+	// A `@prose` block starts at column 0; a `@note` may be indented, since a line note sits above
+	// a key at any depth, and its continuation lines carry the same indent.
 	let i = 0;
 	while (i < lines.length) {
-		const stripped = lines[i].startsWith("#") ? lines[i].replace(/^#[ \t]?/, "") : null;
-		if (stripped === null || !isMarkerLine(stripped)) {
+		const indent = /^[ \t]*/.exec(lines[i])![0];
+		const stripped = lines[i].startsWith(`${indent}#`)
+			? lines[i].slice(indent.length).replace(/^#[ \t]?/, "")
+			: null;
+		if (
+			stripped === null ||
+			!isMarkerLine(stripped) ||
+			(indent && !stripped.trim().startsWith("@note"))
+		) {
 			i++;
 			continue;
 		}
 		const startLine = i;
 		const commentLines = [stripped];
 		i++;
-		while (i < lines.length && lines[i].startsWith("#")) {
-			const next = lines[i].replace(/^#[ \t]?/, "");
+		while (i < lines.length && lines[i].startsWith(`${indent}#`)) {
+			const next = lines[i].slice(indent.length).replace(/^#[ \t]?/, "");
 			if (isMarkerLine(next)) break;
 			commentLines.push(next);
 			i++;
@@ -391,7 +386,7 @@ function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[]
 		const marked = extractMarkedFromLines(commentLines);
 		if (marked) {
 			// `endIndex` lands right after the last comment line's own content, before its line
-			// ending (`\r` included) — matching `scanJsLike`/`scanHtml`'s convention (their `end`
+			// ending (`\r` included) — matching `scanJs`/`scanHtml`'s convention (their `end`
 			// sits right after `*/`/`-->`, also before any newline), so `notes.ts`'s insertion logic
 			// (which always prepends the file's line ending) works identically in every style.
 			const lastLine = i - 1;
@@ -399,7 +394,7 @@ function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[]
 				...marked,
 				commentStyle: "hash",
 				codeLang,
-				startIndex: lineOffsets[startLine],
+				startIndex: lineOffsets[startLine] + indent.length,
 				endIndex: lineOffsets[lastLine] + lines[lastLine].replace(/\r$/, "").length,
 				startLine: startLine + 1,
 			});
@@ -445,6 +440,7 @@ function shiftBlock(
 		startIndex,
 		endIndex: block.endIndex + offset,
 		startLine: lineAt(fullSource, startIndex),
+		misplaced: block.misplaced,
 		partEnd,
 	};
 }
@@ -462,25 +458,39 @@ function shiftBlock(
  */
 function scanSvelte(source: string): RawBlock[] {
 	const blocks: RawBlock[] = [];
+	for (const part of svelteParts(source)) {
+		const text = source.slice(part.start, part.end);
+		const found =
+			part.kind === "markup"
+				? scanHtml(text)
+				: part.kind === "style"
+					? scanCss(text)
+					: scanJs(text, "ts");
+		for (const block of found) blocks.push(shiftBlock(block, part.start, source, part.end));
+	}
+	blocks.sort((a, b) => a.startIndex - b.startIndex);
+	return blocks;
+}
+
+/** A `.svelte` file's parts in order: each `<script>` and `<style>` body, and the markup between
+ *  them (tags included in the markup, which is scanned as HTML). Shared with `insertion.ts`, which
+ *  needs to know which language a line is in. */
+export function svelteParts(
+	source: string,
+): { kind: "script" | "style" | "markup"; start: number; end: number }[] {
+	const parts: { kind: "script" | "style" | "markup"; start: number; end: number }[] = [];
 	const tagRe = /<(script|style)\b[^>]*>([\s\S]*?)<\/\1>/g;
 	let last = 0;
 	let match: RegExpExecArray | null;
 	while ((match = tagRe.exec(source))) {
 		const [full, tagName, inner] = match;
-		const tagStart = match.index;
-		const markup = source.slice(last, tagStart);
-		for (const block of scanHtml(markup)) blocks.push(shiftBlock(block, last, source, tagStart));
-		const innerOffset = tagStart + full.indexOf(inner);
-		const innerEnd = innerOffset + inner.length;
-		const codeLang = tagName === "style" ? "css" : "js";
-		for (const block of scanJsLike(inner, codeLang))
-			blocks.push(shiftBlock(block, innerOffset, source, innerEnd));
-		last = tagStart + full.length;
+		const inside = match.index + full.indexOf(inner);
+		parts.push({ kind: "markup", start: last, end: match.index });
+		parts.push({ kind: tagName as "script" | "style", start: inside, end: inside + inner.length });
+		last = match.index + full.length;
 	}
-	for (const block of scanHtml(source.slice(last)))
-		blocks.push(shiftBlock(block, last, source, source.length));
-	blocks.sort((a, b) => a.startIndex - b.startIndex);
-	return blocks;
+	parts.push({ kind: "markup", start: last, end: source.length });
+	return parts;
 }
 
 /** @prose
@@ -493,7 +503,7 @@ function scanSvelte(source: string): RawBlock[] {
  * the next block is `pending`: a plan item, not a bug (spec §3.2).
  */
 export function parseFile(source: string, extension: string): FileParse {
-	const rawBlocks =
+	const found =
 		extension === "html"
 			? scanHtml(source)
 			: extension === "svelte"
@@ -502,13 +512,26 @@ export function parseFile(source: string, extension: string): FileParse {
 					? scanHashComments(source, "yaml")
 					: extension === "toml"
 						? scanHashComments(source, "toml")
-						: scanJsLike(source, extension === "css" ? "css" : "js");
+						: extension === "css"
+							? scanCss(source)
+							: scanJs(source, extension === "ts" ? "ts" : "js");
+	const misplaced = found.filter((b) => b.misplaced).map((b) => b.startLine);
 	// `mergeNotes` folds a `@note` into whichever `@prose` block precedes it, the file prose's
-	// included, so the file block carries its own note like any chunk.
-	const blocks = mergeNotes(rawBlocks, source);
+	// included, so the file block carries its own note like any chunk. The rest are line notes.
+	const { merged: blocks, lineNotes } = mergeNotes(
+		found.filter((b) => !b.misplaced),
+		source,
+	);
 
 	if (blocks.length === 0) {
-		return { fileProse: null, fileBlock: null, preamble: source.trim(), sections: [] };
+		return {
+			fileProse: null,
+			fileBlock: null,
+			preamble: source.trim(),
+			sections: [],
+			lineNotes,
+			misplaced,
+		};
 	}
 
 	const [fileBlock, ...rest] = blocks;
@@ -579,7 +602,14 @@ export function parseFile(source: string, extension: string): FileParse {
 		noteStartIndex: fileBlock.noteStartIndex,
 		noteEndIndex: fileBlock.noteEndIndex,
 	};
-	return { fileProse: fileBlock.body, fileBlock: fileChunk, preamble, sections };
+	return {
+		fileProse: fileBlock.body,
+		fileBlock: fileChunk,
+		preamble,
+		sections,
+		lineNotes,
+		misplaced,
+	};
 }
 
 /** The anchor of a file's own prose block: `src/store.ts#file`. Reserved: a chunk whose name
@@ -641,12 +671,3 @@ export function firstParagraph(text: string): string {
 	const paragraph = withoutTitle.split(/\n\s*\n/)[0] ?? "";
 	return paragraph.trim();
 }
-
-/** @prose
- * # Comments from oxc for JS and TS (spec §3.1)
- *
- * Planned. Take JS/TS comments and their depth from oxc-parser instead of the hand tokenizer,
- * which removes the regex-literal misread; keep the scanner for CSS, HTML, YAML and TOML. A
- * block below depth 0 becomes a warning on its file instead of being dropped silently. `@note`
- * comments are collected at every depth, since line notes (spec §6.2) sit inside function bodies.
- */

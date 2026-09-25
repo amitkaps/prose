@@ -64,6 +64,18 @@ describe("segments", () => {
 	});
 
 	it("is just the code for a file with no blocks", () => {
-		expect(segments("const a = 1;\n", [])).toEqual([{ kind: "code", text: "const a = 1;" }]);
+		expect(segments("const a = 1;\n", [])).toEqual([
+			{ kind: "code", text: "const a = 1;", line: 1 },
+		]);
+	});
+	it("carries each code run's first line, and lays a line note out in place", () => {
+		const source = "a();\n\n/** @note hi */\nb();\nc();\n";
+		const at = source.indexOf("/** @note");
+		const note = { path: "f:3", text: "hi", hash: "h", span: [at, at + 15] as [number, number] };
+		expect(segments(source, [], [note])).toEqual([
+			{ kind: "code", text: "a();", line: 1 },
+			{ kind: "note", note },
+			{ kind: "code", text: "b();\nc();", line: 4 },
+		]);
 	});
 });

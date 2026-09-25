@@ -4,9 +4,9 @@
  * for this URL" is a local search, not an RPC call. Type-only import from `src/`: the server module
  * uses `node:fs` and must never be bundled into the browser.
  */
-import type { TreeNode } from "../src/tree.js";
+import type { LineNoteNode, TreeNode } from "../src/tree.js";
 
-export type { TreeNode };
+export type { LineNoteNode, TreeNode };
 
 export function findNode(tree: TreeNode, path: string): TreeNode | null {
 	return pathTo(tree, path).at(-1) ?? null;
@@ -69,30 +69,59 @@ export function ordered(children: TreeNode[]): TreeNode[] {
 		.map((x) => x.node);
 }
 
-export type Segment = { kind: "code"; text: string } | { kind: "block"; block: TreeNode };
+export type Segment =
+	| {
+			kind: "code";
+			text: string;
+			/** 1-based line of the run's first line in the file. */ line: number;
+	  }
+	| { kind: "block"; block: TreeNode }
+	| { kind: "note"; note: LineNoteNode };
 
 /** @prose
  * # A file, in order
  *
- * Lays a file out as it was written: the code between the prose comments, and each prose block at
- * the byte range its comment occupied (`span`). The comment text itself is dropped (the page renders
- * it as prose in its place), so the whole file is shown and nothing is repeated. Blank lines at the
- * edges of each code run are trimmed; a run that is only whitespace disappears.
+ * Lays a file out as it was written: the code between the prose comments and line notes, each
+ * prose block or note at the byte range its comment occupied (`span`). The comment text itself is
+ * dropped (the page renders it in its place), so the whole file is shown and nothing is repeated.
+ * Blank lines at the edges of each code run are trimmed; a run that is only whitespace disappears.
+ * A run carries the file line it starts on, so the view can number its lines for a note.
  */
-export function segments(source: string, blocks: TreeNode[]): Segment[] {
+export function segments(
+	source: string,
+	blocks: TreeNode[],
+	lineNotes: LineNoteNode[] = [],
+): Segment[] {
 	const out: Segment[] = [];
-	const pushCode = (raw: string) => {
+	const pushCode = (from: number, to: number) => {
+		const raw = source.slice(from, to);
 		const text = raw.replace(/^(?:[ \t]*\r?\n)+/, "").replace(/\s+$/, "");
-		if (text) out.push({ kind: "code", text });
+		if (!text) return;
+		const start = from + (raw.length - raw.replace(/^(?:[ \t]*\r?\n)+/, "").length);
+		let line = 1;
+		for (let i = 0; i < start; i++) if (source[i] === "\n") line++;
+		out.push({ kind: "code", text, line });
 	};
+	const spans: { start: number; end: number; segment: Segment }[] = [
+		...blocks
+			.filter((b) => b.span)
+			.map((block) => ({
+				start: block.span![0],
+				end: block.span![1],
+				segment: { kind: "block", block } as Segment,
+			})),
+		...lineNotes.map((note) => ({
+			start: note.span[0],
+			end: note.span[1],
+			segment: { kind: "note", note } as Segment,
+		})),
+	].sort((a, b) => a.start - b.start);
 	let at = 0;
-	const spanned = blocks.filter((b) => b.span).sort((a, b) => a.span![0] - b.span![0]);
-	for (const block of spanned) {
-		const [start, end] = block.span!;
-		pushCode(source.slice(at, start));
-		out.push({ kind: "block", block });
-		at = end;
+	for (const span of spans) {
+		pushCode(at, span.start);
+		out.push(span.segment);
+		at = span.end;
 	}
-	pushCode(source.slice(at));
+	pushCode(at, source.length);
 	return out;
 }
