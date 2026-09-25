@@ -162,7 +162,7 @@ function fileToNode(root: string, relPath: string): TreeNode {
 						chunk.endLine,
 					);
 		return {
-			name: chunk.heading ?? chunk.slug,
+			name: chunk.heading ?? chunk.anchor,
 			kind: "chunk",
 			path: `${relPath}#${anchor}`,
 			summary: firstParagraph(chunk.prose),
@@ -182,7 +182,7 @@ function fileToNode(root: string, relPath: string): TreeNode {
 	const blocks: TreeNode[] = [];
 	if (parsed.fileBlock) blocks.push(chunkNode(parsed.fileBlock, FILE_ANCHOR));
 	for (const section of parsed.sections) {
-		for (const chunk of section.chunks) blocks.push(chunkNode(chunk, chunkAnchor(section, chunk)));
+		for (const chunk of section.chunks) blocks.push(chunkNode(chunk, chunkAnchor(chunk)));
 	}
 
 	return {

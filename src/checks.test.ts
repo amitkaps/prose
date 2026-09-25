@@ -119,7 +119,7 @@ describe("checkSymbols", () => {
 		const { symbols, warnings } = checkSymbols(
 			"Calls `addTodo`.",
 			"function addTodo() {}",
-			"main.js#top-chunk-0",
+			"main.js#chunk-1",
 			new Map(),
 		);
 		expect(symbols).toEqual([{ text: "addTodo", status: "local" }]);
@@ -127,16 +127,9 @@ describe("checkSymbols", () => {
 	});
 
 	it("resolves a symbol declared elsewhere in the project as linked, with no warning", () => {
-		const table = new Map([["addTodo", "store.ts#top-chunk-0"]]);
-		const { symbols, warnings } = checkSymbols(
-			"Calls `addTodo`.",
-			"",
-			"main.js#top-chunk-0",
-			table,
-		);
-		expect(symbols).toEqual([
-			{ text: "addTodo", status: "linked", target: "store.ts#top-chunk-0" },
-		]);
+		const table = new Map([["addTodo", "store.ts#chunk-1"]]);
+		const { symbols, warnings } = checkSymbols("Calls `addTodo`.", "", "main.js#chunk-1", table);
+		expect(symbols).toEqual([{ text: "addTodo", status: "linked", target: "store.ts#chunk-1" }]);
 		expect(warnings).toEqual([]);
 	});
 
@@ -144,7 +137,7 @@ describe("checkSymbols", () => {
 		const { symbols, warnings } = checkSymbols(
 			"Calls `addTod0`.",
 			"",
-			"main.js#top-chunk-0",
+			"main.js#chunk-1",
 			new Map(),
 		);
 		expect(symbols).toEqual([{ text: "addTod0", status: "unresolved" }]);
@@ -162,7 +155,7 @@ describe("checkSymbols", () => {
 		const { symbols, warnings } = checkSymbols(
 			"Uses `marked`'s renderer hook.",
 			"",
-			"docs.ts#top-chunk-0",
+			"docs.ts#chunk-1",
 			new Map(),
 			new Set(),
 			knownPackages,
@@ -176,7 +169,7 @@ describe("checkSymbols", () => {
 		const { symbols, warnings } = checkSymbols(
 			"Uses `marked`'s renderer hook.",
 			"",
-			"docs.ts#top-chunk-0",
+			"docs.ts#chunk-1",
 			new Map(),
 			fileScope,
 		);
@@ -185,11 +178,11 @@ describe("checkSymbols", () => {
 	});
 
 	it("doesn't flag a symbol declared in this same chunk via the project table (self-reference isn't 'elsewhere')", () => {
-		const table = new Map([["addTodo", "main.js#top-chunk-0"]]);
+		const table = new Map([["addTodo", "main.js#chunk-1"]]);
 		const { symbols } = checkSymbols(
 			"Calls `addTodo`.",
 			"function addTodo() {}",
-			"main.js#top-chunk-0",
+			"main.js#chunk-1",
 			table,
 		);
 		expect(symbols).toEqual([{ text: "addTodo", status: "local" }]);

@@ -69,7 +69,7 @@ describe("addNote", () => {
 			"main.js",
 			["/** @prose File. */", "", "/** @prose A chunk. */", "const a = 1;", ""].join("\n"),
 		);
-		add("main.js#top-chunk-0", "Should this reject duplicates?");
+		add("main.js#a", "Should this reject duplicates?");
 		const written = readFileSync(join(root, "main.js"), "utf-8");
 		expect(written).toBe(
 			[
@@ -105,7 +105,7 @@ describe("addNote", () => {
 				"",
 			].join("\n"),
 		);
-		add("main.js#top-chunk-0", "A question.");
+		add("main.js#a", "A question.");
 		const written = readFileSync(join(root, "main.js"), "utf-8");
 		expect(written).toContain("\n/** @note\n * A question.\n */\nconst a = 1;");
 		expect(written).not.toContain(" /** @note");
@@ -123,7 +123,7 @@ describe("addNote", () => {
 				"",
 			].join("\n"),
 		);
-		add("index.html#top-chunk-0", "A question.");
+		add("index.html#chunk-1", "A question.");
 		const written = readFileSync(join(root, "index.html"), "utf-8");
 		expect(written).toContain("\t<!-- @note\nA question.\n\t-->\n\t<h1>hi</h1>");
 	});
@@ -142,7 +142,7 @@ describe("addNote", () => {
 				"",
 			].join("\n"),
 		);
-		add("main.js#top-chunk-0", "New question.");
+		add("main.js#a", "New question.");
 		const written = readFileSync(join(root, "main.js"), "utf-8");
 		expect(written).not.toContain("Old question.");
 		const reparsed = parseFile(written, "js");
@@ -155,7 +155,7 @@ describe("addNote", () => {
 			"index.html",
 			["<!-- @prose File. -->", "<!-- @prose A chunk. -->", "<h1>hi</h1>", ""].join("\n"),
 		);
-		add("index.html#top-chunk-0", "A question.");
+		add("index.html#chunk-1", "A question.");
 		const written = readFileSync(join(root, "index.html"), "utf-8");
 		expect(written).toContain("<!-- @note\nA question.\n-->\n<h1>hi</h1>");
 	});
@@ -165,7 +165,7 @@ describe("addNote", () => {
 			"config.toml",
 			["# @prose", "# File.", "", "# @prose", "# A chunk.", "port = 8080", ""].join("\n"),
 		);
-		add("config.toml#top-chunk-0", "Double-check this port.");
+		add("config.toml#chunk-1", "Double-check this port.");
 		const written = readFileSync(join(root, "config.toml"), "utf-8");
 		expect(written).toContain(
 			"# @prose\n# A chunk.\n# @note\n# Double-check this port.\nport = 8080",
@@ -196,7 +196,7 @@ describe("resolveNote", () => {
 				"",
 			].join("\n"),
 		);
-		resolve("main.js#top-chunk-0");
+		resolve("main.js#a");
 		const written = readFileSync(join(root, "main.js"), "utf-8");
 		expect(written).toBe(
 			["/** @prose File. */", "", "/** @prose A chunk. */", "const a = 1;", ""].join("\n"),
@@ -218,7 +218,7 @@ describe("resolveNote", () => {
 				"",
 			].join("\n"),
 		);
-		resolve("config.toml#top-chunk-0");
+		resolve("config.toml#chunk-1");
 		const written = readFileSync(join(root, "config.toml"), "utf-8");
 		expect(written).toBe(
 			["# @prose", "# File.", "", "# @prose", "# A chunk.", "port = 8080", ""].join("\n"),
@@ -227,7 +227,7 @@ describe("resolveNote", () => {
 
 	it("throws when the chunk has no note to resolve", () => {
 		makeFile("main.js", "/** @prose File. */\n\n/** @prose A chunk. */\nconst a = 1;\n");
-		expect(() => resolve("main.js#top-chunk-0")).toThrow();
+		expect(() => resolve("main.js#chunk-1")).toThrow();
 	});
 });
 
@@ -279,20 +279,20 @@ describe("safe writes: which file (spec §6, Trust boundary)", () => {
 describe("safe writes: the block hash (spec §6.3)", () => {
 	it("refuses a write when the block's prose changed since the client saw it", () => {
 		makeFile("main.js", "/** @prose File. */\n\n/** @prose A chunk. */\nconst a = 1;\n");
-		const stale = hashAt("main.js#top-chunk-0");
+		const stale = hashAt("main.js#chunk-1");
 		const edited = "/** @prose File. */\n\n/** @prose A chunk, edited. */\nconst a = 1;\n";
 		writeFileSync(join(root, "main.js"), edited);
-		expect(() => addNote(root, "main.js#top-chunk-0", "x", stale)).toThrow(/changed since/);
+		expect(() => addNote(root, "main.js#chunk-1", "x", stale)).toThrow(/changed since/);
 		expect(readFileSync(join(root, "main.js"), "utf-8")).toBe(edited);
 	});
 
 	it("refuses a write when a block inserted above moved the anchor onto another block", () => {
 		makeFile("main.js", "/** @prose File. */\n\n/** @prose Mine. */\nconst a = 1;\n");
-		const mine = hashAt("main.js#top-chunk-0");
+		const mine = hashAt("main.js#chunk-1");
 		const shifted =
 			"/** @prose File. */\n\n/** @prose New. */\nconst n = 0;\n\n/** @prose Mine. */\nconst a = 1;\n";
 		writeFileSync(join(root, "main.js"), shifted);
-		expect(() => addNote(root, "main.js#top-chunk-0", "x", mine)).toThrow(NoteWriteError);
+		expect(() => addNote(root, "main.js#chunk-1", "x", mine)).toThrow(NoteWriteError);
 		expect(readFileSync(join(root, "main.js"), "utf-8")).toBe(shifted);
 	});
 
@@ -392,7 +392,7 @@ function blocksOf(source: string, ext: string): { anchor: string; chunk: ProseCh
 	return [
 		...(parsed.fileBlock ? [{ anchor: "file", chunk: parsed.fileBlock }] : []),
 		...parsed.sections.flatMap((section) =>
-			section.chunks.map((chunk) => ({ anchor: chunkAnchor(section, chunk), chunk })),
+			section.chunks.map((chunk) => ({ anchor: chunkAnchor(chunk), chunk })),
 		),
 	];
 }

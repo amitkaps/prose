@@ -1,3 +1,4 @@
+import * as fc from "fast-check";
 import { describe, expect, it } from "vite-plus/test";
 import { firstParagraph, parseFile } from "./parser.js";
 
@@ -295,5 +296,68 @@ describe("firstParagraph", () => {
 
 	it("returns the whole text when there is no heading or second paragraph", () => {
 		expect(firstParagraph("Just one paragraph.")).toBe("Just one paragraph.");
+	});
+});
+
+const anchorsOf = (source: string, ext = "ts") =>
+	parseFile(source, ext).sections.flatMap((s) => s.chunks.map((c) => c.anchor));
+
+describe("anchors (spec §3.2)", () => {
+	it("names a chunk by its first declared name, then its heading, then its position", () => {
+		const source = [
+			"/** @prose File. */",
+			"/** @prose Adds. */\nexport function addTodo() {}",
+			"/** @prose\n * # Filtering\n */",
+			"/** @prose Loose. */\nconsole.log(1);",
+		].join("\n\n");
+		expect(anchorsOf(source)).toEqual(["addTodo", "filtering", "chunk-3"]);
+	});
+
+	it("suffixes repeats in source order, and keeps `file` for the file prose", () => {
+		const source = [
+			"/** @prose File. */",
+			"/** @prose One. */\nconst file = 1;",
+			"/** @prose Two. */\nfunction a() {}",
+			"/** @prose Three. */\nfunction a(x) {}",
+		].join("\n\n");
+		expect(anchorsOf(source)).toEqual(["file-2", "a", "a-2"]);
+		expect(parseFile(source, "ts").fileBlock?.anchor).toBe("file");
+	});
+
+	it("gives a heading in a non-JS file its slug", () => {
+		expect(
+			anchorsOf("/** @prose File. */\n\n/** @prose\n * # Layout\n */\nmain { }", "css"),
+		).toEqual(["layout"]);
+	});
+
+	it("property: inserting a block anywhere never changes what an existing anchor names", () => {
+		const names = ["alpha", "beta", "gamma", "delta"];
+		const chunk = (n: string) => `/** @prose ${n}. */\nexport const ${n} = 1;`;
+		const heading = "/** @prose\n * # Notes\n */";
+		fc.assert(
+			fc.property(
+				fc.subarray(names, { minLength: 1 }),
+				fc.nat(),
+				fc.constantFrom(chunk("epsilon"), heading, "/** @prose Bare. */"),
+				(present, at, inserted) => {
+					const blocks = present.map(chunk);
+					const before = ["/** @prose File. */", ...blocks].join("\n\n");
+					const i = at % (blocks.length + 1);
+					const after = [
+						"/** @prose File. */",
+						...blocks.slice(0, i),
+						inserted,
+						...blocks.slice(i),
+					].join("\n\n");
+					const beforeChunks = parseFile(before, "ts").sections.flatMap((s) => s.chunks);
+					const afterByCode = new Map(
+						parseFile(after, "ts")
+							.sections.flatMap((s) => s.chunks)
+							.map((c) => [c.anchor, c.code]),
+					);
+					for (const c of beforeChunks) expect(afterByCode.get(c.anchor)).toBe(c.code);
+				},
+			),
+		);
 	});
 });
