@@ -248,7 +248,9 @@ The route's client is a small prebuilt Svelte 5 SPA (Devframe's `clientAssets`),
 
 Notes are mainly written from the view. Reading a file woven with its prose, and leaving a note next to the block in question, is easier there than in the editor's file view, and it keeps the human out of the code while still pointing at it. A note is also plain source, so the human can write one in the editor and the agent can leave one when it's unsure or needs a decision.
 
-A note is about a specific spot, so it lives with the code (§1), not in a separate file with its own anchors. It is written immediately after the `@prose` block it's about — same delimiters, same gutter convention (§3.1), found by adjacency rather than by an anchor:
+A note is about a specific spot, so it lives with the code (§1), not in a separate file with its own anchors. It uses the same delimiters and gutter convention as `@prose` (§3.1) and is found by adjacency rather than by an anchor. It can sit in one of two places.
+
+A **block note** is written immediately after the `@prose` block it's about:
 
 ```js
 /** @prose
@@ -260,12 +262,28 @@ A note is about a specific spot, so it lives with the code (§1), not in a separ
 function headingId(html) { ... }
 ```
 
+A **line note** is written directly above a line of code, at any depth, for an issue in code that has no `@prose` block of its own, or is too specific for one:
+
+```js
+function headingId(html) {
+  /** @note
+   * Two headings with the same text get the same id here.
+   */
+  const id = slugify(text);
+  ...
+}
+```
+
+Unlike `@prose`, `@note` is found at any depth: the top-level rule (§3.1) exists so prose blocks can split a file into chunks, and a note splits nothing. A note that directly follows a `@prose` block is a block note; any other is a line note on the code line below it.
+
+**Where a line note may go.** A comment is legal in some places and not others: inside a template literal, a multi-line string, a `<pre>` or `<textarea>`, an attribute list, or a YAML block scalar it becomes content or breaks the syntax. So a line note isn't inserted above the exact line picked in the view, but above the start of the construct that contains it: the statement (JS/TS, from the `oxc-parser` AST), the element (HTML and markup), the rule or declaration (CSS), or the key (YAML/TOML). The view shows where the note will land before it's written.
+
 - **No anchor, no orphaning.** A note's position *is* its meaning — it sits right after the block it's about, so there's nothing to resolve and nothing that can silently stop resolving. If the code it's attached to is deleted, the note goes with it; a note about deleted code has nothing left to say.
 - **Resolving deletes it.** Nothing is kept once a note is addressed — if the outcome is worth remembering, it belongs in the `@prose` text itself (a decision made permanent), not in a second, disposable log sitting beside it. Notes are often added and resolved within one session, before anything is committed, so the trail of what was resolved comes from the *since* view (§6.5), not from git history.
 - **Note text is escaped on write.** A note can contain anything, including the comment's own closing delimiter. The write path escapes `*/` in JS/TS/CSS and `-->` in HTML, and a note line that would read as a marker (`@prose`, `@note`) in YAML/TOML, so a note can never end its comment early or start a new block. Resolving a note removes exactly the bytes adding it inserted.
-- **One open note per block.** Adding a note when one already exists replaces it rather than stacking a second — "does this block have outstanding feedback" stays a yes/no question.
+- **One open note per spot.** Adding a note to a block or line that already has one replaces it rather than stacking a second — "does this spot have outstanding feedback" stays a yes/no question. A block can hold its block note plus line notes in its code.
 - **"What's open across the project" is a derived view**, not a maintained file: the tree walk that already computes `warningCount` (§5) can collect every `note` the same way, on demand.
-- **Every `@prose` block can carry a note, the file prose's included.** On the file page each block has its own add and resolve, next to the prose it is about. A file with no `@prose` block has nowhere to attach one, and folder and project prose (`README.md`) have no comment markers, so notes stop there for now (§10).
+- **Every `@prose` block and every code line can carry a note, the file prose's included, so an undocumented file can take notes too.** On the file page each block has its own add and resolve next to its prose, and each code line has an add in its gutter; a line note shows inline at its line. Folder and project prose (`README.md`) and other Markdown have no place for a note yet (§10).
 
 There is no prose editor in the view: a block's own prose is edited by hand in the source, like the code around it. The one write affordance the dev route has is add or resolve a note.
 
@@ -275,8 +293,8 @@ The server exposes Devframe RPC functions, namespaced under the `prose` devframe
 
 - `tree` (shared state): the full hierarchy, with summaries, warnings, and notes. Not a call: the server owns it and pushes the whole new tree to every client when a file changes (§6.1).
 - `node` (`query`): one node's prose, code, warnings, and note, given its path. For agents and scripts: the dev route's own client doesn't call it, since the tree it already holds carries every node in full.
-- `add-note` (`action`): insert or replace the `@note` on a block, addressed by its path (`src/store.ts#addTodo`, or `src/store.ts#file` for the file prose) and the block's content hash.
-- `resolve-note` (`action`): remove a block's `@note` entirely, addressed the same way.
+- `add-note` (`action`): insert or replace a `@note`. A block note is addressed by the block's path (`src/store.ts#addTodo`, or `src/store.ts#file` for the file prose) and its content hash; a line note by the file and line (`src/store.ts:42`) and a hash of that line's text.
+- `resolve-note` (`action`): remove a `@note` entirely, addressed by the note itself: its file, its line, and a hash of its text.
 
 `query` functions are reads that can change over time; `action` functions are the writes. Both are typed end to end by Devframe's RPC layer — no hand-rolled request/response shapes. Every write re-reads and re-parses the target file fresh rather than trusting the client's in-memory tree — the file on disk is the only truth. If the addressed block's hash no longer matches (an agent or an editor changed it since the client's tree was pushed), the write is refused and the client shows the fresh block, so a note never lands on the wrong block or overwrites someone else's edit.
 
@@ -381,6 +399,7 @@ Verify:
 - [ ] Adding, replacing, and resolving a note via `/__prose/` writes back cleanly (Oxfmt leaves the file unchanged otherwise) and round-trips byte-identical when resolved, for any note text (property tests, `src/notes.test.ts`).
 - [ ] A note write aimed at a block that changed since the view loaded is refused, not applied elsewhere.
 - [ ] Deleting a chunk that has a note deletes the note with it — nothing orphaned to track.
+- [ ] A line note added on a line inside a function, a template literal, a multi-line string and an HTML attribute list lands above the enclosing statement or element in each case, and the file still parses and formats unchanged otherwise.
 - [ ] The dev tool mounts and shows live store state.
 - [ ] Editing a source file updates the open view without a reload.
 
@@ -390,8 +409,7 @@ Verify:
 - **Summaries beyond first paragraphs.** Use LLM summaries, cached by a hash of the children, only if first paragraphs prove too thin.
 - **Anchors beyond JS/TS.** CSS, HTML and YAML chunks have no declared name, so they fall back to a heading or position (§3.2). A CSS chunk's first selector, or an HTML chunk's first `id`, could serve.
 - **Live agent channel.** Send a note to a running session directly instead of it waiting to be found by a grep or a "handle notes" request. Devframe ships an MCP adapter (`prose mcp`, once there's a standalone CLI) that could expose tree/node/notes to an agent directly — not wired up in the prototype, which still reaches the agent only through the source files it already reads (§6.2, §8).
-- **Notes without a `@prose` block.** An undocumented file, a folder or the project can't take a note, since there is no comment to sit after. Options: a `@note` marker usable on its own at the top of a file, or a comment convention inside `README.md`.
-- **Notes in Markdown.** READMEs and `prose/*.md` docs can't take a note today. An HTML comment, `<!-- @note … -->`, after the paragraph or heading it's about would follow the same adjacency rule; GitHub doesn't render it.
+- **Notes in Markdown.** Folders, the project, and `prose/*.md` docs can't take a note today, since their prose is Markdown. An HTML comment, `<!-- @note … -->`, after the paragraph or heading it's about would follow the same adjacency rule; GitHub doesn't render it.
 - **Problem-layer tools as plan items.** Could a pending chunk reference a dev tool that shows the options being decided between?
 - **Docs in subfolders of `prose/`.** A medium project will want `prose/feature/recommend.md` beside `prose/spec.md`. Derived names already handle it (path under `prose/`), but the tree walker reads only the top level today, and L3 needs a rule for nesting: show `prose/` subfolders as groups, or flatten to path-named sections. Also open: whether a folder's docs should instead sit next to the code as its `README.md` (§3.3), with `prose/` kept for what spans folders.
 - **Coarser doc staleness.** Optional `covers: [src/tree.ts, …]` frontmatter, so a doc that describes a module without naming symbols goes stale when any covered file changes after it. Only if §5.3's citation-based checks leave gaps.

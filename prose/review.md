@@ -24,6 +24,7 @@ Every item is decided and written into the spec and plan. What's left is code; t
 | 2h | Personal use, small repos: up to ~500 files; no timing budget | spec §2; plan "Testing" |
 | 3.1–3.3 | New *since* view (vs `HEAD`, a ref, or last visit) answers "what changed"; staleness is secondary, uses `blame -w` + ignore-revs, and its limits are stated | spec §1, §5.2, §6.5; plan step 4 |
 | 3.4 | One freeform `@note` annotating an issue, mainly written from the view; the agent may leave one too; no author marker, no `@question`. Notes in Markdown later | spec §6.2, §8, §10 |
+| 3.4b | Notes on any code line, at any depth, inserted above the enclosing statement/element/rule/key; addressed by `file:line` + hash. Replaces the "notes without a `@prose` block" question | spec §6.2–§6.3, §9.2; plan step 3 |
 | 3.5 | Resolved notes shown by the *since* view, which works before anything is committed | spec §6.2, §6.5 |
 | 3.6 | Blocks below depth 0 become a warning | spec §3.1; plan step 3 |
 | 3.7 | JS/TS comments from `oxc-parser`; scanner kept for CSS/HTML/YAML/TOML | spec §3.1; plan step 3 |

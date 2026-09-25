@@ -32,9 +32,14 @@ Steps 1–3 come before anything that builds on anchors or writes (dev tools, `p
 - [ ] Content-derived anchors: pending chunk in `src/parser.ts`. Update `client/nav.ts` and the examples' links to the new form.
 - [ ] Metamorphic test: inserting a block anywhere at top level never changes which block an existing anchor resolves to.
 
-### 3. Parser on oxc for JS/TS (spec §3.1)
+### 3. Parser on oxc for JS/TS, and line notes (spec §3.1, §6.2)
 
 - [ ] Pending chunk "Comments from oxc for JS and TS" in `src/parser.ts`, including the below-depth-0 warning.
+- [ ] Line notes: `@note` found at any depth in every language; a note after a `@prose` block is a block note, any other a line note.
+- [ ] Legal insertion point for a line note: enclosing statement (oxc AST), element, CSS rule or declaration, YAML/TOML key; never inside a string, template literal, `<pre>`/`<textarea>`, attribute list or block scalar.
+- [ ] `add-note` by `file:line` + line hash; `resolve-note` by the note's own position + text hash.
+- [ ] Client: add a note from a code line's gutter, preview where it lands, show line notes inline; counts roll up with block notes.
+- [ ] Tests: the insertion cases in spec §9.2, plus the step 1 property tests extended to line notes.
 
 ### 4. The *since* view (spec §6.5)
 
@@ -46,7 +51,7 @@ Steps 1–3 come before anything that builds on anchors or writes (dev tools, `p
 
 Nothing here is decided; each is a choice to make when it starts to matter.
 
-- [ ] **Notes where there is no `@prose` block**, and **notes in Markdown** (spec §10).
+- [ ] **Notes in Markdown**: READMEs and `prose/*.md` (spec §10).
 - [ ] **Per-block staleness badge** in the margin; the file badge counts them today.
 - [ ] **Inline view for `.svelte`**: highlight each code run by the language of the part it sits in.
 - [ ] **Symbol-check noise on file prose** (about 20 warnings in this repo, mostly external names): ignore list, `package.json`/imports as known (partly done), or a per-block opt-out. Label them true/false first and track the false-positive rate.

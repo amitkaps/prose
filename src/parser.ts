@@ -607,5 +607,6 @@ export function firstParagraph(text: string): string {
  *
  * Planned. Take JS/TS comments and their depth from oxc-parser instead of the hand tokenizer,
  * which removes the regex-literal misread; keep the scanner for CSS, HTML, YAML and TOML. A
- * block below depth 0 becomes a warning on its file instead of being dropped silently.
+ * block below depth 0 becomes a warning on its file instead of being dropped silently. `@note`
+ * comments are collected at every depth, since line notes (spec §6.2) sit inside function bodies.
  */
