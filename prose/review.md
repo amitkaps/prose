@@ -6,14 +6,11 @@ Items are numbered so decisions can cite them (`review 1b`). Findings in §1 wer
 
 ## Decisions
 
-Every item is decided and written into the spec and plan. What's left is code; this file is deleted once plan steps 1–3 land.
+Every item is decided and written into the spec and plan. What's left is code; this file is deleted once plan steps 2–3 land. Items fixed in code are removed from both the table and the text (1a, 1c and 1d went with the safe-writes PR).
 
 | Item | Decision | Where it lives now |
 | ---- | -------- | ------------------ |
-| 1a | Escape note text; validate paths; writes only on loopback; refuse cross-origin WebSocket | spec §6 "Trust boundary", §6.2; plan step 1; pending chunk in `src/notes.ts` |
-| 1b | Anchor = first declared name, then heading slug, then position; writes carry a block content hash | spec §3.2 "Anchors", §6.3; plan step 2; pending chunk in `src/parser.ts` |
-| 1c | Git-aware walk (tracked + untracked-not-ignored); skip `prose/` only at the root | spec §3.4; plan step 1; pending chunk in `src/tree.ts` |
-| 1d | Same content-hash guard as 1b | spec §6.3; plan step 1 |
+| 1b | Anchor = first declared name, then heading slug, then position; writes carry a block content hash (the hash guard is done) | spec §3.2 "Anchors", §6.3; plan step 2; pending chunk in `src/parser.ts` |
 | 2a | Hybrid: single-file work is a pending chunk in its file; `plan.md` keeps ordering and cross-file items | spec §1, §8; `plan.md` intro |
 | 2b | Checklist item rewritten: a note asks for the feature, the agent adds the pending chunk | spec §9.2 |
 | 2c | `prose check` removed from §8 until it exists | spec §8; plan step 6 |
@@ -30,22 +27,12 @@ Every item is decided and written into the spec and plan. What's left is code; t
 | 3.6 | Blocks below depth 0 become a warning | spec §3.1; plan step 3 |
 | 3.7 | JS/TS comments from `oxc-parser`; scanner kept for CSS/HTML/YAML/TOML | spec §3.1; plan step 3 |
 | 3.8 | One line in §6.4 on sourcemaps; no stripping, no CI check | spec §6.4 |
-| §4 | Property tests on writes first (step 1); the rest listed under testing | plan step 1, "Testing" |
+| §4 | Property tests on writes are done (`src/notes.test.ts`); the rest listed under testing | plan "Testing" |
 | 5a | Done list in landing order, no phase numbers | `plan.md` |
 | 5b | §6 intro trimmed to the route and its trust boundary; Devframe wiring rationale moved to `src/plugin.ts` | spec §6; `src/plugin.ts` |
 | 5c | Order: safe writes, anchors, parser, then the rest | `plan.md` |
 
 ## 1. Real bugs the docs don't mention
-
-**1a. Note text can inject code into your source files.** `formatNote` in `src/notes.ts` doesn't escape anything. Adding a note with the text `is this safe? */ export const pwned = 1; /*` wrote this to disk:
-
-```js
-/** @note
- * is this safe? */ export const pwned = 1; /*
- */
-```
-
-The note closes its own comment, and `export const pwned = 1;` becomes live code. HMR then runs it. The same thing happens with `-->` in HTML, and in YAML/TOML a note line starting with `@prose` becomes a new block. Put that together with `auth: false` and there's no path check in `findChunk` (`join(root, "../../x.ts#file")` works), and the write RPC can write outside the project root and inject code. That's acceptable only while the dev server is bound to loopback. With `vite --host` it isn't. The spec also never asks whether Devframe's WebSocket checks the `Origin` header, which is a known class of Vite dev-server bug.
 
 **1b. Chunk anchors aren't stable, but the spec says they are.** §3.4, §5.3 and §6.1 all promise `src/store.ts#addTodo`. The code (`src/parser.ts`, the `chunkSlug` assignment) builds anchors from heading slugs, and unheaded chunks get positional ones: `top-chunk-0`, `top-chunk-1`, …. That causes three problems:
 
@@ -57,10 +44,6 @@ This is the base the whole of Phase 6 (§5.3 anchor references) would sit on. Se
 
 - Anchor on the first declared identifier in the chunk's code, which is what the spec implies.
 - Send a content hash with each write and reject the write if it no longer matches.
-
-**1c. `SKIP_DIRS` includes `"prose"` at every depth** (`src/tree.ts`). A user's `src/prose/` folder disappears from the tree. The walker also ignores `.gitignore`, so `coverage/`, `.wrangler/`, `build/` and similar folders get walked.
-
-**1d. No lost-update protection.** `addNote` reads, modifies and writes with no mtime or hash check. If an agent or your editor writes the same file between the read and the write, one of the two changes is silently lost. That race is exactly what happens with an agent working alongside you.
 
 ## 2. Places where the spec disagrees with itself or with the code
 

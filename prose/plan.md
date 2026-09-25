@@ -14,18 +14,11 @@ In the order it landed.
 - **File as the leaf** — files are the smallest navigable unit (§3.2); a file page reads the whole file in source order with each block in place; every block, the file prose included, takes a `@note`.
 - **CI** — `check`, `test`, `build` on every PR (#2).
 - **Review decisions** — `prose/review.md` settled; spec, plan and code prose updated to match.
+- **Safe writes** — note text escaped per comment style; writes checked against `projectFiles` (inside the root, symlinks included) and the block hash; writes only on loopback, MCP route off; client sends the hash and keeps the draft on refusal; fast-check properties on the pure edits (`withNote`/`withoutNote`); git-aware walk with root-only `prose/` (spec §3.4, §6).
 
 ## Open work, in order
 
-Steps 1–3 come before anything that builds on anchors or writes (dev tools, `prose/` sync).
-
-### 1. Safe writes (spec §6, "Trust boundary"; §6.2–§6.3)
-
-- [ ] Note escaping, path validation and the content-hash guard: pending chunk "Safe writes" in `src/notes.ts`.
-- [ ] Refuse writes when the dev server listens on a non-loopback address; refuse cross-origin WebSocket connections (`src/plugin.ts`, and whatever Devframe exposes for it).
-- [ ] Client sends the block hash with `add-note`/`resolve-note` and shows the fresh block when a write is refused (`client/store.svelte.ts`, `Note.svelte`).
-- [ ] Property tests (fast-check) on the write path: add→resolve is byte-identical for any note text (`*/`, `-->`, `@prose`, CRLF, tabs, unicode, empty); adding twice leaves one note; other blocks untouched.
-- [ ] Git-aware walk and root-only `prose/` skip: pending chunk "A git-aware walk" in `src/tree.ts`.
+Steps 2–3 come before anything that builds on anchors or writes (dev tools, `prose/` sync). Step numbers are kept as they were, since other docs cite them.
 
 ### 2. Anchors (spec §3.2)
 
@@ -39,7 +32,7 @@ Steps 1–3 come before anything that builds on anchors or writes (dev tools, `p
 - [ ] Legal insertion point for a line note: enclosing statement (oxc AST), element, CSS rule or declaration, YAML/TOML key; never inside a string, template literal, `<pre>`/`<textarea>`, attribute list or block scalar.
 - [ ] `add-note` by `file:line` + line hash; `resolve-note` by the note's own position + text hash.
 - [ ] Client: add a note from a code line's gutter, preview where it lands, show line notes inline; counts roll up with block notes.
-- [ ] Tests: the insertion cases in spec §9.2, plus the step 1 property tests extended to line notes.
+- [ ] Tests: the insertion cases in spec §9.2, plus the write-path property tests (`src/notes.test.ts`) extended to line notes.
 
 ### 4. The *since* view (spec §6.5)
 

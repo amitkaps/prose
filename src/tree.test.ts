@@ -1,8 +1,9 @@
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { buildTree, findNode } from "./tree.js";
+import { buildTree, findNode, projectFiles } from "./tree.js";
 
 let root: string;
 
@@ -185,6 +186,51 @@ describe("buildTree: prose/ cross-cutting docs (spec §3.4)", () => {
 		const dir = makeProject({ "main.js": "const a = 1;\n" });
 		const tree = buildTree(dir);
 		expect(tree.children.map((n) => n.path)).toEqual(["main.js"]);
+	});
+});
+
+describe("projectFiles: a git-aware walk (spec §3.4)", () => {
+	it("lists tracked and untracked files, leaving out what .gitignore excludes", () => {
+		const dir = makeProject({
+			".gitignore": "coverage/\nbuild/\n",
+			"src/a.ts": "export {};\n",
+			"src/new.ts": "export {};\n",
+			"coverage/report.js": "x;\n",
+			"build/out.js": "x;\n",
+			"dist/kept.js": "x;\n",
+		});
+		execFileSync("git", ["init", "-q"], { cwd: dir });
+		execFileSync("git", ["add", "src/a.ts"], { cwd: dir });
+		// `dist/` isn't ignored here, so git mode shows it: only .gitignore decides.
+		expect(projectFiles(dir)).toEqual(["dist/kept.js", "src/a.ts", "src/new.ts"]);
+		expect(buildTree(dir).children.map((n) => n.name)).toEqual(["dist", "src"]);
+	});
+
+	it("drops a file that's deleted but still in the index", () => {
+		const dir = makeProject({ "a.ts": "export {};\n", "b.ts": "export {};\n" });
+		execFileSync("git", ["init", "-q"], { cwd: dir });
+		execFileSync("git", ["add", "."], { cwd: dir });
+		rmSync(join(dir, "b.ts"));
+		expect(projectFiles(dir)).toEqual(["a.ts"]);
+	});
+
+	it("walks the disk with the fixed skip list outside a git repository", () => {
+		const dir = makeProject({
+			"node_modules/dep/index.js": "x;\n",
+			".cache/x.js": "x;\n",
+			"src/a.ts": "export {};\n",
+		});
+		expect(projectFiles(dir)).toEqual(["src/a.ts"]);
+	});
+
+	it("treats only the root prose/ as cross-cutting docs; src/prose/ is an ordinary folder", () => {
+		const dir = makeProject({
+			"prose/lessons.md": "Lessons.",
+			"src/prose/render.ts": "/** @prose Renders prose. */\nexport {};\n",
+		});
+		const tree = buildTree(dir);
+		expect(tree.children.map((n) => n.path)).toEqual(["prose/lessons.md", "src"]);
+		expect(findNode(tree, "src/prose/render.ts")?.summary).toBe("Renders prose.");
 	});
 });
 

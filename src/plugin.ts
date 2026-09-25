@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { devframeViteBridge, devframeVitePlugin } from "@devframes/vite/single";
 import { defineDevframe, defineRpcFunction } from "devframe";
 import type { DevframeNodeContext } from "devframe/types";
+import { isLoopbackAddress } from "devframe/utils/origin";
 import type { SharedState } from "devframe/utils/shared-state";
 import type { Plugin } from "vite";
 import { handleAddNote, handleNode, handleResolveNote, handleTree } from "./server/routes.js";
@@ -82,18 +83,43 @@ export function stripProseHtml(html: string): string {
 interface ProseShared {
 	root: string;
 	treeState: SharedState<TreeNode> | null;
+	/** Set once the dev server is listening, and only if it listens on loopback (below). */
+	writable: boolean;
+}
+
+function currentTree(shared: ProseShared): TreeNode {
+	return { ...handleTree(shared.root), writable: shared.writable };
 }
 
 function refreshTree(shared: ProseShared): void {
 	if (!shared.treeState) return;
-	const next = handleTree(shared.root);
+	const next = currentTree(shared);
 	shared.treeState.mutate((state) => Object.assign(state, next));
+}
+
+/** @prose
+ * # Writes only on loopback (spec §6, "Trust boundary")
+ *
+ * Devframe already refuses WebSocket connections from a non-loopback browser origin, but it lets
+ * through clients that send no `Origin` header at all, since those are native tools, not web
+ * pages. That's fine while the dev server listens only on loopback. With `vite --host` anything on
+ * the network could connect and call `add-note`. So writes start refused and are allowed only
+ * once the HTTP server is listening on a loopback address; `vite --host`, or a middleware-mode
+ * server with no HTTP server of its own, stays read-only. The tree carries the flag so the view
+ * can hide its write controls.
+ */
+function assertWritable(shared: ProseShared): void {
+	if (!shared.writable) {
+		throw new Error(
+			"Notes are read-only here: the dev server listens on a non-loopback address (spec §6).",
+		);
+	}
 }
 
 async function registerRpc(ctx: DevframeNodeContext, shared: ProseShared): Promise<void> {
 	shared.root = ctx.workspaceRoot;
 	shared.treeState = await ctx.rpc.sharedState.get<TreeNode>("prose:tree", {
-		initialValue: handleTree(ctx.workspaceRoot),
+		initialValue: currentTree(shared),
 	});
 	ctx.rpc.register(
 		defineRpcFunction({
@@ -108,8 +134,9 @@ async function registerRpc(ctx: DevframeNodeContext, shared: ProseShared): Promi
 			name: "prose:add-note",
 			type: "action",
 			jsonSerializable: true,
-			handler: (path: string, text: string) => {
-				const node = handleAddNote(ctx.workspaceRoot, path, text);
+			handler: (path: string, text: string, hash: string) => {
+				assertWritable(shared);
+				const node = handleAddNote(ctx.workspaceRoot, path, text, hash);
 				refreshTree(shared);
 				return node;
 			},
@@ -120,8 +147,9 @@ async function registerRpc(ctx: DevframeNodeContext, shared: ProseShared): Promi
 			name: "prose:resolve-note",
 			type: "action",
 			jsonSerializable: true,
-			handler: (path: string) => {
-				const node = handleResolveNote(ctx.workspaceRoot, path);
+			handler: (path: string, hash: string) => {
+				assertWritable(shared);
+				const node = handleResolveNote(ctx.workspaceRoot, path, hash);
 				refreshTree(shared);
 				return node;
 			},
@@ -130,7 +158,7 @@ async function registerRpc(ctx: DevframeNodeContext, shared: ProseShared): Promi
 }
 
 export function prose(): Plugin[] {
-	const shared: ProseShared = { root: "", treeState: null };
+	const shared: ProseShared = { root: "", treeState: null, writable: false };
 	const devframeDefinition = defineDevframe({
 		id: "prose",
 		name: "Prose",
@@ -148,8 +176,9 @@ export function prose(): Plugin[] {
 		devframeVitePlugin(devframeDefinition),
 		// The bridge's RPC endpoint gates behind an OTP by default; auth: false skips that here
 		// (see the file prose above for why) — a plain comment, not @prose, since a comment at
-		// this depth (inside the function body) wouldn't be read as prose anyway.
-		devframeViteBridge(devframeDefinition, { auth: false }),
+		// this depth (inside the function body) wouldn't be read as prose anyway. `mcp: false`
+		// keeps Devframe's MCP route unmounted until plan step 6 decides what it exposes.
+		devframeViteBridge(devframeDefinition, { auth: false, mcp: false }),
 		// Dev-only route aside, this is the plugin's only footprint in `vite build` output (§6.4).
 		{
 			name: "prose:strip-html",
@@ -169,6 +198,12 @@ export function prose(): Plugin[] {
 			configureServer(server) {
 				server.watcher.on("all", (event) => {
 					if (event === "change" || event === "add" || event === "unlink") refreshTree(shared);
+				});
+				server.httpServer?.on("listening", () => {
+					const address = server.httpServer?.address();
+					shared.writable =
+						typeof address === "object" && address !== null && isLoopbackAddress(address.address);
+					refreshTree(shared);
 				});
 			},
 		},

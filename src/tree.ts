@@ -1,5 +1,6 @@
+import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, join, relative, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import {
 	checkStaleness,
 	checkSymbols,
@@ -9,6 +10,7 @@ import {
 } from "./checks.js";
 import { blameFile } from "./git.js";
 import {
+	blockHash,
 	chunkAnchor,
 	FILE_ANCHOR,
 	type FileParse,
@@ -49,6 +51,13 @@ export interface TreeNode {
 	/** Chunk-only: the byte range `[start, end)` of this block's comment in the file's `source`, so
 	 *  the view can put the rendered prose where the comment was and show the code around it. */
 	span?: [number, number];
+	/** Chunk-only: a hash of this block's prose and note (`blockHash` in `parser.ts`). The client
+	 *  sends it back with a write, and the server refuses the write if the block on disk no longer
+	 *  matches (spec §6.3). */
+	hash?: string;
+	/** Project-only: false when the dev server listens on a non-loopback address, so the view is
+	 *  read-only (spec §6, "Trust boundary"). Set by `plugin.ts`, not by the walk. */
+	writable?: boolean;
 	/** Chunk-only: an `@note` left directly on this chunk — a direction or question for whoever
 	 *  touches it next, not part of its prose (`src/notes.ts` writes/removes these). */
 	note?: string;
@@ -65,7 +74,8 @@ export interface TreeNode {
 	children: TreeNode[];
 }
 
-const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".svelte-kit", ".vscode", "prose"]);
+/** Only used outside a git repository; inside one, `.gitignore` decides (`projectFiles`). */
+const SKIP_DIRS = new Set(["node_modules", "dist"]);
 const SOURCE_EXTENSIONS = new Set([
 	"js",
 	"ts",
@@ -114,10 +124,9 @@ function readReadme(dir: string): string | null {
  * become this file's children: an unheaded section's chunks attach directly, a headed section
  * becomes its own `section` node wrapping its chunks.
  */
-function fileToNode(root: string, absPath: string): TreeNode {
-	const relPath = relative(root, absPath);
-	const source = readFileSync(absPath, "utf-8");
-	const ext = extensionOf(absPath);
+function fileToNode(root: string, relPath: string): TreeNode {
+	const source = readFileSync(join(root, relPath), "utf-8");
+	const ext = extensionOf(relPath);
 	// A plain .md file is prose by convention (spec §3.1) — no @prose marker or chunking needed.
 	// YAML frontmatter, if present, is metadata rather than prose, so it's stripped here too.
 	const parsed: FileParse =
@@ -157,6 +166,7 @@ function fileToNode(root: string, absPath: string): TreeNode {
 			kind: "chunk",
 			path: `${relPath}#${anchor}`,
 			summary: firstParagraph(chunk.prose),
+			hash: blockHash(chunk),
 			pending: chunk.pending,
 			prose: chunk.prose,
 			code: chunk.code,
@@ -196,9 +206,9 @@ function fileToNode(root: string, absPath: string): TreeNode {
  * highlighted, with no chunks, symbols or warnings, and it counts as neither documented nor
  * undocumented. Oversized files are skipped, since the whole tree is pushed to the client.
  */
-function rawToNode(root: string, absPath: string): TreeNode | null {
+function rawToNode(root: string, relPath: string): TreeNode | null {
+	const absPath = join(root, relPath);
 	if (statSync(absPath).size > RAW_MAX_BYTES) return null;
-	const relPath = relative(root, absPath);
 	return {
 		name: relPath,
 		kind: "raw",
@@ -218,30 +228,119 @@ function sumWarnings(children: TreeNode[]): number {
 }
 
 /** @prose
+ * # Which files the tree holds (spec §3.4)
+ *
+ * The files git would track: `git ls-files` with `--others --exclude-standard`, so an untracked
+ * new file shows up before it's committed while `coverage/`, `.wrangler/` and other ignored
+ * output stay out. Outside a git repository, a plain walk with the fixed `SKIP_DIRS` list stands
+ * in. Either way, dot-folders and dotfiles, lockfiles and extensions the view can't show are
+ * dropped here, so this one list is what the tree is built from and what a note write is checked
+ * against (`src/notes.ts`): a write can only name a file the view could have shown.
+ *
+ * Paths are relative to the root, with `/` separators. The root `prose/` folder is included;
+ * `buildTree` pulls its Markdown out to L3 rather than showing it as a folder.
+ */
+export function projectFiles(root: string): string[] {
+	const listed = gitFiles(root) ?? walkFiles(root, "");
+	return listed
+		.filter((path) => {
+			const segments = path.split("/");
+			const name = segments[segments.length - 1];
+			if (segments.some((segment) => segment.startsWith("."))) return false;
+			if (RESERVED_FILENAMES.has(name)) return false;
+			const ext = extensionOf(name);
+			return SOURCE_EXTENSIONS.has(ext) || RAW_EXTENSIONS.has(ext);
+		})
+		.sort();
+}
+
+/** Tracked files plus untracked ones not ignored, or `null` outside a git repository. A file
+ *  deleted from the working tree but still in the index is dropped, as is a submodule's entry
+ *  (a directory, not a file). */
+function gitFiles(root: string): string[] | null {
+	let output: string;
+	try {
+		output = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
+			cwd: root,
+			encoding: "utf-8",
+			stdio: ["ignore", "pipe", "ignore"],
+			maxBuffer: 64 * 1024 * 1024,
+		});
+	} catch {
+		return null;
+	}
+	const files = [...new Set(output.split("\0").filter(Boolean))];
+	return files.filter((path) => {
+		try {
+			return statSync(join(root, path)).isFile();
+		} catch {
+			return false;
+		}
+	});
+}
+
+function walkFiles(root: string, relDir: string): string[] {
+	const files: string[] = [];
+	for (const entry of readdirSync(join(root, relDir))) {
+		if (entry.startsWith(".") || SKIP_DIRS.has(entry)) continue;
+		const relPath = relDir ? `${relDir}/${entry}` : entry;
+		const stat = statSync(join(root, relPath));
+		if (stat.isDirectory()) files.push(...walkFiles(root, relPath));
+		else if (stat.isFile()) files.push(relPath);
+	}
+	return files;
+}
+
+interface DirIndex {
+	files: string[];
+	dirs: Map<string, DirIndex>;
+}
+
+function indexFiles(paths: string[]): DirIndex {
+	const top: DirIndex = { files: [], dirs: new Map() };
+	for (const path of paths) {
+		const segments = path.split("/");
+		let dir = top;
+		for (const segment of segments.slice(0, -1)) {
+			let next = dir.dirs.get(segment);
+			if (!next) {
+				next = { files: [], dirs: new Map() };
+				dir.dirs.set(segment, next);
+			}
+			dir = next;
+		}
+		dir.files.push(segments[segments.length - 1]);
+	}
+	return top;
+}
+
+/** @prose
  * # One folder's node
  *
- * Recurses into subfolders and files, skipping `SKIP_DIRS` (tooling/VCS folders no project
- * wants walked) and anything dotfile-named. A folder with no prose and no children (an empty
- * subtree) is dropped rather than shown as a dead end — only folders that actually have
- * something to say make it into the tree.
+ * Built from `projectFiles`' list rather than from the disk, so the tree and the write check
+ * agree on what exists. A folder's `README.md` is its prose, not a child. A folder with no prose
+ * and no children (an empty subtree) is dropped rather than shown as a dead end — only folders
+ * that actually have something to say make it into the tree.
  */
-function folderToNode(root: string, dir: string, name: string): TreeNode {
-	const relPath = relative(root, dir);
-	const readme = readReadme(dir);
+function folderToNode(root: string, relDir: string, name: string, index: DirIndex): TreeNode {
+	const readme = index.files.includes("README.md")
+		? readReadme(relDir ? join(root, relDir) : root)
+		: null;
 	const children: TreeNode[] = [];
+	const entries = [...index.dirs.keys(), ...index.files].sort();
 
-	for (const entry of readdirSync(dir).sort()) {
-		if (entry.startsWith(".") || SKIP_DIRS.has(entry) || entry === "README.md") continue;
-		if (RESERVED_FILENAMES.has(entry)) continue;
-		const absPath = join(dir, entry);
-		const stat = statSync(absPath);
-		if (stat.isDirectory()) {
-			const sub = folderToNode(root, absPath, entry);
-			if (sub.children.length > 0 || sub.prose) children.push(sub);
+	for (const entry of entries) {
+		const relPath = relDir ? `${relDir}/${entry}` : entry;
+		const sub = index.dirs.get(entry);
+		if (sub) {
+			const node = folderToNode(root, relPath, entry, sub);
+			if (node.children.length > 0 || node.prose) children.push(node);
+		} else if (entry === "README.md") {
+			continue;
 		} else if (SOURCE_EXTENSIONS.has(extensionOf(entry))) {
-			children.push(fileToNode(root, absPath));
-		} else if (RAW_EXTENSIONS.has(extensionOf(entry))) {
-			const raw = rawToNode(root, absPath);
+			children.push(fileToNode(root, relPath));
+		} else {
+			const raw = rawToNode(root, relPath);
 			if (raw) children.push(raw);
 		}
 	}
@@ -249,7 +348,7 @@ function folderToNode(root: string, dir: string, name: string): TreeNode {
 	return {
 		name,
 		kind: "folder",
-		path: relPath || ".",
+		path: relDir || ".",
 		summary: readme ? firstParagraph(readme) : "undocumented",
 		prose: readme,
 		warningCount: sumWarnings(children),
@@ -260,24 +359,19 @@ function folderToNode(root: string, dir: string, name: string): TreeNode {
 /** @prose
  * # Cross-cutting docs at L3
  *
- * Every `prose/*.md` is cross-cutting project prose (spec §3.4), surfaced at
- * L3 rather than nested as an ordinary folder — `prose` itself stays in `SKIP_DIRS` so the
- * recursive walk never turns it into a folder node. Reuses `fileToNode` for each one, so a
+ * Every Markdown file directly in the root `prose/` is cross-cutting project prose (spec §3.4),
+ * surfaced at L3 rather than nested as an ordinary folder. Only the root one is special: a
+ * `src/prose/` folder is walked like any other. Reuses `fileToNode` for each one, so a
  * `prose/*.md` document gets exactly the same frontmatter-stripping and summary treatment as any
  * other `.md` file — the only special thing about it is *where* it gets attached in the tree.
  */
-function proseDocs(root: string): TreeNode[] {
-	const dir = join(root, "prose");
-	let entries: string[];
-	try {
-		entries = readdirSync(dir);
-	} catch {
-		return [];
-	}
-	return entries
+function proseDocs(root: string, index: DirIndex): TreeNode[] {
+	const dir = index.dirs.get("prose");
+	if (!dir) return [];
+	return dir.files
 		.filter((entry) => extensionOf(entry) === "md")
 		.sort()
-		.map((entry) => fileToNode(root, join(dir, entry)));
+		.map((entry) => fileToNode(root, `prose/${entry}`));
 }
 
 interface ChunkRef {
@@ -397,10 +491,12 @@ function rerollWarnings(node: TreeNode): number {
  * symbol check's cross-file pass and re-rolling warning counts up from it (§5).
  */
 export function buildTree(root: string): TreeNode {
-	const projectNode = folderToNode(root, root, basename(resolve(root)));
+	const index = indexFiles(projectFiles(root));
+	const docs = proseDocs(root, index);
+	index.dirs.delete("prose");
+	const projectNode = folderToNode(root, "", basename(resolve(root)), index);
 	projectNode.kind = "project";
-	projectNode.path = ".";
-	projectNode.children = [...proseDocs(root), ...projectNode.children];
+	projectNode.children = [...docs, ...projectNode.children];
 	applySymbolChecks(projectNode, readPackageNames(root));
 	rerollWarnings(projectNode);
 	return projectNode;
@@ -418,12 +514,3 @@ export function findNode(tree: TreeNode, path: string): TreeNode | null {
 	}
 	return null;
 }
-
-/** @prose
- * # A git-aware walk (spec §3.4)
- *
- * Planned. List files the way git would (tracked, plus untracked files `.gitignore` doesn't
- * exclude) instead of walking every folder minus `SKIP_DIRS`, so `coverage/` and similar
- * build output stay out. Skip `prose/` only at the root, so a `src/prose/` folder is an
- * ordinary folder. Outside a git repo, fall back to the fixed skip list.
- */

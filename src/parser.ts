@@ -6,6 +6,7 @@
  * code between consecutive comments into chunks. No AST, no compiler — a source file is just
  * text with comment syntax, and that's all this needs to find.
  */
+import { createHash } from "node:crypto";
 export interface ProseChunk {
 	slug: string;
 	heading: string | null;
@@ -145,8 +146,12 @@ const MARKERS = ["@prose", "@note"] as const;
 /** The marker check + trimming shared by every comment style — a comment counts only if its
  *  first line, trimmed, starts with `@prose` or `@note`; blank lines at either edge of the body
  *  are dropped. `lines` are already gutter-stripped by the caller (each style strips its own
- *  gutter differently: JS's ` * `, hash-style's `# `, HTML's none at all). */
-function extractMarkedFromLines(lines: string[]): { kind: "prose" | "note"; body: string } | null {
+ *  gutter differently: JS's ` * `, hash-style's `# `, HTML's none at all). A CRLF file's `\r`
+ *  stays out of the body. */
+function extractMarkedFromLines(
+	rawLines: string[],
+): { kind: "prose" | "note"; body: string } | null {
+	const lines = rawLines.map((line) => line.replace(/\r$/, ""));
 	const trimmedFirst = lines[0].trim();
 	const marker = MARKERS.find((m) => trimmedFirst.startsWith(m));
 	if (!marker) return null;
@@ -382,17 +387,17 @@ function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[]
 		}
 		const marked = extractMarkedFromLines(commentLines);
 		if (marked) {
-			// `endIndex` lands right after the last comment line's own content, before its trailing
-			// newline — matching `scanJsLike`/`scanHtml`'s convention (their `end` sits right after
-			// `*/`/`-->`, also before any newline), so `notes.ts`'s insertion logic (which always
-			// prepends its own `"\n"`) works identically regardless of comment style.
+			// `endIndex` lands right after the last comment line's own content, before its line
+			// ending (`\r` included) — matching `scanJsLike`/`scanHtml`'s convention (their `end`
+			// sits right after `*/`/`-->`, also before any newline), so `notes.ts`'s insertion logic
+			// (which always prepends the file's line ending) works identically in every style.
 			const lastLine = i - 1;
 			blocks.push({
 				...marked,
 				commentStyle: "hash",
 				codeLang,
 				startIndex: lineOffsets[startLine],
-				endIndex: lineOffsets[lastLine] + lines[lastLine].length,
+				endIndex: lineOffsets[lastLine] + lines[lastLine].replace(/\r$/, "").length,
 				startLine: startLine + 1,
 			});
 		}
@@ -585,6 +590,20 @@ export const FILE_ANCHOR = "file";
  *  chunk a note write targets, without duplicating this slug logic a second time. */
 export function chunkAnchor(section: ProseSection, chunk: ProseChunk): string {
 	return section.heading === null ? chunk.slug : `${section.slug}/${chunk.slug}`;
+}
+
+/** @prose
+ * A block's identity for a write (spec §6.3): a short hash of its prose and its note. The tree
+ * carries it to the client, and a write sends it back, so a block that changed on disk since
+ * the client's tree was pushed (edited, replaced by the one below it, its note resolved or
+ * rewritten by someone else) refuses the write instead of taking it. The code isn't included:
+ * a note sits after the prose, so a change to the code below doesn't move it.
+ */
+export function blockHash(chunk: Pick<ProseChunk, "prose" | "note">): string {
+	return createHash("sha1")
+		.update(`${chunk.prose}\0${chunk.note ?? ""}`)
+		.digest("hex")
+		.slice(0, 12);
 }
 
 /** Returns the first Markdown paragraph of `text`, skipping a leading heading line, for use as a summary. */
