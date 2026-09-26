@@ -1,6 +1,6 @@
 /** @prose
  * Builds the `/__prose/` SPA that Devframe serves via `clientAssets` (spec §6.1) — a completely
- * separate build from the library itself (`tsdown.config.ts`), since this one's output is static
+ * separate build from the library itself (the `pack` block in `../vite.config.ts`), since this one's output is static
  * assets for a browser, not a Node-consumable package.
  *
  * `base: "/__prose/"` is hardcoded, not relative, matching Devframe's default mount path for a

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { devframeViteBridge, devframeVitePlugin } from "@devframes/vite/single";
@@ -32,6 +33,9 @@ import type { TreeNode } from "./tree.js";
  * (spec §6, "Trust boundary", which also lists the guards writes still need).
  */
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const { version } = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf-8")) as {
+	version: string;
+};
 
 /** @prose
  * # Registering the RPC functions
@@ -176,7 +180,7 @@ export function prose(): Plugin[] {
 	const devframeDefinition = defineDevframe({
 		id: "prose",
 		name: "Prose",
-		version: "0.0.1",
+		version,
 		packageName: "@amitkaps/prose",
 		importMetaUrl: import.meta.url,
 		homepage: "https://prose.amitkaps.com",
