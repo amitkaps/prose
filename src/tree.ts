@@ -447,7 +447,7 @@ function collectChunks(node: TreeNode, acc: ChunkRef[]): void {
  * the project" is only knowable once every chunk's code has been seen — so this runs once, after
  * the whole tree exists: first build one project-wide `identifier → declaring chunk` table, then
  * resolve every chunk's prose spans against it, plus each chunk's own file-scope preamble names
- * (found by dogfooding: `examples/base`'s `docs.ts` names its own `import { marked } from
+ * (found by dogfooding: `amitkaps/base`'s `docs.ts` names its own `import { marked } from
  * "marked"` in prose, and a preamble-only import wasn't visible to any chunk until this scope was
  * threaded through — see `checkSymbols`'s `fileScope` parameter).
  */
