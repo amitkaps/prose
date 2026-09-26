@@ -35,7 +35,7 @@ export default defineConfig({
 	},
 
 	/** @prose
-	 * Builds the library (`src/index.ts` → `dist/index.mjs` + `.d.mts`). `platform: "node"` since
+	 * Builds the library (`src/index.ts` → `dist/index.js` + `.d.ts`). `platform: "node"` since
 	 * this only ever runs server-side, inside a consuming app's Vite dev server — the client SPA is
 	 * a completely separate build (`client/vite.config.ts`), never touched by this one.
 	 */
@@ -43,6 +43,8 @@ export default defineConfig({
 		entry: ["src/index.ts"],
 		format: "esm",
 		platform: "node",
+		// `type: "module"` already makes `.js` ESM; tsdown's Node default would emit `.mjs`.
+		fixedExtension: false,
 		dts: true,
 		sourcemap: true,
 	},
