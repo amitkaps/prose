@@ -28,7 +28,7 @@ const SHIKI_LANG: Record<string, string> = {
 };
 
 export function langForPath(path: string): string {
-	const filePart = path.split("#")[0];
+	const filePart = path.split("#")[0]!;
 	const ext = filePart.slice(filePart.lastIndexOf(".") + 1).toLowerCase();
 	return SHIKI_LANG[ext] ?? "text";
 }

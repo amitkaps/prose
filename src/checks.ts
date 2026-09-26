@@ -133,7 +133,7 @@ export function extractCodeSpans(prose: string): string[] {
 	const re = /`([^`\n]+)`/g;
 	let match: RegExpExecArray | null;
 	while ((match = re.exec(prose))) {
-		const text = match[1];
+		const text = match[1]!; // group 1 always participates: the pattern has no alternation
 		if (
 			IDENTIFIER_RE.test(text) &&
 			!KEYWORDS_AND_LITERALS.has(text) &&

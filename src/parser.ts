@@ -171,16 +171,16 @@ function extractMarkedFromLines(
 	rawLines: string[],
 ): { kind: "prose" | "note"; body: string } | null {
 	const lines = rawLines.map((line) => line.replace(/\r$/, ""));
-	const trimmedFirst = lines[0].trim();
+	const trimmedFirst = lines[0]!.trim();
 	const marker = MARKERS.find((m) => trimmedFirst.startsWith(m));
 	if (!marker) return null;
 	let rest = trimmedFirst.slice(marker.length);
 	if (rest.startsWith(" ")) rest = rest.slice(1);
 	const out: string[] = [];
 	if (rest.length > 0) out.push(rest);
-	for (let i = 1; i < lines.length; i++) out.push(lines[i]);
-	while (out.length && out[0].trim() === "") out.shift();
-	while (out.length && out[out.length - 1].trim() === "") out.pop();
+	for (let i = 1; i < lines.length; i++) out.push(lines[i]!);
+	while (out.length && out[0]!.trim() === "") out.shift();
+	while (out.length && out.at(-1)!.trim() === "") out.pop();
 	return { kind: marker === "@prose" ? "prose" : "note", body: out.join("\n") };
 }
 
@@ -263,7 +263,7 @@ function scanJs(source: string, lang: "js" | "ts"): RawBlock[] {
 	} catch {
 		return [];
 	}
-	const statements = parsed.program.body.map((node) => [node.start, node.end]);
+	const statements = parsed.program.body.map((node): [number, number] => [node.start, node.end]);
 	const blocks: RawBlock[] = [];
 	for (const comment of parsed.comments) {
 		if (comment.type !== "Block" || !comment.value.startsWith("*")) continue;
@@ -362,9 +362,9 @@ function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[]
 	// a key at any depth, and its continuation lines carry the same indent.
 	let i = 0;
 	while (i < lines.length) {
-		const indent = /^[ \t]*/.exec(lines[i])![0];
-		const stripped = lines[i].startsWith(`${indent}#`)
-			? lines[i].slice(indent.length).replace(/^#[ \t]?/, "")
+		const indent = /^[ \t]*/.exec(lines[i]!)![0];
+		const stripped = lines[i]!.startsWith(`${indent}#`)
+			? lines[i]!.slice(indent.length).replace(/^#[ \t]?/, "")
 			: null;
 		if (
 			stripped === null ||
@@ -377,8 +377,8 @@ function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[]
 		const startLine = i;
 		const commentLines = [stripped];
 		i++;
-		while (i < lines.length && lines[i].startsWith(`${indent}#`)) {
-			const next = lines[i].slice(indent.length).replace(/^#[ \t]?/, "");
+		while (i < lines.length && lines[i]!.startsWith(`${indent}#`)) {
+			const next = lines[i]!.slice(indent.length).replace(/^#[ \t]?/, "");
 			if (isMarkerLine(next)) break;
 			commentLines.push(next);
 			i++;
@@ -394,8 +394,8 @@ function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[]
 				...marked,
 				commentStyle: "hash",
 				codeLang,
-				startIndex: lineOffsets[startLine] + indent.length,
-				endIndex: lineOffsets[lastLine] + lines[lastLine].replace(/\r$/, "").length,
+				startIndex: lineOffsets[startLine]! + indent.length,
+				endIndex: lineOffsets[lastLine]! + lines[lastLine]!.replace(/\r$/, "").length,
 				startLine: startLine + 1,
 			});
 		}
@@ -409,7 +409,7 @@ function scanHtml(source: string): RawBlock[] {
 	const re = /<!--([\s\S]*?)-->/g;
 	let match: RegExpExecArray | null;
 	while ((match = re.exec(source))) {
-		const marked = extractMarkedBlock(match[1], false);
+		const marked = extractMarkedBlock(match[1]!, false);
 		if (marked) {
 			blocks.push({
 				...marked,
@@ -483,7 +483,7 @@ export function svelteParts(
 	let last = 0;
 	let match: RegExpExecArray | null;
 	while ((match = tagRe.exec(source))) {
-		const [full, tagName, inner] = match;
+		const [full, tagName, inner] = match as unknown as [string, string, string];
 		const inside = match.index + full.indexOf(inner);
 		parts.push({ kind: "markup", start: last, end: match.index });
 		parts.push({ kind: tagName as "script" | "style", start: inside, end: inside + inner.length });
@@ -534,8 +534,9 @@ export function parseFile(source: string, extension: string): FileParse {
 		};
 	}
 
-	const [fileBlock, ...rest] = blocks;
-	const nextStart = rest.length > 0 ? rest[0].startIndex : source.length;
+	const fileBlock = blocks[0]!;
+	const rest = blocks.slice(1);
+	const nextStart = rest[0]?.startIndex ?? source.length;
 	const preambleEnd =
 		fileBlock.partEnd !== undefined ? Math.min(nextStart, fileBlock.partEnd) : nextStart;
 	const preamble = source.slice(fileBlock.endIndex, preambleEnd).trim();
@@ -545,8 +546,8 @@ export function parseFile(source: string, extension: string): FileParse {
 	let hasOpenedSection = false;
 
 	for (let i = 0; i < rest.length; i++) {
-		const block = rest[i];
-		const nextBlockStart = i + 1 < rest.length ? rest[i + 1].startIndex : source.length;
+		const block = rest[i]!;
+		const nextBlockStart = i + 1 < rest.length ? rest[i + 1]!.startIndex : source.length;
 		const codeEnd =
 			block.partEnd !== undefined ? Math.min(nextBlockStart, block.partEnd) : nextBlockStart;
 		const code = source.slice(block.endIndex, codeEnd).trim();
@@ -556,7 +557,7 @@ export function parseFile(source: string, extension: string): FileParse {
 		const headingMatch = block.body.split("\n")[0]?.match(HEADING_RE);
 		if (headingMatch) {
 			if (hasOpenedSection || currentSection.chunks.length > 0) sections.push(currentSection);
-			const heading = headingMatch[1].trim();
+			const heading = headingMatch[1]!.trim();
 			currentSection = { heading, slug: slugify(heading), chunks: [] };
 			hasOpenedSection = true;
 		}

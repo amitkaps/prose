@@ -32,16 +32,16 @@ function parseBlame(output: string): BlameLine[] {
 	const result: BlameLine[] = [];
 	let i = 0;
 	while (i < lines.length) {
-		const header = HEADER_RE.exec(lines[i]);
+		const header = HEADER_RE.exec(lines[i]!);
 		if (!header) {
 			i++;
 			continue;
 		}
-		const [, sha, , finalLineStr] = header;
+		const [, sha = "", , finalLineStr] = header;
 		const finalLine = Number(finalLineStr);
 		i++;
-		while (i < lines.length && !lines[i].startsWith("\t")) {
-			const timeMatch = /^author-time (\d+)/.exec(lines[i]);
+		while (i < lines.length && !lines[i]!.startsWith("\t")) {
+			const timeMatch = /^author-time (\d+)/.exec(lines[i]!);
 			if (timeMatch) timeBySha.set(sha, Number(timeMatch[1]));
 			i++;
 		}

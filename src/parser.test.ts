@@ -9,17 +9,17 @@ describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
 		expect(parsed.fileProse).toBe("File summary.");
 		expect(parsed.preamble).toBe('import x from "y";');
 		expect(parsed.sections).toHaveLength(1);
-		expect(parsed.sections[0].chunks).toHaveLength(1);
-		expect(parsed.sections[0].chunks[0].prose).toBe("A chunk.");
-		expect(parsed.sections[0].chunks[0].code).toBe("const a = 1;");
-		expect(parsed.sections[0].chunks[0].pending).toBe(false);
+		expect(parsed.sections[0]!.chunks).toHaveLength(1);
+		expect(parsed.sections[0]!.chunks[0]!.prose).toBe("A chunk.");
+		expect(parsed.sections[0]!.chunks[0]!.code).toBe("const a = 1;");
+		expect(parsed.sections[0]!.chunks[0]!.pending).toBe(false);
 	});
 
 	it("marks a chunk pending when no code follows before EOF", () => {
 		const source = `/** @prose\n * File.\n */\n\n/** @prose\n * Plan item.\n */\n`;
 		const parsed = parseFile(source, "js");
-		expect(parsed.sections[0].chunks[0].pending).toBe(true);
-		expect(parsed.sections[0].chunks[0].code).toBe("");
+		expect(parsed.sections[0]!.chunks[0]!.pending).toBe(true);
+		expect(parsed.sections[0]!.chunks[0]!.code).toBe("");
 	});
 
 	it("starts a new section on a heading line, and keeps the heading block as a chunk too", () => {
@@ -30,10 +30,10 @@ describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
 		].join("\n\n");
 		const parsed = parseFile(source, "js");
 		expect(parsed.sections).toHaveLength(1);
-		expect(parsed.sections[0].heading).toBe("State");
-		expect(parsed.sections[0].chunks).toHaveLength(2);
-		expect(parsed.sections[0].chunks[0].heading).toBe("State");
-		expect(parsed.sections[0].chunks[1].heading).toBeNull();
+		expect(parsed.sections[0]!.heading).toBe("State");
+		expect(parsed.sections[0]!.chunks).toHaveLength(2);
+		expect(parsed.sections[0]!.chunks[0]!.heading).toBe("State");
+		expect(parsed.sections[0]!.chunks[1]!.heading).toBeNull();
 	});
 
 	it("ignores unmarked comments entirely, treating them as code", () => {
@@ -105,7 +105,7 @@ describe("parseFile: HTML (<!-- @prose -->)", () => {
 	it("chunks code between comments", () => {
 		const source = `<!-- @prose\nFile.\n-->\n<!-- @prose\nA chunk.\n-->\n<h1>hi</h1>\n`;
 		const parsed = parseFile(source, "html");
-		expect(parsed.sections[0].chunks[0].code).toBe("<h1>hi</h1>");
+		expect(parsed.sections[0]!.chunks[0]!.code).toBe("<h1>hi</h1>");
 	});
 });
 
@@ -120,10 +120,10 @@ describe("parseFile: YAML/TOML (# @prose)", () => {
 	it("chunks code between # comment blocks, in a .toml file", () => {
 		const source = "# @prose\n# File.\n\n# @prose\n# A chunk.\nport = 8080\n";
 		const parsed = parseFile(source, "toml");
-		expect(parsed.sections[0].chunks[0].prose).toBe("A chunk.");
-		expect(parsed.sections[0].chunks[0].code).toBe("port = 8080");
-		expect(parsed.sections[0].chunks[0].commentStyle).toBe("hash");
-		expect(parsed.sections[0].chunks[0].codeLang).toBe("toml");
+		expect(parsed.sections[0]!.chunks[0]!.prose).toBe("A chunk.");
+		expect(parsed.sections[0]!.chunks[0]!.code).toBe("port = 8080");
+		expect(parsed.sections[0]!.chunks[0]!.commentStyle).toBe("hash");
+		expect(parsed.sections[0]!.chunks[0]!.codeLang).toBe("toml");
 	});
 
 	it("does not treat an indented # comment (nested inside a mapping) as a prose block", () => {
@@ -189,12 +189,12 @@ describe("parseFile: .svelte (script/style as JS/CSS, markup as HTML, merged in 
 		].join("\n");
 		const parsed = parseFile(source, "svelte");
 		const chunks = parsed.sections.flatMap((s) => s.chunks);
-		expect(chunks[0].code).toBe("let a = 1;");
-		expect(chunks[0].code).not.toContain("</script>");
-		expect(chunks[1].code).toBe("<h1>hi</h1>");
-		expect(chunks[1].code).not.toContain("<style>");
-		expect(chunks[2].code).toBe("h1 { color: red; }");
-		expect(chunks[2].code).not.toContain("</style>");
+		expect(chunks[0]!.code).toBe("let a = 1;");
+		expect(chunks[0]!.code).not.toContain("</script>");
+		expect(chunks[1]!.code).toBe("<h1>hi</h1>");
+		expect(chunks[1]!.code).not.toContain("<style>");
+		expect(chunks[2]!.code).toBe("h1 { color: red; }");
+		expect(chunks[2]!.code).not.toContain("</style>");
 	});
 });
 
@@ -208,7 +208,7 @@ describe("parseFile: @note", () => {
 			"const a = 1;",
 		].join("\n");
 		const parsed = parseFile(source, "js");
-		const chunk = parsed.sections[0].chunks[0];
+		const chunk = parsed.sections[0]!.chunks[0]!;
 		expect(chunk.note).toBe("Should this reject duplicates?");
 		expect(chunk.code).toBe("const a = 1;");
 		expect(chunk.code).not.toContain("@note");
@@ -218,7 +218,7 @@ describe("parseFile: @note", () => {
 		const source =
 			"# @prose\n# File.\n\n# @prose\n# A chunk.\n# @note Double-check this port.\nport: 8080\n";
 		const parsed = parseFile(source, "yaml");
-		const chunk = parsed.sections[0].chunks[0];
+		const chunk = parsed.sections[0]!.chunks[0]!;
 		expect(chunk.prose).toBe("A chunk.");
 		expect(chunk.note).toBe("Double-check this port.");
 		expect(chunk.code).toBe("port: 8080");
@@ -228,7 +228,7 @@ describe("parseFile: @note", () => {
 	it("records commentStyle and exact byte offsets for a chunk with no note yet", () => {
 		const source = ["/** @prose File. */", "", "/** @prose A chunk. */", "const a = 1;"].join("\n");
 		const parsed = parseFile(source, "js");
-		const chunk = parsed.sections[0].chunks[0];
+		const chunk = parsed.sections[0]!.chunks[0]!;
 		expect(chunk.commentStyle).toBe("js");
 		expect(chunk.note).toBeUndefined();
 		expect(chunk.noteStartIndex).toBeUndefined();
@@ -244,7 +244,7 @@ describe("parseFile: @note", () => {
 			"const a = 1;",
 		].join("\n");
 		const parsed = parseFile(source, "js");
-		const chunk = parsed.sections[0].chunks[0];
+		const chunk = parsed.sections[0]!.chunks[0]!;
 		expect(source.slice(chunk.noteStartIndex, chunk.noteEndIndex)).toBe("/** @note A question. */");
 	});
 
@@ -260,7 +260,7 @@ describe("parseFile: @note", () => {
 		const parsed = parseFile(source, "js");
 		const chunks = parsed.sections.flatMap((s) => s.chunks);
 		expect(chunks.every((c) => c.note === undefined)).toBe(true);
-		expect(chunks[0].code).toContain("const a = 1;");
+		expect(chunks[0]!.code).toContain("const a = 1;");
 	});
 
 	it("drops a leading note with no preceding prose block to attach to", () => {
@@ -278,7 +278,7 @@ describe("parseFile: @note", () => {
 			"<h1>hi</h1>",
 		].join("\n");
 		const parsed = parseFile(source, "html");
-		const chunk = parsed.sections[0].chunks[0];
+		const chunk = parsed.sections[0]!.chunks[0]!;
 		expect(chunk.note).toBe("A question.");
 		expect(chunk.commentStyle).toBe("html");
 	});
@@ -374,7 +374,7 @@ describe("misplaced blocks (spec §3.1)", () => {
 			"/** @prose File. */\nfunction f() {}\n/** @prose Next. */\nconst a = { /** doc */ b: 1 };\n";
 		const parsed = parseFile(s, "ts");
 		expect(parsed.misplaced).toEqual([]);
-		expect(parsed.sections[0].chunks).toHaveLength(1);
+		expect(parsed.sections[0]!.chunks).toHaveLength(1);
 	});
 });
 
@@ -391,7 +391,7 @@ describe("line notes (spec §6.2)", () => {
 			"}",
 		].join("\n");
 		const parsed = parseFile(s, "ts");
-		expect(parsed.sections[0].chunks[0].note).toBe("Block note.");
+		expect(parsed.sections[0]!.chunks[0]!.note).toBe("Block note.");
 		expect(parsed.lineNotes.map((n) => [n.startLine, n.text])).toEqual([
 			[4, "Second, so a line note."],
 			[6, "In the body."],

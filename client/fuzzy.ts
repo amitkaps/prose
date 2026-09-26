@@ -18,7 +18,7 @@ export function score(query: string, text: string): number | null {
 		if (at === -1) return null;
 		total += 1;
 		if (at === previous + 1) total += 3;
-		if (at === 0 || WORD_START.has(t[at - 1])) total += 2;
+		if (at === 0 || WORD_START.has(t[at - 1]!)) total += 2;
 		previous = at;
 		from = at + 1;
 	}

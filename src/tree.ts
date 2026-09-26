@@ -279,7 +279,7 @@ export function projectFiles(root: string): string[] {
 	return listed
 		.filter((path) => {
 			const segments = path.split("/");
-			const name = segments[segments.length - 1];
+			const name = segments.at(-1)!;
 			if (segments.some((segment) => segment.startsWith("."))) return false;
 			if (RESERVED_FILENAMES.has(name)) return false;
 			const ext = extensionOf(name);
@@ -343,7 +343,7 @@ function indexFiles(paths: string[]): DirIndex {
 			}
 			dir = next;
 		}
-		dir.files.push(segments[segments.length - 1]);
+		dir.files.push(segments.at(-1)!);
 	}
 	return top;
 }
