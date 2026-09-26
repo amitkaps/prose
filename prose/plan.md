@@ -17,6 +17,7 @@ In the order it landed.
 - **Safe writes** — note text escaped per comment style; writes checked against `projectFiles` (inside the root, symlinks included) and the block hash; writes only on loopback, MCP route off; client sends the hash and keeps the draft on refusal; fast-check properties on the pure edits (`withNote`/`withoutNote`); git-aware walk with root-only `prose/` (spec §3.4, §6).
 - **Anchors** — a block's address is its first declared name, else its heading slug, else `chunk-N`, repeats suffixed (spec §3.2); property test that inserting a block never changes what an existing anchor names.
 - **Parser on oxc, and line notes** — JS/TS comments come from `oxc-parser`; a `@prose` block inside a function, class or rule is a warning on its file; `@note` is read at any depth, a note straight after a block's prose is its block note and any other a line note (`file:line`, hash of the line on add, of the note on resolve). The landing spot is the enclosing statement, element, rule or key, never inside a string, `<pre>`, attribute list or block scalar (`src/insertion.ts`); the view has a gutter button per line and shows where the note will land first. Property tests on the write path cover every language.
+- **Installable, 0.1.0** — library builds with `vp pack` (the `pack` block in `vite.config.ts`; `vite` aliased to Vite+ core by a `pnpm-workspace.yaml` override); `exports` types, `client/dist`-only `files`, `prepack`, `engines`; version read from `package.json`; `vite` peer narrowed to what's tested (8 / Vite+); README; `release.yml` attaches the packed tarball to a GitHub Release on a `vX.Y.Z` tag (#8).
 
 ## Open work, in order
 
@@ -63,6 +64,13 @@ Ordered by cost. Needs step 2's anchors.
 - [ ] **(d) Doc staleness**: paragraph-level blame against the chunks a paragraph references.
 - [ ] **(e) Duplication check** and **L3 backlinks**.
 - [ ] **(f) Evaluate** `covers:` frontmatter.
+
+### Distribution
+
+- [ ] Tag `v0.1.0` on `main` and confirm the `release` workflow attaches the tarball (the workflow has not run yet).
+- [ ] Try the release-asset install in `examples/base` (today it uses `link:../..`) and in one repo outside this one.
+- [ ] Publish to a registry (npm `@amitkaps/prose`) once the API has settled; decide the versioning policy before 1.0.
+- [ ] Test the `vite` peer range beyond 8 before widening it.
 
 ### Testing, alongside the steps above
 
