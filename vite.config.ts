@@ -1,6 +1,6 @@
 /** @prose
- * Drives `vp fmt` / `vp lint` / `vp test` for the plugin's own source — not `vp build`: the
- * library builds via `tsdown` (`tsdown.config.ts`) and the client SPA via
+ * Drives `vp fmt` / `vp lint` / `vp test` / `vp pack` for the plugin's own source — not `vp build`:
+ * the library builds via `vp pack` (the `pack` block below) and the client SPA via
  * `vite build --config client/vite.config.ts`, so `plugins` stays empty here. `examples/**`
  * each have their own `vite-plus` config and style; running `vp` from the repo root must not
  * reach into them, which is why `ignored` excludes them explicitly rather than relying on
@@ -32,6 +32,19 @@ export default defineConfig({
 		categories: { correctness: "error" },
 		options: { typeAware: true, typeCheck: true },
 		ignorePatterns: ignored,
+	},
+
+	/** @prose
+	 * Builds the library (`src/index.ts` → `dist/index.mjs` + `.d.mts`). `platform: "node"` since
+	 * this only ever runs server-side, inside a consuming app's Vite dev server — the client SPA is
+	 * a completely separate build (`client/vite.config.ts`), never touched by this one.
+	 */
+	pack: {
+		entry: ["src/index.ts"],
+		format: "esm",
+		platform: "node",
+		dts: true,
+		sourcemap: true,
 	},
 
 	test: {
