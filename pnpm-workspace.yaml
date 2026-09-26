@@ -1,4 +1,4 @@
 # Collapse every `vite` in the tree onto Vite+'s core build, which `vp pack` requires (same
-# override as examples/base). Bump this alongside the `vite-plus` devDependency.
+# override as amitkaps/base). Bump this alongside the `vite-plus` devDependency.
 overrides:
   "vite@*": "npm:@voidzero-dev/vite-plus-core@1.0.0-rc.0"

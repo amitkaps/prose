@@ -429,9 +429,9 @@ The plugin ships a snippet for the project's `CLAUDE.md` / `AGENTS.md`:
 
 Build it first. It exercises the parser, navigation, both checks and the annotator without SvelteKit in the way.
 
-### 9.2 `examples/base`: a real app
+### 9.2 `amitkaps/base`: a real app
 
-[`examples/base/`](../examples/base/) is a copy of [amitkaps/base](https://github.com/amitkaps/base), a small static site: SvelteKit 3 + Svelte 5, Vite+ (`vp`), `marked` + Zod for Markdown content, prerendered, with the Cloudflare adapter. Its CI workflow, deploy script and custom-domain route are removed. `pnpm check`, `pnpm test` and `pnpm build` pass as copied.
+[amitkaps/base](https://github.com/amitkaps/base) is a separate, real repo: a small static site on SvelteKit 3 + Svelte 5, Vite+ (`vp`), `marked` + Zod for Markdown content, prerendered, with the Cloudflare adapter. It uses Prose the way any outside project would, through the released package (`@amitkaps/prose`, from a GitHub release tarball until it is on a registry), so packaging problems show up there, not in a linked copy. It replaces an earlier in-repo copy (`examples/base`); more in-repo `examples/*` are added only when a case needs a fixture of its own.
 
 It's a good test because it's real but small:
 
@@ -447,7 +447,9 @@ Steps:
 2. Promote the explanatory comments to `@prose` blocks, and add file prose and folder `README.md`s. Leave code-level comments as they are. Note which comments were hard to classify; that's input for the convention.
 3. Add one pending chunk: a new feature, written only as prose.
 4. Add `dev/docs.tool.ts`, which shows every content page's parsed frontmatter and heading ids. This is a problem-layer tool for the content model.
-5. Add the §8 snippet to `examples/base/AGENTS.md`.
+5. Add the §8 snippet to its `AGENTS.md`.
+
+Steps 1, 2 and 5 are done (amitkaps/base#17); 3 and 4 are open.
 
 Verify:
 

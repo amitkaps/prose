@@ -9,7 +9,7 @@ In the order it landed.
 - **Skeleton** — plugin, parser, read-only `/__prose/` on Devframe (`@devframes/vite`, `auth: false`), `examples/single`, `tsdown` + `vite-plus` toolchain, the repo dogfooded with `@prose`.
 - **Checks** — symbol check (`oxc-parser`) and staleness check (`git blame --porcelain`), warnings rolled up per node (§5.1–§5.2).
 - **Annotator** — `@note` parser, write-back (`src/notes.ts`), `add-note`/`resolve-note` RPC, client UI (§6.2–§6.3).
-- **More languages** — `.svelte`, `.md`, `.yaml`/`.toml`; HTML-strip build hook; live updates via Devframe `SharedState`; `examples/base` converted; §8 snippet in its `AGENTS.md`.
+- **More languages** — `.svelte`, `.md`, `.yaml`/`.toml`; HTML-strip build hook; live updates via Devframe `SharedState`; the real app (now `amitkaps/base`) converted; §8 snippet in its `AGENTS.md`.
 - **Svelte client** — Svelte 5 (runes); cascade layers and tokens; collapsible rail, quick-jump palette, loading and error states, breadcrumbs, one badge system, copy-link, `raw` nodes for JSON, project-health panel.
 - **File as the leaf** — files are the smallest navigable unit (§3.2); a file page reads the whole file in source order with each block in place; every block, the file prose included, takes a `@note`.
 - **CI** — `check`, `test`, `build` on every PR (#2).
@@ -18,6 +18,7 @@ In the order it landed.
 - **Anchors** — a block's address is its first declared name, else its heading slug, else `chunk-N`, repeats suffixed (spec §3.2); property test that inserting a block never changes what an existing anchor names.
 - **Parser on oxc, and line notes** — JS/TS comments come from `oxc-parser`; a `@prose` block inside a function, class or rule is a warning on its file; `@note` is read at any depth, a note straight after a block's prose is its block note and any other a line note (`file:line`, hash of the line on add, of the note on resolve). The landing spot is the enclosing statement, element, rule or key, never inside a string, `<pre>`, attribute list or block scalar (`src/insertion.ts`); the view has a gutter button per line and shows where the note will land first. Property tests on the write path cover every language.
 - **Installable, 0.1.0** — library builds with `vp pack` (the `pack` block in `vite.config.ts`; `vite` aliased to Vite+ core by a `pnpm-workspace.yaml` override); `exports` types, `client/dist`-only `files`, `prepack`, `engines`; version read from `package.json`; `vite` peer narrowed to what's tested (8 / Vite+); README; `release.yml` attaches the packed tarball to a GitHub Release on a `vX.Y.Z` tag (#8).
+- **Real-app test case** — `examples/base` retired; `amitkaps/base` installs the released `v0.1.0` tarball and carries the `@prose` annotations (amitkaps/base#17). More `examples/*` only when a case needs a fixture of its own.
 
 ## Open work, in order
 
@@ -43,13 +44,13 @@ Nothing here is decided; each is a choice to make when it starts to matter.
 - [ ] **Symbol-check noise on file prose** (about 20 warnings in this repo, mostly external names): ignore list, `package.json`/imports as known (partly done), or a per-block opt-out. Label them true/false first and track the false-positive rate.
 - [ ] **Staleness for the file prose**: compare against the newest code anywhere in the file.
 - [ ] **Raw source toggle** on the file page.
-- [ ] **`examples/base`'s prose in the new model**: `app.css` has only a file-level block; decide whether it should carry more.
+- [ ] **`amitkaps/base`'s prose in the new model**: `app.css` has only a file-level block; decide whether it should carry more.
 - [ ] **Size signal**: line and block counts per file, feeding the "ask for a split with a `@note`" workflow (§3.2).
 - [ ] **Folding**: collapse the file prose or blocks on long files.
 
 ### 6. Dev tools, diagram, CLI/MCP (spec §4, §7, §8, §10)
 
-- [ ] `dev/*.tool.ts` discovery via `import.meta.glob`, listed under **Tools**; then `dev/docs.tool.ts` and one pending chunk in `examples/base`.
+- [ ] `dev/*.tool.ts` discovery via `import.meta.glob`, listed under **Tools**; then `dev/docs.tool.ts` and one pending chunk in `amitkaps/base`.
 - [ ] Import graph from `oxc-parser`'s module records, grouped by folder, linked to L1 views.
 - [ ] `prose check` CLI for the §5 warnings (Devframe's `cac` adapter). Add it to the §8 snippet only once it exists.
 - [ ] Evaluate Devframe's MCP adapter to expose `tree`/`node`/notes to an agent (§10).
@@ -67,20 +68,18 @@ Ordered by cost. Needs step 2's anchors.
 
 ### Distribution
 
-- [ ] Tag `v0.1.0` on `main` and confirm the `release` workflow attaches the tarball (the workflow has not run yet).
-- [ ] Try the release-asset install in `examples/base` (today it uses `link:../..`) and in one repo outside this one.
 - [ ] Publish to a registry (npm `@amitkaps/prose`) once the API has settled; decide the versioning policy before 1.0.
 - [ ] Test the `vite` peer range beyond 8 before widening it.
 
 ### Testing, alongside the steps above
 
 - [ ] Run the §9.2 checklist item by item (`check`/`test`/`build` pass; the rest is only informally confirmed).
-- [ ] Build check in CI: `examples/*` built with the plugin on and off, `dist/` diffed; no `@prose`/`@note` in built HTML.
-- [ ] Playwright against `dev:prose` and `examples/base`: navigate, add a note and check the file on disk, edit a file and see the view update, `/__prose` without the trailing slash.
+- [ ] Build check in CI: `examples/*` and `amitkaps/base` built with the plugin on and off, `dist/` diffed; no `@prose`/`@note` in built HTML.
+- [ ] Playwright against `dev:prose` and `amitkaps/base`: navigate, add a note and check the file on disk, edit a file and see the view update, `/__prose` without the trailing slash.
 - [ ] Git fixture repos for staleness: code-only, prose-only, both, uncommitted, reformat-only, rebase, squash.
 - [ ] Open the view on a ~500-file repo once and check it stays usable (spec §2).
 - [ ] Parser over a corpus of real repos: never throws; reassembling blocks, code and notes gives the original bytes.
-- [ ] The §1 five-minute test, run for real: an agent makes ~30 changes to `examples/base`, then answer the four questions from `/__prose/` alone and from `git log -p` alone, and compare.
+- [ ] The §1 five-minute test, run for real: an agent makes ~30 changes to `amitkaps/base`, then answer the four questions from `/__prose/` alone and from `git log -p` alone, and compare.
 
 ## Open questions
 

@@ -338,7 +338,7 @@ export function declaredParameters(
  * `local` too, not `unresolved` and not a same-file `linked` link to nowhere.
  *
  * `knownPackages` is `package.json`'s own dependency names (`tree.ts` reads it once). Prose often
- * names a *library*, not the specific binding imported from it — `examples/base`'s own docs.ts
+ * names a *library*, not the specific binding imported from it — `amitkaps/base`'s own docs.ts
  * imports `Marked` but its prose says "`marked`'s renderer hook," meaning the npm package, a
  * proper noun with no binding of its own to resolve. A declared dependency name is exactly the
  * project's own record of "this external thing is a real part of this project," so it's excluded
