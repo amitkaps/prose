@@ -90,7 +90,7 @@ describe("addNote", () => {
 		);
 		// Round-trips: re-parsing the written file reads the note back out correctly.
 		const reparsed = parseFile(written, "js");
-		expect(reparsed.sections[0].chunks[0].note).toBe("Should this reject duplicates?");
+		expect(reparsed.sections[0]!.chunks[0]!.note).toBe("Should this reject duplicates?");
 	});
 
 	it("measures indentation from the @prose block's opening line, not its closing gutter line", () => {
@@ -151,7 +151,7 @@ describe("addNote", () => {
 		const written = readFileSync(join(root, "main.js"), "utf-8");
 		expect(written).not.toContain("Old question.");
 		const reparsed = parseFile(written, "js");
-		expect(reparsed.sections[0].chunks[0].note).toBe("New question.");
+		expect(reparsed.sections[0]!.chunks[0]!.note).toBe("New question.");
 		expect(written.match(/@note/g)).toHaveLength(1);
 	});
 
@@ -176,7 +176,7 @@ describe("addNote", () => {
 			"# @prose\n# A chunk.\n# @note\n# Double-check this port.\nport = 8080",
 		);
 		const reparsed = parseFile(written, "toml");
-		expect(reparsed.sections[0].chunks[0].note).toBe("Double-check this port.");
+		expect(reparsed.sections[0]!.chunks[0]!.note).toBe("Double-check this port.");
 	});
 
 	it("throws when the chunk path does not resolve (stale client, or a file/folder-level path)", () => {
@@ -420,7 +420,7 @@ describe("property: note writes (spec §6.2)", () => {
 					noteText,
 					(original, pick, first, second) => {
 						const before = blocksOf(original, ext);
-						const { anchor, chunk } = before[pick % before.length];
+						const { anchor, chunk } = before[pick % before.length]!;
 						const index = before.findIndex((b) => b.anchor === anchor);
 						const style = chunk.commentStyle;
 						const hash = blockHash(chunk);
@@ -440,11 +440,11 @@ describe("property: note writes (spec §6.2)", () => {
 							expect(written.split("</script").length).toBe(original.split("</script").length);
 						}
 
-						const twice = withNote(written, ext, anchor, second, blockHash(after[index].chunk));
+						const twice = withNote(written, ext, anchor, second, blockHash(after[index]!.chunk));
 						expect(twice).toBe(withNote(original, ext, anchor, second, hash));
 
 						if (chunk.note === undefined) {
-							expect(withoutNote(written, ext, anchor, blockHash(after[index].chunk))).toBe(
+							expect(withoutNote(written, ext, anchor, blockHash(after[index]!.chunk))).toBe(
 								original,
 							);
 						}
@@ -464,7 +464,7 @@ describe("property: note writes (spec §6.2)", () => {
  * with LF, CRLF and no final newline, any note text parses back as exactly one line note with the
  * escaped text, adds no block, leaves the code as it was, and resolving it restores the bytes.
  */
-const lineHashAt = (source: string, line: number) => lineHash(source.split("\n")[line - 1]);
+const lineHashAt = (source: string, line: number) => lineHash(source.split("\n")[line - 1]!);
 
 describe("line notes: the write path", () => {
 	const source = [
@@ -508,7 +508,7 @@ describe("line notes: the write path", () => {
 				span: expect.any(Array),
 			},
 		]);
-		resolveNote(root, "main.ts:4", noteNode!.lineNotes![0].hash);
+		resolveNote(root, "main.ts:4", noteNode!.lineNotes![0]!.hash);
 		expect(readFileSync(join(root, "main.ts"), "utf-8")).toBe(source);
 	});
 
@@ -543,13 +543,13 @@ describe("line notes: the write path", () => {
 		});
 		addNote(root, "main.ts:4", "About a.", lineHashAt(s, 4));
 		const parsed = parseFile(readFileSync(join(root, "main.ts"), "utf-8"), "ts");
-		expect(parsed.sections[0].chunks[0].note).toBe("About a.");
+		expect(parsed.sections[0]!.chunks[0]!.note).toBe("About a.");
 		expect(parsed.lineNotes).toEqual([]);
 	});
 
 	it("resolves a trailing note without touching the code on its line", () => {
 		const s = "/** @prose File. */\nconst a = 1; /** @note trailing */\nconst b = 2;\n";
-		const note = parseFile(s, "ts").lineNotes[0];
+		const note = parseFile(s, "ts").lineNotes[0]!;
 		expect(withoutLineNote(s, "ts", note.startLine, note.hash)).toBe(
 			"/** @prose File. */\nconst a = 1; \nconst b = 2;\n",
 		);
@@ -568,7 +568,7 @@ describe("line notes: the write path", () => {
 		for (const [ext, src] of cases) {
 			const notes = parseFile(src, ext).lineNotes;
 			expect(notes).toHaveLength(1);
-			expect(notes[0].text).toMatch(/^in /);
+			expect(notes[0]!.text).toMatch(/^in /);
 		}
 	});
 });
@@ -620,7 +620,7 @@ describe("property: line notes (spec §6.2)", () => {
 			fc.assert(
 				fc.property(fc.constantFrom(...variants), fc.nat(), noteText, (original, pick, text) => {
 					const lines = legal(original);
-					const line = lines[pick % lines.length];
+					const line = lines[pick % lines.length]!;
 					const hash = lineHashAt(original, line);
 					const style = landing(original, ext, line).style;
 					fc.pre(escapeNote(text, style).trim() !== "");

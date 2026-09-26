@@ -46,9 +46,9 @@ function firstCode(text: string, line: number): number | null {
 	const lines = text.split("\n");
 	if (line < 1 || line > lines.length) return null;
 	let offset = 0;
-	for (let i = 0; i < line - 1; i++) offset += lines[i].length + 1;
-	const indent = /^[ \t]*/.exec(lines[line - 1])![0].length;
-	return lines[line - 1].trim() === "" ? null : offset + indent;
+	for (let i = 0; i < line - 1; i++) offset += lines[i]!.length + 1;
+	const indent = /^[ \t]*/.exec(lines[line - 1]!)![0].length;
+	return lines[line - 1]!.trim() === "" ? null : offset + indent;
 }
 
 function within(spans: readonly (readonly [number, number])[], offset: number): boolean {
@@ -178,7 +178,7 @@ function cssItems(text: string): { items: CssItem[]; comments: [number, number][
 	const skipBlank = (from: number): number => {
 		let i = from;
 		while (i < n) {
-			if (/\s/.test(text[i])) i++;
+			if (/\s/.test(text[i]!)) i++;
 			else if (text[i] === "/" && text[i + 1] === "*") {
 				const close = text.indexOf("*/", i + 2);
 				const end = close === -1 ? n : close + 2;
@@ -281,7 +281,7 @@ function htmlElements(text: string): { roots: El[]; comments: [number, number][]
 	const roots: El[] = [];
 	const comments: [number, number][] = [];
 	const stack: El[] = [];
-	const add = (el: El) => (stack.length ? stack[stack.length - 1].children : roots).push(el);
+	const add = (el: El) => (stack.length ? stack.at(-1)!.children : roots).push(el);
 	let i = 0;
 	while (i < n) {
 		if (text[i] !== "<") {
@@ -312,7 +312,7 @@ function htmlElements(text: string): { roots: El[]; comments: [number, number][]
 			i++;
 			continue;
 		}
-		const name = open[1].toLowerCase();
+		const name = open[1]!.toLowerCase();
 		let j = i + open[0].length;
 		let brace = 0;
 		while (j < n && !(text[j] === ">" && brace === 0)) {
@@ -373,7 +373,7 @@ function yamlFinder(text: string, line: number): Found {
 		lines.slice(0, index).reduce((sum, l) => sum + l.length + 1, 0);
 	let scalar: { keyLine: number; indent: number } | null = null;
 	for (let i = 0; i < line; i++) {
-		const current = lines[i].replace(/\r$/, "");
+		const current = lines[i]!.replace(/\r$/, "");
 		const indent = /^[ \t]*/.exec(current)![0].length;
 		if (scalar) {
 			if (current.trim() === "" || indent > scalar.indent) {
@@ -386,7 +386,7 @@ function yamlFinder(text: string, line: number): Found {
 			scalar = { keyLine: i, indent };
 		}
 	}
-	const target = lines[line - 1].trim();
+	const target = lines[line - 1]!.trim();
 	if (target.startsWith("#")) throw isComment(line);
 	return { offset: offsetOf(line - 1) };
 }
@@ -407,7 +407,7 @@ function tomlFinder(text: string, line: number): Found {
 	let depth = 0;
 	let entry = 0;
 	for (let i = 0; i < line - 1; i++) {
-		const current = lines[i].replace(/\r$/, "");
+		const current = lines[i]!.replace(/\r$/, "");
 		if (multi === null && depth === 0 && current.trim() !== "" && !current.trim().startsWith("#")) {
 			entry = i;
 		}
@@ -438,6 +438,6 @@ function tomlFinder(text: string, line: number): Found {
 		}
 	}
 	if (multi !== null || depth > 0) return { offset: offsetOf(entry) };
-	if (lines[line - 1].trim().startsWith("#")) throw isComment(line);
+	if (lines[line - 1]!.trim().startsWith("#")) throw isComment(line);
 	return { offset: offsetOf(line - 1) };
 }

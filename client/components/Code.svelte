@@ -38,7 +38,7 @@
 	const parts = $derived.by(() => {
 		const match = /^(<pre[^>]*><code>)([\s\S]*)(<\/code><\/pre>)$/.exec(html);
 		if (!match || !noteable) return null;
-		const lines = match[2]
+		const lines = match[2]!
 			.split("\n")
 			.map((line, i) =>
 				line.replace(
@@ -64,7 +64,7 @@
 			<LineNoteEditor
 				{path}
 				line={startLine + picked}
-				text={code.split("\n")[picked]}
+				text={code.split("\n")[picked] ?? ""}
 				onclose={() => (picked = null)}
 			/>
 			{#if picked + 1 < parts.lines.length}{@html wrap(parts.lines.slice(picked + 1))}{/if}

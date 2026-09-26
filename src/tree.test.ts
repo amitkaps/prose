@@ -30,14 +30,14 @@ describe("buildTree", () => {
 		expect(tree.kind).toBe("project");
 		expect(tree.name).toBe(basename(dir));
 		expect(tree.children).toHaveLength(1);
-		expect(tree.children[0].path).toBe("main.js");
-		expect(tree.children[0].summary).toBe("File summary.");
+		expect(tree.children[0]!.path).toBe("main.js");
+		expect(tree.children[0]!.summary).toBe("File summary.");
 	});
 
 	it("marks a file with no @prose blocks as undocumented", () => {
 		const dir = makeProject({ "main.js": "const a = 1;\n" });
 		const tree = buildTree(dir);
-		expect(tree.children[0].summary).toBe("undocumented");
+		expect(tree.children[0]!.summary).toBe("undocumented");
 	});
 
 	it("reads a folder's README.md as its prose, and excludes it from the folder's children", () => {
@@ -77,11 +77,14 @@ describe("buildTree", () => {
 			"main.js":
 				"/** @prose File. */\nimport x from 'y';\n\n/** @prose A chunk. */\nconst a = 1;\n",
 		});
-		const file = buildTree(dir).children[0];
+		const file = buildTree(dir).children[0]!;
 		expect(file.children).toEqual([]);
 		expect(file.blocks?.map((b) => b.path)).toEqual(["main.js#file", "main.js#a"]);
 		// spans are the comment's exact byte range in the source, so a view can lay code around it
-		const [first, second] = file.blocks!;
+		const [first, second] = file.blocks! as [
+			NonNullable<typeof file.blocks>[number],
+			NonNullable<typeof file.blocks>[number],
+		];
 		expect(file.source!.slice(...first.span!)).toBe("/** @prose File. */");
 		expect(file.source!.slice(...second.span!)).toBe("/** @prose A chunk. */");
 	});
@@ -90,9 +93,9 @@ describe("buildTree", () => {
 		const dir = makeProject({
 			"main.js": "/** @prose File. */\n/** @note\n * Split this up.\n */\nconst a = 1;\n",
 		});
-		const file = buildTree(dir).children[0];
+		const file = buildTree(dir).children[0]!;
 		expect(findNode(buildTree(dir), "main.js#file")?.note).toBe("Split this up.");
-		expect(file.blocks?.[0].note).toBe("Split this up.");
+		expect(file.blocks?.[0]!.note).toBe("Split this up.");
 	});
 
 	it("skips node_modules, dist and other generated directories", () => {
@@ -138,9 +141,9 @@ describe("buildTree: file source", () => {
 			"c.md": "Prose only.\n",
 		});
 		const byPath = Object.fromEntries(buildTree(dir).children.map((n) => [n.path, n]));
-		expect(byPath["a.js"].source).toBe("/** @prose\n * Doc.\n */\nconst a = 1;\n");
-		expect(byPath["b.js"].source).toBe("const b = 2;\n");
-		expect(byPath["c.md"].source).toBeUndefined();
+		expect(byPath["a.js"]!.source).toBe("/** @prose\n * Doc.\n */\nconst a = 1;\n");
+		expect(byPath["b.js"]!.source).toBe("const b = 2;\n");
+		expect(byPath["c.md"]!.source).toBeUndefined();
 	});
 });
 
@@ -173,7 +176,7 @@ describe("buildTree: prose/ cross-cutting docs (spec §3.4)", () => {
 			"prose/lessons.md",
 			"src",
 		]);
-		expect(tree.children[0].prose).toBe("Architecture body.");
+		expect(tree.children[0]!.prose).toBe("Architecture body.");
 	});
 
 	it("never turns prose itself into an ordinary folder node", () => {

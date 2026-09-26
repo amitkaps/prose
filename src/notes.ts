@@ -73,7 +73,7 @@ function splitPath(path: string): Target {
 	const lineMatch = hashIndex === -1 ? /^(.+):(\d+)$/.exec(path) : null;
 	if (hashIndex === -1 && !lineMatch)
 		throw new NoteWriteError(`"${path}" names a file, not a block.`);
-	const relPath = lineMatch ? lineMatch[1] : path.slice(0, hashIndex);
+	const relPath = lineMatch ? lineMatch[1]! : path.slice(0, hashIndex);
 	const ext = extensionOf(relPath);
 	if (!SOURCE_EXTENSIONS.has(ext)) {
 		throw new NoteWriteError(`"${relPath}" can't hold a note yet (spec §10).`);
@@ -153,8 +153,8 @@ function wholeLineRange(source: string, start: number, end: number): [number, nu
  */
 export function escapeNote(text: string, commentStyle: "js" | "html" | "hash"): string {
 	const lines = text.replace(/\r\n?/g, "\n").split("\n");
-	while (lines.length && lines[0].trim() === "") lines.shift();
-	while (lines.length && lines[lines.length - 1].trim() === "") lines.pop();
+	while (lines.length && lines[0]!.trim() === "") lines.shift();
+	while (lines.length && lines.at(-1)!.trim() === "") lines.pop();
 	const body = lines.join("\n");
 	if (commentStyle === "js") return body.replaceAll("*/", "*\\/").replaceAll("</", "<\\/");
 	if (commentStyle === "html") return body.replace(/--(!?)>/g, "--$1&gt;");
@@ -280,7 +280,7 @@ function lineTarget(
 	expectedHash: string,
 ): { start: number; indent: string; style: "js" | "html" | "hash"; text: string; line: number } {
 	const lines = source.split("\n");
-	if (line < 1 || line > lines.length || lineHash(lines[line - 1]) !== expectedHash) {
+	if (line < 1 || line > lines.length || lineHash(lines[line - 1]!) !== expectedHash) {
 		throw new NoteWriteError(
 			`Line ${line} changed since the view loaded it, so nothing was written. Check the file and try again.`,
 		);
@@ -293,7 +293,7 @@ function lineTarget(
 		throw err;
 	}
 	const start = lines.slice(0, landed.line - 1).reduce((sum, l) => sum + l.length + 1, 0);
-	const text = lines[landed.line - 1].replace(/\r$/, "");
+	const text = lines[landed.line - 1]!.replace(/\r$/, "");
 	return {
 		start,
 		indent: /^[ \t]*/.exec(text)![0],

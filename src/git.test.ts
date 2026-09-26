@@ -37,11 +37,11 @@ describe("blameFile", () => {
 		expect(blame).not.toBeNull();
 		expect(blame).toHaveLength(3);
 		// The two committed lines share one real, finite timestamp.
-		expect(blame![0].time).toBe(blame![1].time);
-		expect(Number.isFinite(blame![0].time)).toBe(true);
+		expect(blame![0]!.time).toBe(blame![1]!.time);
+		expect(Number.isFinite(blame![0]!.time)).toBe(true);
 		// The uncommitted third line counts as newest (spec §5.2).
-		expect(blame![2].time).toBe(Number.POSITIVE_INFINITY);
-		expect(newestTime(blame!, 1, 2)).toBe(blame![0].time);
+		expect(blame![2]!.time).toBe(Number.POSITIVE_INFINITY);
+		expect(newestTime(blame!, 1, 2)).toBe(blame![0]!.time);
 		expect(newestTime(blame!, 1, 3)).toBe(Number.POSITIVE_INFINITY);
 	});
 
