@@ -16,6 +16,7 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 
 - the `prose/` docs, especially a short one stating what the project promises and what it leaves out, and `plan.md` for where the work stands;
 - `@prose` blocks, now and then, mostly found by grep, as a map of which file does what;
+- `prose/` docs published as the project's documentation: markz's site renders its `prose/*.md` in place, so the docs readers see are the docs the project is designed by (§3.6);
 - nothing in `@note`. Discussion happened in the chat, over several turns, and the agent wrote the outcome back into `spec.md` or `plan.md`.
 
 So Prose is now the part that worked: the convention (§3), a plain Markdown viewer for reading it (§6), and a checker (§5). `lessons.md` has the details; §7 lists what was dropped.
@@ -27,8 +28,8 @@ So Prose is now the part that worked: the convention (§3), a plain Markdown vie
 | Folder   | Holds                                                    | Read by Prose                     |
 | -------- | -------------------------------------------------------- | --------------------------------- |
 | `src/`   | the executable implementation, with `@prose` in its comments | yes: chunks, files, folders (§3.1–§3.3) |
-| `prose/` | project understanding: prose whose subject spans more than one file or folder | yes: L3 documents (§3.4), linked to the code (§3.5) |
-| `docs/`  | published documentation, for users of the project        | no: out of scope (§2)             |
+| `prose/` | project understanding: prose whose subject spans more than one file or folder; often also the published documentation (§3.6) | yes: L3 documents (§3.4), linked to the code (§3.5) |
+| `docs/`  | the project's own documentation site, if it has one, which may render `prose/` | as ordinary code; building sites is out of scope (§2) |
 
 **Short prose is what makes it work.** A promises doc short enough to hold in mind lets decisions be argued from what the project promises rather than from taste. A first paragraph of three lines is a map; one of three packed sentences is a chore. The convention limits length (§8) because long prose stops being read, and prose that isn't read stops being kept.
 
@@ -45,7 +46,7 @@ So Prose is now the part that worked: the convention (§3), a plain Markdown vie
 | In                                                                      | Out                                                  |
 | ----------------------------------------------------------------------- | ---------------------------------------------------- |
 | `.ts`, `.js`, `.css`, `.html`, `.svelte`, `.yaml`/`.yml`, `.toml` with prose in comments | New file types, tangling, `.ts.md` |
-| Folder `README.md` as folder prose; `prose/` for cross-cutting prose | A published documentation site |
+| Folder `README.md` as folder prose; `prose/` for cross-cutting prose, publishable as-is (§3.6) | Building the project's documentation site |
 | `prose serve`: a read-only Markdown view of the project (§6) | Writing anything from the viewer |
 | `prose check`: symbol, staleness and reference checks (§5) | LLM-generated summaries (first paragraphs are used) |
 | Stripping `@prose` from built HTML (§6.4) | Anything else in production builds |
@@ -179,7 +180,7 @@ The tree includes the files git would track: tracked files plus untracked ones n
 
 ### 3.5 References
 
-A reference names a place in the project, and the syntax is an ordinary relative Markdown link, so it reads and clicks the same on GitHub, in the editor's preview and in the viewer (§6.1):
+A reference names a place in the project, and the syntax is an ordinary relative Markdown link, so it reads and clicks the same on GitHub, in the editor's preview, in the viewer (§6.1) and on a site that publishes `prose/` (§3.6):
 
 ```text
 src/session.ts                     a file
@@ -191,6 +192,19 @@ prose/architecture.md#sessions     a section of it, by heading slug
 An inline code span that names an identifier (`` `createSession` ``) is a reference too, resolved by the symbol check (§5.1).
 
 **State a rule once, and link to it.** When a `prose/` doc or a tested file owns a rule (a grammar, a schema, a contract), a `@prose` block links to it and keeps only how and why this code does it. Restating the rule in several places means only one copy is tested, and the others drift.
+
+### 3.6 Publishing `prose/`
+
+The docs a project is designed by are usually the ones its users need too: what it is, the language or API it offers, how it's built, what it learned. So `prose/` is written to be published as it is, with no copy in `docs/` to drift. [markz](https://github.com/amitkaps/markz) does this: its site renders `prose/markz.md` as the home page and `syntax.md`, `grammar.md`, `design.md` and `lessons.md` as pages, read in place at build time, and the repo's `README.md` stays for GitHub.
+
+The convention already fits a site, as long as the docs keep to it:
+
+- **No metadata block.** A doc's title is its first heading and its summary is its first paragraph (§4), so a site reads both from the Markdown itself.
+- **Links by repo path** (§3.5). A site maps a link to another published doc onto that doc's route, and any other relative link (to code, or to an unpublished doc) onto the file on GitHub, so no link breaks in either place.
+- **Written for a reader who wasn't in the chat.** A decision is recorded as what the project does and why, not as the conversation that reached it. Neutral, current, rewritten rather than appended (§8).
+- **The site chooses what's published.** Not every `prose/` doc is for users: `plan.md` usually isn't. The site lists the docs it renders; Prose prescribes no marker for it.
+
+Building the site is the project's own work (markz renders its pages with markz). Prose's part is keeping the docs publishable, and checking their links (§5.3).
 
 ## 4. Hierarchy
 
@@ -310,7 +324,7 @@ The package ships a snippet for the project's `CLAUDE.md` / `AGENTS.md`:
 - Prose goes in `@prose` comments (§3.1). Ordinary comments stay for code-level notes.
 - Keep prose current in the same change as the code. Rewrite it where it has drifted; don't append. A change that only tunes code (same behaviour, same stated costs) needn't touch prose.
 - State a rule once. If a `prose/` doc or a tested file owns it, link to it (§3.5) and keep only how and why this code does it.
-- Decisions made in the chat go into the prose in the same change: into the `prose/` doc they change when they span files, into the `@prose` block when they concern one spot. Keep the project's promises doc (§3.4) short, and update its non-goals when something is ruled out.
+- Decisions made in the chat go into the prose in the same change: into the `prose/` doc they change when they span files, into the `@prose` block when they concern one spot. Write `prose/` docs for a reader who wasn't in the chat, since they may be published as they are (§3.6): what the project does and why, linked by repo path, with no metadata block. Keep the project's promises doc (§3.4) short, and update its non-goals when something is ruled out.
 - Keep `prose/plan.md` (or its equivalent) current: what's done in one line each, what's next in order. Work that belongs to one file can be a pending chunk there instead.
 - Run `prose check` before finishing. Resolve unresolved symbols and broken references. Treat a possibly-stale warning as a prompt to reread the prose against the code, not as something to clear with a token edit.
 
@@ -333,7 +347,7 @@ Three separate repos use Prose the way any outside project would, through the re
 
 - [amitkaps/base](https://github.com/amitkaps/base): a small static site on SvelteKit + Svelte 5, Vite+, prerendered. It has TS modules, `.svelte` files with all three parts and plain CSS, and it's the one host that needs the HTML strip (§6.4).
 - [amitkaps/sitez](https://github.com/amitkaps/sitez): a zero-config static site generator with a short promises doc (`prose/idea.md`) and 89 `@prose` blocks. Its one open `@note` (`src/site.ts`) is folded into the prose when it adopts this version.
-- [amitkaps/markz](https://github.com/amitkaps/markz): a Markdown parser of about 4,600 lines of TypeScript, with a tested grammar in `prose/` that `@prose` blocks should link to rather than restate (§3.5).
+- [amitkaps/markz](https://github.com/amitkaps/markz): a Markdown parser of about 4,600 lines of TypeScript, with a tested grammar in `prose/` that `@prose` blocks should link to rather than restate (§3.5). Its documentation site (`docs/`) publishes `prose/` in place (§3.6).
 
 Verify:
 
@@ -346,7 +360,7 @@ Verify:
 
 ## 10. Open questions
 
-- **Static export.** `prose build out/` writing the same pages as static HTML, to host next to a project or read offline. Only if serving locally turns out not to be enough.
+- **Static export.** `prose build out/` writing the same pages as static HTML. A project that publishes `prose/` (§3.6) builds its own site today, rendered with its own Markdown (markz with markz); an export would suit one that doesn't care how its docs look. Only if a second project asks for it.
 - **Check results in the viewer.** A quiet count per file, if reading and checking turn out to want the same page.
 - **Nested chunks.** Should prose blocks for class members and nested functions become sub-chunks?
 - **Summaries beyond first paragraphs.** Use LLM summaries, cached by a hash of the children, only if first paragraphs prove too thin.
