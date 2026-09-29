@@ -2,6 +2,20 @@
 
 How to build `@amitkaps/prose` correctly next time. `spec.md` is the design, `plan.md` the remaining work; this file is for gotchas and bug classes. Each entry: symptom, cause, fix, how to detect it.
 
+The Devframe, Svelte client, annotator and safe-writes sections describe code that 0.2.0 removes (spec §7). They stay because the bug classes carry over to whatever comes next.
+
+## Field use: what got used (2026-09-30)
+
+0.1.0 was used on two more projects, sitez (a static site generator, 49 commits) and markz (a Markdown parser, about 4,600 lines). The agents on each wrote a report, and the human's own use matched them.
+
+- **Build the smallest thing that gets read, and watch whether it is.** The `/__prose/` route, its annotator and the planned *since* view were most of 0.1.0's work. The human rarely opened the route: the `prose/` docs were read in the editor, and `@prose` blocks once in a while. When an agent changes code quickly, the reader wants Markdown where they already look. Detect it early by asking what the human actually opened last week, before building the next view.
+- **Discussion happens in the chat, not in annotations.** A decision took several turns of conversation, and the agent then rewrote `spec.md` or `plan.md`. `@note` never became the channel: sitez has one note open for weeks (`src/site.ts`), markz has none, and markz's cross-file questions went into `prose/` docs instead. A channel the human has to go and look at loses to the one they're already in.
+- **The short promises doc paid off most.** sitez's `prose/idea.md` let design questions be settled from what the project promises (no configuration, so a layer can't be switched off, only overridden), and its "Not in v1" list pushed features to other projects. It works because it's short enough to hold in mind.
+- **First paragraphs are a map for finding, not a substitute for reading.** Grepping 89 `@prose` summaries finds the right file faster than reading code. Agents still read the whole file once there. Writing the prose also caught gaps: stating "plain-JS scripts are checked too" led to checking it, and then to a test.
+- **The prose costs a second edit per change and drifts toward density.** 36 of sitez's 49 commits touch `prose/`. Blocks grew into long sentences carrying three qualifications each ("rewrite, don't append" is harder than it sounds). Hence the three-line limit on first paragraphs (spec §8).
+- **A rule stated in three places drifts in the untested ones.** markz explains its syntax in `syntax.md`, states it in the tested `grammar.md`, and restated it in `@prose`. One `@prose` block already disagreed with `AGENTS.md` about where origins live. Link to the owner and keep only the how and why (spec §3.5).
+- **Tuning changes rightly skip prose, and staleness can't tell.** markz's speed commits changed code without prose, which was correct, but a speed change that alters a cost the prose states would slip through the same way.
+
 ## Integrating Devframe
 
 - **Set the client build's `base` absolutely to the mount path, and pass `connectDevframe()` an explicit `baseURL`.** The same relative-path bug lives at two layers. (1) `base: "./"` in the client's Vite config breaks when the route is hit without its trailing slash (`/__prose`): `./assets/x.js` resolves against the parent path and lands on the host app. Hardcode `base: "/__<id>/"`, Devframe's default mount for a hosted devframe. (2) `connectDevframe()` defaults to `baseURL: "./"`, so `__connection.json` 404s the same way (`Failed to get connection meta from ./`). Derive `baseURL` from `import.meta.url` by string slicing (`lastIndexOf("/")`, twice), not `new URL("../", import.meta.url)` (next entry).
@@ -57,13 +71,13 @@ Found by dogfooding on the plugin's own source; `examples/single` and `examples/
 
 ## Design review (2026-09-25)
 
-Found by reading the spec against the code rather than by running either; `prose/review.md` has the full list.
+Found by reading the spec against the code rather than by running either; `prose/review.md` (removed once every item was settled; see `git log`) had the full list.
 
 - **A write path that builds comments from user text must escape the delimiter.** `formatNote` put note text inside `/** … */` verbatim, so a note containing `*/` closed the comment and the rest became live code, run by HMR. Every round-trip test used friendly text. Detect with property tests over arbitrary note text, not examples (spec §6.2).
 - **An address built from position isn't stable, whatever the spec calls it.** The spec promised `#addTodo`; the code produced `top-chunk-2`, which moves when a block is inserted above. Re-parsing the file fresh on every write didn't help, because the address itself had moved. Derive anchors from content and guard writes with a content hash (spec §3.2).
 - **`git blame` can't tell who wrote a line when the human makes every commit.** Author-based ideas (agent notes vs human notes) fail in a one-person-plus-agents workflow. Put anything that needs an author in the text itself.
-- **Don't assume work gets committed.** Sessions run long and uncommitted; blame-based checks see all of it as "newest". Anything the view needs within a session has to compare against the working tree or the review baseline the browser keeps (spec §2, §6.5).
-- **Section references drift like any other reference.** Code prose cited §6.4 for the RPC handlers (§6.3) and §3.3 for rules in §3.1. Check them (plan step 7a) and don't renumber sections casually; add new ones at the end of their chapter.
+- **Don't assume work gets committed.** Sessions run long and uncommitted; blame-based checks see all of it as "newest". Anything the view needs within a session has to read the working tree (spec §2).
+- **Section references drift like any other reference.** Code prose cited §6.4 for the RPC handlers (§6.3) and §3.3 for rules in §3.1. Check them (plan step 5a) and don't renumber sections casually; add new ones at the end of their chapter.
 
 ## Safe writes
 
