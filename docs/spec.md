@@ -46,7 +46,7 @@ A **prose block** is a comment whose first token is the **`@prose`** marker. The
 
 | Language      | Prose block                         |
 | ------------- | ----------------------------------- |
-| JS, TS, CSS   | `/** @prose … */` at top level      |
+| JS, TS, CSS   | `/** @prose … */` on its own line   |
 | HTML, markup  | `<!-- @prose … -->`                 |
 | YAML, TOML    | `# @prose …`, one `#` per line, at column 0 |
 
@@ -68,7 +68,7 @@ The count lives in an `<output>`, announced to screen readers when it changes.
 - **`@prose` starts the block on its own line, and the closing delimiter (`*/` or `-->`) sits on its own line too** — never `/** @prose text */` on one line. In JS/TS/CSS this keeps every body line gutter-prefixed with ` * `, so formatters (oxfmt) re-indent the block as JSDoc, and a body line that itself starts with `*` (a Markdown bullet) can't be mistaken for the gutter.
 - **Every other comment is a code comment**, including unmarked `/** */` JSDoc, `//`, `/* */`, and unmarked `<!-- -->`. So API docs like `/** @param x */`, `// TODO`, and tool pragmas like `<!-- svelte-ignore … -->` are never read as prose.
 - The marker is opt-in because comments already have many owners: JSDoc, Vite, Svelte, formatters, and linters. Adding a marker is the explicit step of promoting a comment to prose.
-- In JS, TS and CSS, prose blocks go at top level. A block inside a function, class, or rule body (or any nested callback or object literal) isn't a chunk boundary; the renderer shows it as an ordinary comment in the code.
+- In JS, TS and CSS, a prose block counts at any depth when it starts its own line, with only indentation before it: at top level, or inside a class, function or rule, so a class reads method by method. Its chunk runs to the next block, as at top level, so a block inside a function splits that function's code in two. One that shares its line with code (`call(/** @prose … */ x)`) is an ordinary comment in the code.
 - TypeScript treats `@prose` as a JSDoc tag, so an editor hover shows the prose as that tag's text. It's readable, if slightly noisy.
 - YAML and TOML have no block-comment delimiter, so a prose block there is a maximal run of `#`-prefixed lines starting with a `# @prose` line, each line's own `# ` gutter stripped. Only column 0 counts; an indented `#` comment is an ordinary comment.
 - In `.svelte` files, each part follows its own language's rule: `<script>` the JS/TS rule, the markup the HTML rule, `<style>` the CSS rule. The chunks from all three parts are merged in source order.
@@ -126,7 +126,7 @@ The last block is a pending chunk: a plan item with no code yet.
 
 1. The file prose is `file`.
 2. Otherwise, the slug of the block's heading, when it opens with one: `filtering` for the pending chunk above. The heading is what a reader sees, so it names the block before the code does.
-3. Otherwise, the first name the chunk's code declares: `addTodo`, `toggleTodo`. (JS and TS.)
+3. Otherwise, the first name the chunk's code declares: `addTodo`, `toggleTodo`; for a block inside a class or function, the first member or declaration below it: `metadata`. (JS and TS.)
 4. Otherwise, a positional fallback (`chunk-3`), the only kind that moves when blocks are inserted above it.
 
 A repeated anchor within a file gets a `-2`, `-3` suffix in source order.

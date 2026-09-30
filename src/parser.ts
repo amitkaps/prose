@@ -7,7 +7,7 @@
  * out in source order with the prose where the comment was.
  */
 import { parseSync } from "oxc-parser";
-import { declaredIdentifiers } from "./names.js";
+import { declaredAfter, declaredIdentifiers, type DeclaredName } from "./names.js";
 
 export type CodeLang = "js" | "css" | "html" | "yaml" | "toml";
 
@@ -50,8 +50,12 @@ interface RawBlock {
   startIndex: number;
   endIndex: number;
   startLine: number;
-  /** A `@prose` block below the top level: not a block, left as an ordinary comment (§3.1). */
+  /** A `@prose` comment below the top level that doesn't start its own line: not a block, left
+   *  as an ordinary comment (§3.1). */
   nested?: boolean;
+  /** For a block inside a class or function: the first name declared after it in the whole file,
+   *  since its own code isn't a program `declaredIdentifiers` can read. */
+  inner?: { declared: DeclaredName | null };
   /** For `.svelte` files: the end of this block's own part (script, style or markup), so its
    *  trailing code never bleeds across a part boundary into the next `<script>` or `<style>`. */
   partEnd?: number;
@@ -101,6 +105,12 @@ function extractMarkedFromLines(rawLines: string[]): string | null {
   return out.join("\n");
 }
 
+/** Whether only indentation precedes `index` on its line. */
+function startsLine(source: string, index: number): boolean {
+  const lineStart = source.lastIndexOf("\n", index - 1) + 1;
+  return /^[ \t]*$/.test(source.slice(lineStart, index));
+}
+
 function extractMarkedBlock(inner: string, stripContinuation: boolean): string | null {
   const lines = inner.split("\n");
   const stripped = lines.map((line, i) =>
@@ -114,9 +124,10 @@ function extractMarkedBlock(inner: string, stripContinuation: boolean): string |
  *
  * The comments come from `oxc-parser`, so a regex literal, a template string or a
  * comment-shaped string can't be misread as a comment. A `/**` comment that starts with the
- * marker counts only at the top level, outside every top-level statement; one inside a function,
- * class or object is `nested`, and stays part of the code around it (spec §3.1). A file oxc can't
- * parse at all yields no blocks.
+ * marker counts at the top level, and at any depth when it starts its own line: markz's `class
+ * Parser` reads method by method. One that shares its line with code, inside a call or an object
+ * literal, is `nested`, and stays part of the code around it (spec §3.1). A file oxc can't parse
+ * at all yields no blocks.
  */
 function scanJs(source: string, lang: "js" | "ts"): RawBlock[] {
   let parsed: ReturnType<typeof parseSync>;
@@ -127,18 +138,23 @@ function scanJs(source: string, lang: "js" | "ts"): RawBlock[] {
   }
   const statements = parsed.program.body.map((node): [number, number] => [node.start, node.end]);
   const blocks: RawBlock[] = [];
+  let after: ((index: number) => DeclaredName | null) | undefined;
   for (const comment of parsed.comments) {
     if (comment.type !== "Block" || !comment.value.startsWith("*")) continue;
     const text = source.slice(comment.start, comment.end);
     const body = extractMarkedBlock(text.slice(3, -2), true);
     if (body === null) continue;
+    const inside = statements.some(([start, end]) => comment.start >= start && comment.end <= end);
+    const ownLine = startsLine(source, comment.start);
+    if (inside && ownLine) after ??= declaredAfter(parsed.program);
     blocks.push({
       body,
       codeLang: "js",
       startIndex: comment.start,
       endIndex: comment.end,
       startLine: lineAt(source, comment.start),
-      nested: statements.some(([start, end]) => comment.start >= start && comment.end <= end),
+      nested: inside && !ownLine,
+      inner: inside && ownLine ? { declared: after!(comment.end) } : undefined,
     });
   }
   return blocks;
@@ -148,7 +164,8 @@ function scanJs(source: string, lang: "js" | "ts"): RawBlock[] {
  * # Scanning CSS
  *
  * CSS has no parser here, only a pass that skips strings and comments and counts `{}`, so a
- * `/** @prose *\/` counts at depth 0 and is `nested` inside a rule (spec §3.1).
+ * `/** @prose *\/` counts at depth 0, and inside a rule when it starts its own line; otherwise
+ * it's `nested` (spec §3.1).
  */
 function scanCss(source: string): RawBlock[] {
   const blocks: RawBlock[] = [];
@@ -175,7 +192,7 @@ function scanCss(source: string): RawBlock[] {
           startIndex: i,
           endIndex: end,
           startLine: lineAt(source, i),
-          nested: depth > 0,
+          nested: depth > 0 && !startsLine(source, i),
         });
       }
       i = end;
@@ -275,6 +292,12 @@ function shiftBlock(
     endIndex: block.endIndex + offset,
     startLine: lineAt(fullSource, startIndex),
     partEnd,
+    inner: block.inner && {
+      declared: block.inner.declared && {
+        ...block.inner.declared,
+        start: block.inner.declared.start + offset,
+      },
+    },
   };
 }
 
@@ -357,6 +380,9 @@ export function parseFile(source: string, extension: string): FileParse {
   const preamble = source.slice(fileBlock.endIndex, preambleEnd).trim();
 
   const sections: ProseSection[] = [];
+  /** A block inside a class or function names its chunk from the file's AST (`scanJs`), when the
+   *  name it found is in the chunk's own code; `null` means it has no name, not "look it up". */
+  const innerNames = new Map<ProseChunk, string | null>();
   let currentSection: ProseSection = { heading: null, slug: "top", chunks: [] };
   let hasOpenedSection = false;
 
@@ -375,7 +401,7 @@ export function parseFile(source: string, extension: string): FileParse {
       hasOpenedSection = true;
     }
 
-    currentSection.chunks.push({
+    const chunk: ProseChunk = {
       anchor: "",
       heading: headingMatch ? currentSection.heading : null,
       prose: block.body,
@@ -385,11 +411,16 @@ export function parseFile(source: string, extension: string): FileParse {
       startIndex: block.startIndex,
       endIndex: block.endIndex,
       codeLang: block.codeLang,
-    });
+    };
+    currentSection.chunks.push(chunk);
+    if (block.inner) {
+      const declared = block.inner.declared;
+      innerNames.set(chunk, declared && declared.start < codeEnd ? declared.name : null);
+    }
   }
   sections.push(currentSection);
 
-  assignAnchors(sections);
+  assignAnchors(sections, innerNames);
 
   return {
     fileProse: fileBlock.body,
@@ -417,13 +448,13 @@ export const FILE_ANCHOR = "file";
  * # Content-derived anchors (spec §3.2)
  *
  * In order: the slug of the chunk's heading, then the first name its code declares (JS and TS
- * only), then `chunk-N` by position, the only kind that moves when a block is inserted above. The
+ * only; for a block inside a class, the method or field below it), then `chunk-N` by position, the only kind that moves when a block is inserted above. The
  * heading comes first because it's what the reader sees: a `## Table rows` block is `#table-rows`,
  * not whichever helper its code happens to declare first.
  * A repeat within the file takes `-2`, `-3` in source order, and `file` is taken from the start.
  * Names keep their case, so `#addTodo` reads as the code does.
  */
-function assignAnchors(sections: ProseSection[]): void {
+function assignAnchors(sections: ProseSection[], innerNames: Map<ProseChunk, string | null>): void {
   const used = new Set([FILE_ANCHOR]);
   const seen = new Map<string, number>();
   let position = 0;
@@ -432,7 +463,9 @@ function assignAnchors(sections: ProseSection[]): void {
       position++;
       const base = chunk.heading
         ? slugify(chunk.heading)
-        : ([...declaredIdentifiers(chunk.code, chunk.codeLang)][0] ?? `chunk-${position}`);
+        : ((innerNames.has(chunk)
+            ? innerNames.get(chunk)
+            : [...declaredIdentifiers(chunk.code, chunk.codeLang)][0]) ?? `chunk-${position}`);
       let n = seen.get(base) ?? 1;
       let anchor = n === 1 && !used.has(base) ? base : `${base}-${++n}`;
       while (used.has(anchor)) anchor = `${base}-${++n}`;
