@@ -88,3 +88,57 @@ export function declaredIdentifiers(
   }
   return names;
 }
+
+/** @prose
+ * A block inside a class or a function has no top level to read: its code, `metadata(start)
+ * { … }`, isn't a program on its own. So its name comes from the whole file's AST instead: the
+ * first declaration or member that starts after the block, at any depth. A method, a class field,
+ * an object property, a function, a class, a variable, a type. A computed key (`[Symbol.iterator]`)
+ * has no name to give, and a private `#field` gives `field`, since `#` starts the anchor.
+ */
+export function declaredAfter(program: unknown): (index: number) => DeclaredName | null {
+  const found: DeclaredName[] = [];
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const child of node) visit(child);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    const ast = node as AstNode;
+    if (typeof ast.type === "string") {
+      const name = nameOf(ast);
+      if (name) found.push({ name, start: ast.start as number });
+    }
+    for (const key in ast) if (key !== "type") visit(ast[key]);
+  };
+  visit(program);
+  found.sort((a, b) => a.start - b.start);
+  return (index) => found.find((d) => d.start >= index) ?? null;
+}
+
+export interface DeclaredName {
+  name: string;
+  start: number;
+}
+
+function nameOf(node: AstNode): string | null {
+  const key = (node.computed ? null : (node.key ?? node.id)) as AstNode | null | undefined;
+  switch (node.type) {
+    case "MethodDefinition":
+    case "PropertyDefinition":
+    case "AccessorProperty":
+    case "TSAbstractMethodDefinition":
+    case "TSAbstractPropertyDefinition":
+    case "Property":
+    case "FunctionDeclaration":
+    case "ClassDeclaration":
+    case "VariableDeclarator":
+    case "TSInterfaceDeclaration":
+    case "TSTypeAliasDeclaration":
+    case "TSEnumDeclaration":
+      return key && (key.type === "Identifier" || key.type === "PrivateIdentifier")
+        ? (key.name as string)
+        : null;
+  }
+  return null;
+}

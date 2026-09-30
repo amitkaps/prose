@@ -274,13 +274,69 @@ describe("anchors (spec §3.2)", () => {
 });
 
 describe("nested blocks (spec §3.1)", () => {
-  it("leaves a @prose block inside a function or a rule in the code, not as a block", () => {
-    const js = "/** @prose File. */\nfunction f() {\n  /** @prose Inside. */\n  g();\n}\n";
+  it("reads a class method by method, each block named by the member below it", () => {
+    const ts = [
+      "/** @prose File. */",
+      "export class Parser {",
+      "\t/** @prose",
+      "\t * Runs it.",
+      "\t */",
+      "\trun(start: number): void {",
+      "\t\tconst at = start;",
+      "\t}",
+      "",
+      "\t/** @prose",
+      "\t * ## Metadata",
+      "\t */",
+      "\tmetadata(start: number): number {",
+      "\t\treturn start;",
+      "\t}",
+      "",
+      "\t/** @prose",
+      "\t * The field.",
+      "\t */",
+      "\t#depth = 0;",
+      "}",
+      "",
+    ].join("\n");
+    const chunks = parseFile(ts, "ts").sections.flatMap((s) => s.chunks);
+    expect(chunks.map((c) => c.anchor)).toEqual(["run", "metadata", "depth"]);
+    expect(chunks[0]!.code).toBe("run(start: number): void {\n\t\tconst at = start;\n\t}");
+    expect(chunks[2]!.code).toBe("#depth = 0;\n}");
+  });
+
+  it("splits a function at a block inside it, and names it by the first declaration below", () => {
+    const js =
+      "/** @prose File. */\nfunction f() {\n  g();\n  /** @prose Then. */\n  const h = 1;\n}\n";
+    const [chunk] = parseFile(js, "ts").sections.flatMap((s) => s.chunks);
+    expect(chunk!.anchor).toBe("h");
+    expect(chunk!.code).toBe("const h = 1;\n}");
+  });
+
+  it("names a block with nothing declared below it in its chunk by position", () => {
+    const js = "/** @prose File. */\nfunction f() {\n  /** @prose Then. */\n  g();\n}\n";
+    expect(parseFile(js, "ts").sections[0]!.chunks[0]!.anchor).toBe("chunk-1");
+  });
+
+  it("leaves a @prose comment that shares its line with code, inside a statement, in the code", () => {
+    const js = "/** @prose File. */\ncall(/** @prose Inline. */ 1);\n";
     const parsed = parseFile(js, "ts");
     expect(parsed.sections.flatMap((s) => s.chunks)).toEqual([]);
-    expect(parsed.preamble).toContain("/** @prose Inside. */");
+    expect(parsed.preamble).toContain("/** @prose Inline. */");
+  });
+
+  it("reads a CSS block inside a rule when it starts its own line", () => {
     const css = "/** @prose File. */\n.a {\n  /** @prose Inside. */\n  color: red;\n}\n";
-    expect(parseFile(css, "css").preamble).toContain("/** @prose Inside. */");
+    const chunks = parseFile(css, "css").sections.flatMap((s) => s.chunks);
+    expect(chunks.map((c) => c.code)).toEqual(["color: red;\n}"]);
+    const inline = "/** @prose File. */\n.a { /** @prose Inline. */ color: red; }\n";
+    expect(parseFile(inline, "css").preamble).toContain("/** @prose Inline. */");
+  });
+
+  it("names a block inside a .svelte script by the member below it", () => {
+    const svelte =
+      "<script>\n/** @prose File. */\nconst api = {\n  /** @prose Loads. */\n  load() {},\n};\n</script>\n";
+    expect(parseFile(svelte, "svelte").sections[0]!.chunks[0]!.anchor).toBe("load");
   });
 
   it("still finds a top-level block after a function, and ignores an object literal's plain doc comment", () => {
