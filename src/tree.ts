@@ -169,8 +169,13 @@ export function rawToNode(root: string, relPath: string): TreeNode | null {
  * the root, with `/` separators.
  */
 export function projectFiles(root: string): string[] {
-  const listed = gitFiles(root) ?? walkFiles(root, "");
-  return listed
+  return showable(gitFiles(root) ?? walkFiles(root, "", SKIP_DIRS));
+}
+
+/** The files among `paths` the tree shows, sorted: no dot-folders or dotfiles, no lockfiles, only
+ *  extensions it can render. `prose build` applies it to the files a commit holds. */
+export function showable(paths: string[]): string[] {
+  return paths
     .filter((path) => {
       const segments = path.split("/");
       const name = segments.at(-1)!;
@@ -207,13 +212,14 @@ function gitFiles(root: string): string[] | null {
   });
 }
 
-function walkFiles(root: string, relDir: string): string[] {
+/** Every file under `relDir`, dot entries and `skip` folders left out. */
+export function walkFiles(root: string, relDir: string, skip = new Set<string>()): string[] {
   const files: string[] = [];
   for (const entry of readdirSync(join(root, relDir))) {
-    if (entry.startsWith(".") || SKIP_DIRS.has(entry)) continue;
+    if (entry.startsWith(".") || skip.has(entry)) continue;
     const relPath = relDir ? `${relDir}/${entry}` : entry;
     const stat = statSync(join(root, relPath));
-    if (stat.isDirectory()) files.push(...walkFiles(root, relPath));
+    if (stat.isDirectory()) files.push(...walkFiles(root, relPath, skip));
     else if (stat.isFile()) files.push(relPath);
   }
   return files;
