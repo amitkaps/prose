@@ -7,13 +7,21 @@
  * it out as one document. `docs/` is an ordinary folder here (spec §3.4).
  */
 import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import {
+  closeSync,
+  lstatSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  readSync,
+  statSync,
+} from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { type CodeLang, firstParagraph, parseFile, type ProseChunk } from "./parser.js";
 
 export interface TreeNode {
   name: string;
-  kind: "project" | "folder" | "file" | "raw" | "chunk";
+  kind: "project" | "folder" | "file" | "raw" | "binary" | "chunk";
   /** The repo path, with `#anchor` for a chunk: `src/store.ts#addTodo`. */
   path: string;
   summary: string;
@@ -32,11 +40,17 @@ export interface TreeNode {
   line?: number;
   /** Chunk-only: the language of this chunk's code. */
   codeLang?: CodeLang;
+  /** Raw-only: what's past the shown text, `4,213 more lines`, when the file is cut short. */
+  more?: string;
+  /** Binary-only: what it is and how big, `PNG image · 12 KB`, and an image as a `data:` URL. */
+  about?: string;
+  image?: string;
   children: TreeNode[];
 }
 
 /** Only used outside a git repository; inside one, `.gitignore` decides (`projectFiles`). */
 const SKIP_DIRS = new Set(["node_modules", "dist"]);
+/** The languages whose comments can hold `@prose` (spec §3.1); `.md` is prose as it is. */
 const SOURCE_EXTENSIONS = new Set([
   "js",
   "ts",
@@ -48,12 +62,10 @@ const SOURCE_EXTENSIONS = new Set([
   "yml",
   "toml",
 ]);
-// JSON has no comment for `@prose` to live in, but its structure (dependencies, scripts,
-// compiler options) is worth reading, so it's shown as `raw` text.
-const RAW_EXTENSIONS = new Set(["json", "jsonc"]);
-const RAW_MAX_BYTES = 200_000;
-// Generated, never written by hand: excluded by name, since `.yaml` and `.json` are otherwise shown.
-const RESERVED_FILENAMES = new Set([
+/** Past this size a file is read as text, not parsed: nobody writes prose into a generated file. */
+const SOURCE_MAX_BYTES = 200_000;
+// Generated, never written by hand, so never parsed for prose: shown as text, cut short.
+const GENERATED_FILENAMES = new Set([
   "pnpm-lock.yaml",
   "package-lock.json",
   "yarn.lock",
@@ -61,8 +73,24 @@ const RESERVED_FILENAMES = new Set([
   "bun.lockb",
 ]);
 
-function extensionOf(name: string): string {
-  return name.slice(name.lastIndexOf(".") + 1).toLowerCase();
+/** `ts` for `a.ts`; none for `LICENSE` or `.gitignore`. */
+export function extensionOf(path: string): string {
+  const name = path.slice(path.lastIndexOf("/") + 1);
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
+}
+
+/** @prose
+ * # Which files are read for prose
+ *
+ * Markdown, and source in a language `@prose` lives in (spec §3.1), unless it's generated: a
+ * lockfile by name, or anything past 200 KB. Every other file git lists still has a page, as text
+ * or as a binary file (`rawToNode`).
+ */
+export function isSource(root: string, relPath: string): boolean {
+  const name = relPath.slice(relPath.lastIndexOf("/") + 1);
+  if (!SOURCE_EXTENSIONS.has(extensionOf(name)) || GENERATED_FILENAMES.has(name)) return false;
+  return extensionOf(name) === "md" || statSync(join(root, relPath)).size <= SOURCE_MAX_BYTES;
 }
 
 function readReadme(dir: string): string | null {
@@ -143,47 +171,130 @@ function readFileNode(absPath: string, relPath: string): TreeNode {
   };
 }
 
-/** A file that can't carry prose (JSON has no comments): its text, shown as it is, and counted
- *  as neither documented nor undocumented. Oversized files are skipped. */
-export function rawToNode(root: string, relPath: string): TreeNode | null {
+/** @prose
+ * # Every other file
+ *
+ * A file that isn't read for prose is shown as it is (spec §4.1). Text, JSON and `LICENSE` and a
+ * lockfile alike, is one highlighted run, cut at 1,000 lines or 100 KB, whichever comes first,
+ * with how much is left said at the end. A file is binary when its first 8 KB hold a NUL byte, as
+ * git decides; its page says what it is and how big, and an image up to 1 MB is shown, inline as
+ * a `data:` URL, so a built site needs no copy of the file beside its page.
+ */
+export function rawToNode(root: string, relPath: string): TreeNode {
   const absPath = join(root, relPath);
-  if (statSync(absPath).size > RAW_MAX_BYTES) return null;
+  const size = statSync(absPath).size;
+  const base = { name: relPath, path: relPath, summary: "", prose: null, children: [] };
+  const ext = extensionOf(relPath);
+  const image = IMAGE_TYPES[ext];
+  if (image && size <= IMAGE_MAX_BYTES) {
+    const data = readFileSync(absPath).toString("base64");
+    const about = `${image.label} · ${formatSize(size)}`;
+    return { ...base, kind: "binary", about, image: `data:${image.type};base64,${data}` };
+  }
+  if (image || isBinary(absPath)) {
+    const about = `${image?.label ?? (ext ? `${ext.toUpperCase()} file` : "Binary file")} · ${formatSize(size)}`;
+    return { ...base, kind: "binary", about };
+  }
+  const { text, more } = cut(readFileSync(absPath, "utf-8"));
+  return { ...base, kind: "raw", code: text, ...(more ? { more } : {}) };
+}
+
+const TEXT_MAX_LINES = 1000;
+const TEXT_MAX_CHARS = 100_000;
+const IMAGE_MAX_BYTES = 1_000_000;
+const IMAGE_TYPES: Record<string, { type: string; label: string }> = {
+  png: { type: "image/png", label: "PNG image" },
+  jpg: { type: "image/jpeg", label: "JPEG image" },
+  jpeg: { type: "image/jpeg", label: "JPEG image" },
+  gif: { type: "image/gif", label: "GIF image" },
+  webp: { type: "image/webp", label: "WebP image" },
+  avif: { type: "image/avif", label: "AVIF image" },
+  ico: { type: "image/x-icon", label: "Icon" },
+  svg: { type: "image/svg+xml", label: "SVG image" },
+};
+
+function isBinary(absPath: string): boolean {
+  const fd = openSync(absPath, "r");
+  try {
+    const head = Buffer.alloc(8000);
+    return head.subarray(0, readSync(fd, head, 0, head.length, 0)).includes(0);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/** The text up to the caps, and what's left: whole lines where it can, else the characters. */
+function cut(text: string): { text: string; more?: string } {
+  const lines = text.replace(/\n$/, "").split("\n");
+  let shown = 0;
+  let chars = 0;
+  while (shown < lines.length && shown < TEXT_MAX_LINES) {
+    if (chars + lines[shown]!.length > TEXT_MAX_CHARS) break;
+    chars += lines[shown]!.length + 1;
+    shown++;
+  }
+  if (shown === lines.length) return { text };
+  if (shown === 0) {
+    return {
+      text: lines[0]!.slice(0, TEXT_MAX_CHARS),
+      more: `${formatSize(text.length - TEXT_MAX_CHARS)} more`,
+    };
+  }
+  const rest = lines.length - shown;
   return {
-    name: relPath,
-    kind: "raw",
-    path: relPath,
-    summary: "",
-    prose: null,
-    code: readFileSync(absPath, "utf-8"),
-    children: [],
+    text: lines.slice(0, shown).join("\n"),
+    more: `${rest.toLocaleString("en")} more line${rest === 1 ? "" : "s"}`,
   };
+}
+
+export function formatSize(bytes: number): string {
+  if (bytes < 1000) return `${bytes} B`;
+  if (bytes < 1_000_000) return `${Math.round(bytes / 1000)} KB`;
+  return `${(bytes / 1_000_000).toFixed(1)} MB`;
 }
 
 /** @prose
  * # Which files the tree holds (spec §4.2)
  *
- * The files git would track: `git ls-files` with `--others --exclude-standard`, so an untracked
- * new file shows up before it's committed while ignored output stays out. Outside a git
- * repository, a plain walk with the fixed `SKIP_DIRS` list stands in. Either way, dot-folders
- * and dotfiles, lockfiles and extensions the tree can't show are dropped. Paths are relative to
- * the root, with `/` separators.
+ * Every file git would track: `git ls-files` with `--others --exclude-standard`, so an untracked
+ * new file shows up before it's committed while ignored output stays out. Dotfiles, `LICENSE`,
+ * lockfiles and images included: what the repository holds, not a set of extensions. Outside a
+ * git repository, a plain walk stands in, leaving out dot-folders and the fixed `SKIP_DIRS`.
+ * Paths are relative to the root, with `/` separators, sorted.
  */
 export function projectFiles(root: string): string[] {
-  return showable(gitFiles(root) ?? walkFiles(root, "", SKIP_DIRS));
+  const skip = (name: string) => name.startsWith(".") || SKIP_DIRS.has(name);
+  return (gitFiles(root) ?? walkFiles(root, "", skip)).sort();
 }
 
-/** The files among `paths` the tree shows, sorted: no dot-folders or dotfiles, no lockfiles, only
- *  extensions it can render. `prose build` applies it to the files a commit holds. */
-export function showable(paths: string[]): string[] {
-  return paths
-    .filter((path) => {
-      const segments = path.split("/");
-      const name = segments.at(-1)!;
-      if (segments.some((segment) => segment.startsWith("."))) return false;
-      if (RESERVED_FILENAMES.has(name)) return false;
-      const ext = extensionOf(name);
-      return SOURCE_EXTENSIONS.has(ext) || RAW_EXTENSIONS.has(ext);
-    })
+/** @prose
+ * What `.gitignore` leaves out of one folder, for the line at the end of its page (spec §4.1),
+ * at the level it's named: `node_modules/`, never its contents, so nothing ignored is walked.
+ * Empty outside a git repository.
+ */
+export function ignoredIn(root: string, relDir: string): string[] {
+  let output: string;
+  try {
+    output = execFileSync(
+      "git",
+      ["ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--directory"],
+      {
+        cwd: root,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+        maxBuffer: 64 * 1024 * 1024,
+      },
+    );
+  } catch {
+    return [];
+  }
+  const prefix = relDir ? `${relDir}/` : "";
+  return output
+    .split("\0")
+    .filter(
+      (path) => path && path.startsWith(prefix) && !path.slice(prefix.length, -1).includes("/"),
+    )
+    .map((path) => path.slice(prefix.length))
     .sort();
 }
 
@@ -212,13 +323,19 @@ function gitFiles(root: string): string[] | null {
   });
 }
 
-/** Every file under `relDir`, dot entries and `skip` folders left out. */
-export function walkFiles(root: string, relDir: string, skip = new Set<string>()): string[] {
+/** Every file under `relDir`, entries `skip` names left out. A symbolic link is never followed:
+ *  `prose build` walks a commit's export, and a tracked link to a file outside it mustn't
+ *  publish that file. */
+export function walkFiles(
+  root: string,
+  relDir: string,
+  skip: (name: string) => boolean = () => false,
+): string[] {
   const files: string[] = [];
   for (const entry of readdirSync(join(root, relDir))) {
-    if (entry.startsWith(".") || skip.has(entry)) continue;
+    if (skip(entry)) continue;
     const relPath = relDir ? `${relDir}/${entry}` : entry;
-    const stat = statSync(join(root, relPath));
+    const stat = lstatSync(join(root, relPath));
     if (stat.isDirectory()) files.push(...walkFiles(root, relPath, skip));
     else if (stat.isFile()) files.push(relPath);
   }
@@ -270,11 +387,10 @@ function folderToNode(root: string, relDir: string, name: string, index: DirInde
       if (node.children.length > 0 || node.prose) children.push(node);
     } else if (entry === "README.md") {
       continue;
-    } else if (SOURCE_EXTENSIONS.has(extensionOf(entry))) {
+    } else if (isSource(root, relPath)) {
       children.push(fileToNode(root, relPath));
     } else {
-      const raw = rawToNode(root, relPath);
-      if (raw) children.push(raw);
+      children.push(rawToNode(root, relPath));
     }
   }
 
@@ -293,7 +409,7 @@ function folderToNode(root: string, relDir: string, name: string, index: DirInde
  *
  * What a folder page needs, and no more (spec §4.1): its `README.md` as prose, then its
  * subfolders, each summarized by its own `README.md`, and its files, each summarized by its
- * first paragraph. Subfolders aren't walked and raw files aren't read, so a page costs the files
+ * first paragraph. Subfolders aren't walked and other files aren't read, so a page costs the files
  * directly in the folder, whatever the size of the repository. Returns `null` for a folder that
  * holds nothing the walk lists.
  */
@@ -323,7 +439,7 @@ export function folderListing(root: string, files: string[], relDir: string): Tr
     if (name === "README.md") continue;
     const path = relDir ? `${relDir}/${name}` : name;
     children.push(
-      SOURCE_EXTENSIONS.has(extensionOf(name))
+      isSource(root, path)
         ? fileToNode(root, path)
         : { name: path, kind: "raw", path, summary: "", prose: null, children: [] },
     );

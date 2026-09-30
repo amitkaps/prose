@@ -10,9 +10,17 @@ import { type FSWatcher, watch } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { basename, resolve, sep } from "node:path";
 import { escapeHtml, warmHighlighter } from "./highlight.js";
-import { folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
+import { binaryBody, folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
 import { renderRail } from "./rail.js";
-import { fileToNode, folderListing, projectFiles, rawToNode } from "./tree.js";
+import {
+  extensionOf,
+  fileToNode,
+  folderListing,
+  ignoredIn,
+  isSource,
+  projectFiles,
+  rawToNode,
+} from "./tree.js";
 
 export interface ServeOptions {
   /** The port to try first; the next free one is used if it's taken. `0` lets the OS pick. */
@@ -27,8 +35,8 @@ export interface Served {
   close(): Promise<void>;
 }
 
-/** The path the page's live reload listens on. A dot segment never names a repository file,
- *  since the walk leaves dot-folders out. */
+/** The path the page's live reload listens on, in `.prose/`, the folder prose keeps its own
+ *  output in (`prose build`), which a repository ignores. */
 const EVENTS_PATH = "/.prose/events";
 const PORT_ATTEMPTS = 20;
 
@@ -80,24 +88,25 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
   if (path === "" || path.endsWith("/")) {
     const node = folderListing(root, files, path.replace(/\/$/, ""));
     if (!node) return notFound();
-    return { status: 200, html: shell(await folderBody(node)) };
+    // What's ignored exists only on this machine, so a built page doesn't list it (spec §4.4).
+    const ignored = live ? ignoredIn(root, path.replace(/\/$/, "")) : [];
+    return { status: 200, html: shell(await folderBody(node, ignored)) };
   }
 
   if (files.includes(path)) {
     const editorLink = `vscode://file${resolve(root, path).split(sep).join("/")}`;
-    const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
-    if (ext === "md") {
+    if (extensionOf(path) === "md") {
       return { status: 200, html: shell(await markdownBody(fileToNode(root, path)), editorLink) };
     }
-    if (ext === "json" || ext === "jsonc") {
-      const node = rawToNode(root, path);
-      const body = node ? await rawBody(node) : `<p class="missing">Too large to show.</p>`;
-      return { status: 200, html: shell(body, editorLink, node !== null) };
+    if (isSource(root, path)) {
+      return {
+        status: 200,
+        html: shell(await sourceBody(fileToNode(root, path)), editorLink, true),
+      };
     }
-    return {
-      status: 200,
-      html: shell(await sourceBody(fileToNode(root, path)), editorLink, true),
-    };
+    const node = rawToNode(root, path);
+    if (node.kind === "binary") return { status: 200, html: shell(binaryBody(node), editorLink) };
+    return { status: 200, html: shell(await rawBody(node), editorLink, true) };
   }
 
   if (folderListing(root, files, path)) {
@@ -142,8 +151,8 @@ function send(res: ServerResponse, status: number, body: string): void {
  * A page connects only while it's visible (`render.ts`), since a browser allows six connections to
  * one server and each open page would otherwise hold one, so a few idle tabs could leave a new
  * page waiting to load. A page that comes back into view reconnects with its render time, and
- * hears at once about anything it missed. Changes inside dot-folders and `node_modules` are
- * dropped, as the walk drops them. Where the platform has no recursive watch, pages don't reload.
+ * hears at once about anything it missed. Changes inside `.git`, `node_modules` and prose's own
+ * `.prose/` are dropped: git's bookkeeping, dependencies and a build's output aren't pages. Where the platform has no recursive watch, pages don't reload.
  */
 interface Listener {
   res: ServerResponse;
@@ -181,7 +190,10 @@ function watchRoot(root: string, changes: Changes): FSWatcher | null {
     return watch(root, { recursive: true }, (_event, filename) => {
       if (!filename) return;
       const path = filename.toString().split(sep).join("/");
-      if (path.split("/").some((s) => s.startsWith(".") || s === "node_modules")) return;
+      const segments = path.split("/");
+      if (segments[0] === ".prose" || segments.some((s) => s === ".git" || s === "node_modules")) {
+        return;
+      }
       changes.record(path);
     });
   } catch {

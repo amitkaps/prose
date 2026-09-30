@@ -52,10 +52,12 @@ describe("build: examples/single", () => {
   it("writes a page per folder and per file, a source index.html as index.html.html", () => {
     expect(pages.sort()).toEqual(
       [
+        ".gitignore.html",
         "index.html",
         "index.html.html",
         "main.js.html",
         "package.json.html",
+        "pnpm-lock.yaml.html",
         "README.md.html",
         "style.css.html",
       ].sort(),
@@ -179,5 +181,21 @@ describe("build: a repository", () => {
     expect(main(built.html)).toBe(main(live.html));
     expect(live.html).toContain("new EventSource");
     expect(built.html).not.toContain("new EventSource");
+  });
+
+  it("names what's ignored on a local folder page, never on a built one", async () => {
+    writeFileSync(join(root, ".env"), "SECRET=1\n");
+    writeFileSync(join(root, ".gitignore"), ".prose/\n.env\n");
+    try {
+      const site: Site = { root, project: "demo", files: projectFiles(root), live: true };
+      const live = await renderRoute(site, "");
+      const built = await renderRoute({ ...site, live: false }, "");
+      if (live.status !== 200 || built.status !== 200) throw new Error("expected pages");
+      expect(live.html).toContain('<p class="ignored">Ignored here: <code>.env</code>');
+      expect(built.html).not.toContain("Ignored here");
+    } finally {
+      rmSync(join(root, ".env"));
+      git(root, "checkout", "--", ".gitignore");
+    }
   });
 });

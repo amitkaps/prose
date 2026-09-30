@@ -9,7 +9,7 @@
 import { html as markz } from "@amitkaps/markz";
 import { escapeHtml, highlight, highlightFences } from "./highlight.js";
 import { FILE_ANCHOR } from "./parser.js";
-import type { TreeNode } from "./tree.js";
+import { extensionOf, type TreeNode } from "./tree.js";
 import { STYLE } from "./style.js";
 
 export async function renderMarkdown(text: string): Promise<string> {
@@ -21,10 +21,6 @@ function renderSummary(text: string): string {
   return markz(text)
     .trim()
     .replace(/^<p>([\s\S]*)<\/p>$/, "$1");
-}
-
-function extensionOf(path: string): string {
-  return path.slice(path.lastIndexOf(".") + 1).toLowerCase();
 }
 
 type Segment = { kind: "block"; block: TreeNode } | { kind: "code"; text: string; line: number };
@@ -81,17 +77,31 @@ function renderListing(children: TreeNode[]): string {
   return `<ul class="listing">${items.join("")}</ul>`;
 }
 
-export async function folderBody(node: TreeNode): Promise<string> {
+/** A folder's README, its listing, and, on a local page, one line naming what `.gitignore`
+ *  leaves out of it (`ignoredIn`): no links and no counts, since there's nothing there to read. */
+export async function folderBody(node: TreeNode, ignored: string[] = []): Promise<string> {
   const readme = node.prose ? `<div class="prose">${await renderMarkdown(node.prose)}</div>` : "";
-  return `${readme}${renderListing(node.children)}`;
+  const names = ignored.map((name) => `<code>${escapeHtml(name)}</code>`).join(" ");
+  const line = ignored.length ? `<p class="ignored">Ignored here: ${names}</p>` : "";
+  return `${readme}${renderListing(node.children)}${line}`;
 }
 
 export async function markdownBody(node: TreeNode): Promise<string> {
   return `<div class="prose">${await renderMarkdown(node.prose ?? "")}</div>`;
 }
 
+/** A file that isn't read for prose: one run, and what was cut from its end (`rawToNode`). */
 export async function rawBody(node: TreeNode): Promise<string> {
-  return NO_PROSE + (await codeRun(node.code ?? "", extensionOf(node.path), 1));
+  const more = node.more ? `<p class="more">… ${escapeHtml(node.more)}</p>` : "";
+  return NO_PROSE + (await codeRun(node.code ?? "", extensionOf(node.path) || "text", 1)) + more;
+}
+
+/** A binary file: what it is and how big, and an image shown. */
+export function binaryBody(node: TreeNode): string {
+  const image = node.image
+    ? `<img class="binary-image" src="${node.image}" alt="${escapeHtml(node.path)}">`
+    : "";
+  return `<p class="binary">${escapeHtml(node.about ?? "")}</p>${image}`;
 }
 
 /** Shown in place of prose on a file that has none, so **Prose only** doesn't leave a bare header. */
@@ -127,7 +137,7 @@ async function codeRun(text: string, lang: string, startLine: number): Promise<s
  */
 export async function sourceBody(node: TreeNode): Promise<string> {
   const blocks = node.blocks ?? [];
-  const lang = extensionOf(node.path);
+  const lang = extensionOf(node.path) || "text";
   if (blocks.length === 0) return NO_PROSE + (await codeRun(node.source ?? "", lang, 1));
   const parts = await Promise.all(
     segments(node.source ?? "", blocks).map(async (segment) => {
