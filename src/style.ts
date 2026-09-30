@@ -3,8 +3,9 @@
  *
  * The file tree on the left, then one readable column, light and dark from the reader's setting.
  * Prose is the page and code is the aside: code sits folded in a quieter panel, so a file reads as
- * its prose first. On a source page, prose keeps the reading measure while code runs widen to 100
- * columns, oxfmt's print width, left edges aligned, so code wraps only on a narrow window. Below
+ * its prose first. Every page shares one centre line: prose keeps the reading measure, and code
+ * runs widen to 100 columns, oxfmt's print width, equally on both sides, so code wraps only on a
+ * narrow window and prose never moves between a doc and a source file. Below
  * 52rem the tree hides behind the **Files** button, over the page, and the editor link goes.
  *
  * Code takes its colours from the same tokens: shiki's CSS-variables theme names each token's
@@ -21,7 +22,8 @@ export const STYLE = `
 	--paper: #fdfcfa;
 	--panel: #f4f2ee;
 	--rule: #e3e0da;
-	--link: #0b5cad;
+	--link: #9c4221;
+	--selection: color-mix(in srgb, #c47a2c 28%, transparent);
 	--accent: #9a6700;
 	--measure: 44rem;
 	--rail: 16rem;
@@ -52,7 +54,8 @@ export const STYLE = `
 		--paper: #1a1917;
 		--panel: #23221f;
 		--rule: #34322e;
-		--link: #7cb7ff;
+		--link: #e6a57c;
+		--selection: color-mix(in srgb, #e3b341 26%, transparent);
 		--accent: #e3b341;
 		--shiki-foreground: #e6e3dd;
 		--shiki-token-comment: #8f887c;
@@ -76,31 +79,41 @@ export const STYLE = `
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--paper); color: var(--ink); }
 a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+::selection { background: var(--selection); }
 .layout { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); min-height: 100vh; }
 .rail {
 	position: sticky; top: 0; height: 100vh; overflow-y: auto;
-	padding: 0.75rem 0.5rem 2rem 1.1rem; border-right: 1px solid var(--rule); background: var(--panel);
+	padding: 0.75rem 0 2rem; border-right: 1px solid var(--rule); background: var(--panel);
 	font-size: 0.82rem; line-height: 1.35;
+	--edge: 0.9rem;
+	--step: 1rem;
+	--twisty: 0.9rem;
+	--gap: 0.35rem;
 }
-.rail ul { list-style: none; margin: 0; padding: 0 0 0 0.75rem; }
-.rail > ul { padding-left: 0; }
-.rail a {
-	display: block; padding: 0.2rem 0.4rem; border-radius: 4px;
-	color: var(--ink); text-decoration: none; overflow-wrap: anywhere;
+/* Rows span the rail's full width, so a highlight does too; each indents itself by its depth.
+   A folder's chevron sits under the start of its parent's name, and a file leaves the chevron's
+   slot empty, so names at one level line up, and the top-level chevrons line up with the
+   project's name. */
+.rail ul { list-style: none; margin: 0; padding: 0; }
+.rail a { color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.rail .rail-project { display: block; padding: 0.2rem var(--edge); margin-bottom: 0.4rem; font-weight: 600; }
+.rail a.file, .rail summary {
+	display: flex; align-items: center; gap: var(--gap);
+	padding: 0.2rem var(--edge) 0.2rem calc(var(--edge) + var(--depth) * var(--step));
 }
-.rail a:hover { background: var(--rule); }
-.rail a[aria-current] { background: var(--rule); font-weight: 600; }
-.rail .rail-project { font-weight: 600; margin-bottom: 0.4rem; }
-.rail summary { display: flex; align-items: center; cursor: pointer; list-style: none; }
+.rail a.file { padding-left: calc(var(--edge) + var(--depth) * var(--step) + var(--twisty) + var(--gap)); }
+.rail a.file:hover, .rail summary:hover, .rail .rail-project:hover { background: var(--rule); }
+.rail [aria-current] { background: var(--rule); font-weight: 600; }
+.rail summary { cursor: pointer; list-style: none; }
+.rail summary a { flex: 1; }
 .rail summary::-webkit-details-marker { display: none; }
 .rail summary::before {
-	content: ""; flex: none; width: 0.9rem; height: 0.9rem; margin-left: -0.9rem;
-	background: currentColor; opacity: 0.5;
+	content: ""; flex: none; width: var(--twisty); height: var(--twisty);
+	background: currentColor; opacity: 0.6;
 	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E") center / contain no-repeat;
 	transition: transform 0.1s;
 }
 .rail details[open] > summary::before { transform: rotate(90deg); }
-.rail summary a { flex: 1; }
 .rail-toggle { display: none; }
 @media (max-width: 52rem) {
 	.layout { grid-template-columns: minmax(0, 1fr); }
@@ -117,7 +130,7 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 .bar {
 	position: sticky; top: 0; z-index: 1;
 	display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 1rem; align-items: center;
-	padding: 0.6rem 1rem; background: var(--paper); border-bottom: 1px solid var(--rule);
+	min-height: 3.25rem; padding: 0.5rem 1rem; background: var(--paper); border-bottom: 1px solid var(--rule);
 	font-size: 0.9rem;
 }
 .page { min-width: 0; }
@@ -142,9 +155,9 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 :root:not(.prose-only) .mode [data-mode="code"], .prose-only .mode [data-mode="prose"] {
 	background: var(--rule); color: var(--ink);
 }
-main { max-width: var(--measure); margin: 0 auto; padding: 1.5rem 1rem 4rem; }
-.source main { max-width: calc(var(--code-width) + 2rem); }
-.source main > .block { max-width: var(--measure); }
+/* One centre line on every page: prose at the reading measure, code wider on both sides of it. */
+main { max-width: calc(var(--code-width) + 2rem); margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+main > * { max-width: var(--measure); margin-inline: auto; }
 .prose { overflow-wrap: anywhere; }
 .prose h1, .prose h2, .prose h3 { line-height: 1.25; text-wrap: balance; }
 .prose h1 { font-size: 1.75rem; }
@@ -167,7 +180,7 @@ pre.shiki .line {
 	padding-left: 2ch; text-indent: -2ch;
 }
 .code {
-	margin: 0.5rem 0 1.25rem; border-radius: 8px; overflow: hidden;
+	margin: 0.5rem auto 1.25rem; border-radius: 8px; overflow: hidden;
 	background: var(--shiki-background); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 	font-size: 0.85rem; max-width: calc(100ch + var(--gutter) + 5ch + 2rem);
 }
@@ -194,7 +207,7 @@ pre.shiki .line {
 :root:not(.prose-only) .code.closed .code-head, .prose-only .code:not(.opened) .code-head { border-bottom-color: transparent; }
 :root:not(.prose-only) .code.closed .chevron, .prose-only .code:not(.opened) .chevron { transform: none; }
 code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
-.block { position: relative; margin: 1.5rem 0 0.5rem; scroll-margin-top: 4rem; }
+.block { position: relative; margin: 1.5rem auto 0.5rem; scroll-margin-top: 4rem; }
 .block .anchor {
 	position: absolute; left: -1.25rem; top: 0; width: 1rem; text-align: center;
 	color: var(--muted); text-decoration: none; opacity: 0;

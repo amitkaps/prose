@@ -36,23 +36,28 @@ function href(path: string, folder: boolean): string {
 	return `/${path.split("/").map(encodeURIComponent).join("/")}${folder ? "/" : ""}`;
 }
 
-function renderDir(dir: Dir, prefix: string, current: string): string {
+/** @prose
+ * Each row carries its depth, and indents itself by it, rather than nesting padding in the
+ * lists: so a row's highlight spans the rail's full width, as an editor's explorer does, while
+ * its chevron and name sit at their depth.
+ */
+function renderDir(dir: Dir, prefix: string, current: string, depth: number): string {
 	const rows: string[] = [];
 	for (const name of [...dir.dirs.keys()].sort()) {
 		const path = prefix ? `${prefix}/${name}` : name;
 		const here = current === `${path}/`;
 		const open = current.startsWith(`${path}/`);
 		rows.push(
-			`<li><details data-folder="${escapeHtml(path)}"${open ? " open" : ""}><summary><a href="${escapeHtml(href(path, true))}"${
+			`<li><details data-folder="${escapeHtml(path)}"${open ? " open" : ""}><summary style="--depth: ${depth}"${
 				here ? ` aria-current="page"` : ""
-			}>${escapeHtml(name)}</a></summary><ul>${renderDir(dir.dirs.get(name)!, path, current)}</ul></details></li>`,
+			}><a href="${escapeHtml(href(path, true))}">${escapeHtml(name)}</a></summary><ul>${renderDir(dir.dirs.get(name)!, path, current, depth + 1)}</ul></details></li>`,
 		);
 	}
 	for (const name of [...dir.files].sort()) {
 		if (name === "README.md") continue;
 		const path = prefix ? `${prefix}/${name}` : name;
 		rows.push(
-			`<li><a class="file" href="${escapeHtml(href(path, false))}"${
+			`<li><a class="file" style="--depth: ${depth}" href="${escapeHtml(href(path, false))}"${
 				current === path ? ` aria-current="page"` : ""
 			}>${escapeHtml(name)}</a></li>`,
 		);
@@ -65,5 +70,5 @@ function renderDir(dir: Dir, prefix: string, current: string): string {
 export function renderRail(files: string[], current: string, project: string): string {
 	return `<nav class="rail" aria-label="Files"><a class="rail-project" href="/"${
 		current === "" ? ` aria-current="page"` : ""
-	}>${escapeHtml(project)}</a><ul>${renderDir(index(files), "", current)}</ul></nav>`;
+	}>${escapeHtml(project)}</a><ul>${renderDir(index(files), "", current, 0)}</ul></nav>`;
 }
