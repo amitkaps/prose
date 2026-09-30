@@ -116,7 +116,7 @@ describe("serve: folders", () => {
       "src/README.md": "# src\n\nThe source.\n",
       "src/a.ts": "/** @prose\n * Does a.\n */\nexport const a = 1;\n",
       "src/b.ts": "export const b = 2;\n",
-      "prose/plan.md": "# Plan\n\nWhat's next.\n",
+      "docs/plan.md": "# Plan\n\nWhat's next.\n",
     };
     for (const [path, text] of Object.entries(files)) {
       mkdirSync(join(root, path, ".."), { recursive: true });
@@ -144,9 +144,9 @@ describe("serve: folders", () => {
     expect(body).not.toContain('data-mode="prose" aria-pressed="false" disabled');
   });
 
-  it("shows prose/ as an ordinary folder on the project page", async () => {
+  it("shows docs/ as an ordinary folder on the project page", async () => {
     const { body } = await get(served.url, "/");
-    expect(body).toContain('href="prose/"');
+    expect(body).toContain('href="docs/"');
     expect(body).toContain('href="src/"');
   });
 
@@ -156,7 +156,7 @@ describe("serve: folders", () => {
     // `app.ts` sorts before both folders, and still comes after them.
     expect(rail.indexOf('data-folder="src"')).toBeLessThan(rail.indexOf('href="/app.ts"'));
     expect(rail).toContain('<details data-folder="src" open>');
-    expect(rail).toContain('<details data-folder="prose">');
+    expect(rail).toContain('<details data-folder="docs">');
     expect(rail).toContain(
       '<a class="file" style="--depth: 1" href="/src/a.ts" aria-current="page">a.ts</a>',
     );
@@ -203,7 +203,7 @@ describe("serve: live reload", () => {
     expect(touches("src/a.ts", "src/")).toBe(true);
     expect(touches("src/a.ts", "")).toBe(true);
     expect(touches("src/b.ts", "src/a.ts")).toBe(false);
-    expect(touches("prose/plan.md", "src/")).toBe(false);
+    expect(touches("docs/plan.md", "src/")).toBe(false);
   });
 
   it("catches a page up on a change it missed while it wasn't listening", async () => {

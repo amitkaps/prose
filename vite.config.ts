@@ -5,7 +5,7 @@
  */
 import { defineConfig } from "vite-plus";
 
-const ignored = ["dist/**", "examples/**", "prose/**", "README.md", "pnpm-lock.yaml"];
+const ignored = ["dist/**", "examples/**", "docs/**", "README.md", "pnpm-lock.yaml"];
 
 export default defineConfig({
   plugins: [],

@@ -4,7 +4,7 @@
  * Walks a repository into a tree of folders and files (spec §4), each with its summary: a
  * folder's from its `README.md`, a Markdown file's from its first paragraph, a source file's
  * from its file prose. A source file also carries its text and its blocks, so a renderer can lay
- * it out as one document. `prose/` is an ordinary folder here (spec §3.4).
+ * it out as one document. `docs/` is an ordinary folder here (spec §3.4).
  */
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";

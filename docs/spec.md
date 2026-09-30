@@ -137,10 +137,10 @@ A folder's `README.md` is its prose, and the root `README.md` is the project's. 
 
 ### 3.4 Writing that spans the code
 
-Some writing has no natural home in one comment or one README: what the project promises, architecture that spans files, the order of the work, lessons learned building it. The convention suggests a root `prose/` folder of Markdown files for it:
+Some writing has no natural home in one comment or one README: what the project promises, architecture that spans files, the order of the work, lessons learned building it. The convention suggests a root `docs/` folder of Markdown files for it:
 
 ```text
-prose/
+docs/
   idea.md
   plan.md
   lessons.md
@@ -148,17 +148,17 @@ prose/
 
 - **Keep one short promises doc.** `idea.md`, `spec.md`, whatever the project calls it: what the project promises and what it leaves out ("not in v1"). In use it was the most valuable file: decisions could be argued from it, and its non-goals stopped scope creep. It pays off because it's short enough to hold in mind.
 - **Decisions land in the prose.** A decision reached in the chat that spans files goes into the doc it changes, in the same change as the code (§5). One that concerns a single spot goes into that spot's `@prose`.
-- **`prose/` is a suggestion, not a mechanism.** The renderer treats it as an ordinary folder of Markdown (§4.1). Because it's plain Markdown linked by repo path, a static site generator can publish it as it is; what gets published, and how internal docs like `plan.md` stay off a site, is that tool's concern.
+- **`docs/` is a suggestion, not a mechanism.** The renderer treats it as an ordinary folder of Markdown (§4.1). Because it's plain Markdown linked by repo path, a static site generator can publish it as it is; what gets published, and how internal docs like `plan.md` stay off a site, is that tool's concern.
 
 ### 3.5 References
 
-A reference is an ordinary relative Markdown link, so it reads and clicks the same on GitHub, in the editor's preview, in the renderer, and on a site that publishes `prose/`:
+A reference is an ordinary relative Markdown link, so it reads and clicks the same on GitHub, in the editor's preview, in the renderer, and on a site that publishes `docs/`:
 
 ```text
 src/session.ts                     a file
 src/session.ts#createSession       a block in it, by its anchor (§3.2)
-prose/architecture.md              a doc
-prose/architecture.md#sessions     a section of it, by heading slug
+docs/architecture.md               a doc
+docs/architecture.md#sessions      a section of it, by heading slug
 ```
 
 **State a rule once, and link to it.** When a doc or a tested file owns a rule (a grammar, a schema, a contract), a `@prose` block links to it and keeps only how and why this code does it. Restating the rule in several places means only one copy is tested, and the others drift.
@@ -174,7 +174,7 @@ It needs no config, no Vite and no dev server, and it works on any repository: o
 URLs mirror repo paths, so a relative link in the prose works the same in the renderer as on GitHub (§3.5).
 
 - **A folder** (`/`, `/src/`): its `README.md`, then its subfolders and files, each with its first paragraph: a folder's from its `README.md`, a Markdown file's from its first paragraph, a source file's from its file prose. A source file without prose says *undocumented*, so coverage is visible where you read, without a report.
-- **A Markdown file** (`/prose/plan.md`): rendered as it is.
+- **A Markdown file** (`/docs/plan.md`): rendered as it is.
 - **A source file** (`/src/store.ts`): one document. The file prose first, then each chunk's prose in source order, with its code between them. Each run of code is a panel with a header that stays in every mode (a chevron, how many lines and which, the language), numbered with the file's own line numbers, highlighted, and wrapped only past 100 columns: prose keeps the reading measure, code widens to the formatter's print width. A pending chunk shows as its prose with a *pending* mark. Each block's anchor (§3.2) is its fragment, with a `#` in the margin beside its first line, heading or text, to link to it; the file prose, being the top of the page, has none. A **Prose & Code / Prose only** switch sets whether runs start open, remembered across pages; a run's header opens or closes that run on its own. The switch is on every page, in the same place, disabled where there's no code. A file with no prose says so, and is one run with the same header.
 - **Any other text file** (`package.json`, a lockfile excepted): highlighted, unfolded.
 
