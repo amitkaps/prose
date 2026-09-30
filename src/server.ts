@@ -65,6 +65,26 @@ export interface Site {
 
 export type Route = { status: 200 | 404; html: string } | { status: 301; location: string };
 
+/** @prose
+ * A static host's own 404 page, `404.html` at the site's root: GitHub Pages and Cloudflare serve
+ * it for any address the site doesn't have, so a missing page keeps the file tree instead of
+ * dropping the reader on the host's page. It's served at whatever address was missing, so it
+ * can't name it; its links are absolute, so they work from any. GitHub Pages also serves it for
+ * everything under `.github/`, which it never publishes.
+ */
+export function notFoundPage(site: Site): string {
+  return page({
+    project: site.project,
+    path: "",
+    rail: renderRail(site.files, "", site.project),
+    body: `<p class="missing">Nothing at this address in this repository.</p>`,
+    editorLink: null,
+    hasCode: false,
+    live: site.live,
+    version: site.version,
+  });
+}
+
 export async function renderRoute(site: Site, path: string): Promise<Route> {
   const { root, project, files, live, version } = site;
   const shell = (body: string, editorLink: string | null = null, hasCode = false) =>

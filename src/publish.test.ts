@@ -47,6 +47,7 @@ describe("publish", () => {
       [
         ".gitignore.html",
         ".nojekyll",
+        "404.html",
         "README.md.html",
         "index.html",
         "src/a.ts.html",
