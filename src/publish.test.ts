@@ -44,7 +44,14 @@ describe("publish", () => {
     expect(git("rev-parse", "prose")).toBe(done.commit);
     expect(git("rev-list", "--count", "prose")).toBe("1");
     expect(onBranch().sort()).toEqual(
-      [".nojekyll", "README.md.html", "index.html", "src/a.ts.html", "src/index.html"].sort(),
+      [
+        ".gitignore.html",
+        ".nojekyll",
+        "README.md.html",
+        "index.html",
+        "src/a.ts.html",
+        "src/index.html",
+      ].sort(),
     );
     expect(show("src/a.ts.html")).toContain("Does a.");
     expect(git("log", "-1", "--format=%B", "prose")).toContain(`Built from ${head}.`);

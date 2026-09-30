@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { buildTree, findNode, projectFiles } from "./tree.js";
+import { buildTree, findNode, ignoredIn, projectFiles, rawToNode, walkFiles } from "./tree.js";
 
 let root: string;
 
@@ -112,15 +112,13 @@ describe("buildTree", () => {
     );
   });
 
-  it("skips lockfiles by name even though .yaml/.toml are otherwise walked", () => {
+  it("shows a lockfile as text, never parsed for prose, though .yaml otherwise is", () => {
     const dir = makeProject({
-      "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
-      "package.json": "{}\n",
+      "pnpm-lock.yaml": "# @prose\n# Not prose.\nlockfileVersion: '9.0'\n",
       "config.toml": "port = 8080\n",
     });
-    const tree = buildTree(dir);
-    // `package.json` is a raw file now, so it stays; the lockfile is the one excluded.
-    expect(tree.children.map((n) => n.name)).toEqual(["config.toml", "package.json"]);
+    const byName = Object.fromEntries(buildTree(dir).children.map((n) => [n.name, n.kind]));
+    expect(byName).toEqual({ "config.toml": "file", "pnpm-lock.yaml": "raw" });
   });
 });
 
@@ -147,9 +145,50 @@ describe("buildTree: raw files", () => {
     expect(raw?.children).toEqual([]);
   });
 
-  it("still excludes generated lockfiles", () => {
-    const dir = makeProject({ "package-lock.json": "{}", "main.ts": "const a = 1;\n" });
-    expect(buildTree(dir).children.map((n) => n.path)).toEqual(["main.ts"]);
+  it("shows every other file: dotfiles, LICENSE, a source file too large to be written by hand", () => {
+    const dir = makeProject({
+      ".gitignore": "dist/\n",
+      LICENSE: "MIT\n",
+      "big.ts": `export const a = "${"x".repeat(200_001)}";\n`,
+    });
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    const kinds = buildTree(dir).children.map((n) => [n.path, n.kind]);
+    expect(kinds).toEqual([
+      [".gitignore", "raw"],
+      ["LICENSE", "raw"],
+      ["big.ts", "raw"],
+    ]);
+  });
+
+  it("cuts long text at 1,000 lines, and a long line at 100 KB, saying what's left", () => {
+    const lines = Array.from({ length: 1500 }, (_, i) => `line ${i + 1}`).join("\n");
+    const dir = makeProject({ "notes.txt": `${lines}\n`, "min.js.map": "x".repeat(150_000) });
+    const long = rawToNode(dir, "notes.txt");
+    expect(long.code!.split("\n")).toHaveLength(1000);
+    expect(long.more).toBe("500 more lines");
+    const wide = rawToNode(dir, "min.js.map");
+    expect(wide.code).toHaveLength(100_000);
+    expect(wide.more).toBe("50 KB more");
+  });
+
+  it("gives a binary file its type and size, and an image its bytes to show", () => {
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    const dir = makeProject({});
+    writeFileSync(join(dir, "dot.png"), png);
+    writeFileSync(join(dir, "font.woff2"), Buffer.from([0x77, 0x4f, 0x46, 0x32, 0, 1, 2]));
+    expect(rawToNode(dir, "dot.png")).toMatchObject({
+      kind: "binary",
+      about: "PNG image · 70 B",
+      image: `data:image/png;base64,${png.toString("base64")}`,
+    });
+    expect(rawToNode(dir, "font.woff2")).toMatchObject({
+      kind: "binary",
+      about: "WOFF2 file · 7 B",
+    });
+    expect(rawToNode(dir, "font.woff2").image).toBeUndefined();
   });
 });
 
@@ -178,8 +217,22 @@ describe("projectFiles: a git-aware walk (spec §4.2)", () => {
     execFileSync("git", ["init", "-q"], { cwd: dir });
     execFileSync("git", ["add", "src/a.ts"], { cwd: dir });
     // `dist/` isn't ignored here, so git mode shows it: only .gitignore decides.
-    expect(projectFiles(dir)).toEqual(["dist/kept.js", "src/a.ts", "src/new.ts"]);
-    expect(buildTree(dir).children.map((n) => n.name)).toEqual(["dist", "src"]);
+    expect(projectFiles(dir)).toEqual([".gitignore", "dist/kept.js", "src/a.ts", "src/new.ts"]);
+    expect(buildTree(dir).children.map((n) => n.name)).toEqual([".gitignore", "dist", "src"]);
+  });
+
+  it("names what's ignored in one folder, at the level .gitignore names it", () => {
+    const dir = makeProject({
+      ".gitignore": "node_modules/\n.env\n*.log\n",
+      ".env": "SECRET=1\n",
+      "node_modules/dep/index.js": "x;\n",
+      "src/a.ts": "export {};\n",
+      "src/debug.log": "x\n",
+    });
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    expect(ignoredIn(dir, "")).toEqual([".env", "node_modules/"]);
+    expect(ignoredIn(dir, "src")).toEqual(["debug.log"]);
+    expect(projectFiles(dir)).toEqual([".gitignore", "src/a.ts"]);
   });
 
   it("drops a file that's deleted but still in the index", () => {
@@ -197,6 +250,20 @@ describe("projectFiles: a git-aware walk (spec §4.2)", () => {
       "src/a.ts": "export {};\n",
     });
     expect(projectFiles(dir)).toEqual(["src/a.ts"]);
+    expect(ignoredIn(dir, "")).toEqual([]);
+  });
+
+  it("never follows a symbolic link, so a commit's export can't reach outside itself", () => {
+    const outside = makeProject({ "secret.txt": "x\n" });
+    const dir = mkdtempSync(join(tmpdir(), "prose-tree-link-"));
+    writeFileSync(join(dir, "a.ts"), "export {};\n");
+    symlinkSync(join(outside, "secret.txt"), join(dir, "secret.txt"));
+    symlinkSync(outside, join(dir, "linked"));
+    try {
+      expect(walkFiles(dir, "")).toEqual(["a.ts"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

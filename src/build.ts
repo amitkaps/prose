@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { warmHighlighter } from "./highlight.js";
 import { renderRoute, type Site } from "./server.js";
-import { showable, walkFiles } from "./tree.js";
+import { walkFiles } from "./tree.js";
 
 export interface BuildOptions {
   /** Where the site goes; `.prose/site` inside the repository by default. */
@@ -137,7 +137,7 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
       maxBuffer: 1024 * 1024 * 1024,
     });
     execFileSync("tar", ["-x", "-C", snapshot], { input: tar });
-    const files = showable(walkFiles(snapshot, ""));
+    const files = walkFiles(snapshot, "").sort();
     const site: Site = { root: snapshot, project: basename(root), files, live: false, version };
     const paths = ["", ...folders(files), ...files];
     for (const path of paths) {

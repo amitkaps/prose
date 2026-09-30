@@ -232,4 +232,9 @@ code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 .listing p { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.92rem; }
 .undocumented { font-style: italic; }
 .missing { color: var(--muted); }
+.ignored { color: var(--muted); font-size: 0.85rem; margin: 1rem auto; opacity: 0.75; }
+.ignored code { margin-inline-end: 0.5ch; }
+.more { color: var(--muted); font-style: italic; }
+.binary { color: var(--muted); }
+.binary-image { display: block; max-width: 100%; height: auto; margin-block: 1rem; }
 `;

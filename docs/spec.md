@@ -173,17 +173,17 @@ It needs no config, no Vite and no dev server, and it works on any repository: o
 
 URLs mirror repo paths, so a relative link in the prose works the same in the renderer as on GitHub (§3.5).
 
-- **A folder** (`/`, `/src/`): its `README.md`, then its subfolders and files, each with its first paragraph: a folder's from its `README.md`, a Markdown file's from its first paragraph, a source file's from its file prose. A source file without prose says *undocumented*, so coverage is visible where you read, without a report.
+- **A folder** (`/`, `/src/`): its `README.md`, then its subfolders and files, each with its first paragraph: a folder's from its `README.md`, a Markdown file's from its first paragraph, a source file's from its file prose. A source file without prose says *undocumented*, so coverage is visible where you read, without a report. Locally, the page ends with one dim line naming what `.gitignore` leaves out of that folder, at the level it's named (`Ignored here: node_modules/ dist/ .env`): no links and no counts, since there's nothing there to read.
 - **A Markdown file** (`/docs/plan.md`): rendered as it is.
 - **A source file** (`/src/store.ts`): one document. The file prose first, then each chunk's prose in source order, with its code between them. Each run of code is a panel with a header that stays in every mode (a chevron, how many lines and which, the language), numbered with the file's own line numbers, highlighted, and wrapped only past 100 columns: prose keeps the reading measure, code widens to the formatter's print width. A pending chunk shows as its prose with a *pending* mark. Each block's anchor (§3.2) is its fragment, with a `#` in the margin beside its first line, heading or text, to link to it; the file prose, being the top of the page, has none. A **Prose & Code / Prose only** switch sets whether runs start open, remembered across pages; a run's header opens or closes that run on its own. The switch is on every page, in the same place, disabled where there's no code. A file with no prose says so, and is one run with the same header.
-- **Any other text file** (`package.json`, a lockfile excepted): highlighted, unfolded.
+- **Any other file** (`package.json`, `LICENSE`, `.gitignore`, a lockfile): a text file is one highlighted run, cut at 1,000 lines or 100 KB with how much is left said at the end; a binary file says what it is and how big, and an image up to 1 MB is shown.
 
 Every page has the repository's file tree on the left, as an editor's explorer shows it: folders first, the folders around the current page open, and the reader's own opened folders kept from page to page. On a narrow screen it sits behind a **Files** button. Every page also has a breadcrumb to its ancestors and a link to open the file in the editor. The page reloads when a file it shows changes, keeping the scroll position.
 
 ### 4.2 What it reads
 
-- The files git would track: tracked files, plus untracked ones not ignored by `.gitignore`, so a brand-new file shows up before it's committed. Outside a git repository, a fixed skip list (`node_modules`, `dist`, dot-folders).
-- Generated lockfiles (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, …) and files over 200 KB are listed but not rendered. Binary files are listed only.
+- Every file git would track, whatever its type: tracked files, plus untracked ones not ignored by `.gitignore`, so a brand-new file shows up before it's committed. Dotfiles and `.github/` included. Ignored files stay out of the file tree, which is the same locally and published; a folder's page names them (§4.1). Outside a git repository, a fixed skip list (`node_modules`, `dist`, dot-folders).
+- Prose is read from Markdown and from the languages in §3.1, except generated files: lockfiles (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, …) and anything over 200 KB are shown as text.
 - A request for a path outside the root, or for a file the walk doesn't hold, is a 404.
 
 ### 4.3 How it renders
@@ -199,7 +199,7 @@ Every page has the repository's file tree on the left, as an editor's explorer s
 
 `prose build [dir]` writes the same pages as static files, for any static host, into `.prose/site` (`--out` to change it). The pages come from the same code as the server's, so the site is the reader, not a second design.
 
-- **One commit, as the public repository shows it.** The build renders `HEAD`'s tracked files (`git archive`), not the working tree: no untracked or ignored file reaches the site, and it warns when there are uncommitted changes, since they aren't in it.
+- **One commit, as the public repository shows it.** The build renders `HEAD`'s tracked files (`git archive`), not the working tree: no untracked or ignored file reaches the site, and it warns when there are uncommitted changes, since they aren't in it. A folder's page doesn't name what's ignored, which exists only on one machine, and a tracked symbolic link is never followed, so it can't publish a file outside the commit.
 - **URLs as they are locally.** `/src/store.ts` is `/src/store.ts`: a folder's page is `folder/index.html` and a file's is its path plus `.html` (`src/store.ts.html`), which GitHub Pages serves at the path without the `.html`, with no redirect. The site sits at a domain's root. A source file named `index.html` would be its folder's page there, so its page is `index.html.html`, and links to it say so.
 - **No live parts.** No live reload, no render time, no **Open in editor**; in its place, the snapshot: the nearest tag and the short commit (`v0.1.0 · 1c77293`). The same commit gives the same bytes, so a rebuild changes only the pages that changed.
 - **Its own folder only.** The build clears its output first, so it refuses a folder it didn't make: one holding the repository or tracked files, or a non-empty one without its marker. It never edits `.gitignore`; it warns when the output isn't ignored.

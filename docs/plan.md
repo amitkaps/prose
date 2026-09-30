@@ -11,14 +11,13 @@ Roadmap for building `docs/spec.md`; section numbers refer to it. This file hold
 - **`@prose` inside a class** — a JS, TS or CSS block counts at any depth when it starts its own line, so markz's `class Parser` reads method by method (`block.ts`, 16 blocks where it had one). A block inside a class or function is named by the first member or declaration below it, from the file's AST (`declaredAfter` in `src/names.ts`). YAML and TOML keep column 0.
 - **`prose build`** — the reader as static files (spec §4.4): `renderRoute` in `server.ts` is the seam the server and `src/build.ts` share; `HEAD` exported with `git archive`; a file's page at its path plus `.html`, which a GitHub Pages spike (`amitkaps/pages`) showed is served at the local URL with no redirect, and a source `index.html` at `index.html.html`; the tag and commit in the bar, no live parts, the same bytes per commit; output in `.prose/site`, a folder it made or none. Cloudflare's `.html` handling is untested.
 - **`prose publish`** — the build committed to an orphan `prose` branch through a temporary index, `commit-tree` and a conditional `update-ref`, never checking it out and never pushing (spec §4.5, `src/publish.ts`); `--domain` writes `CNAME`, carried forward; `.nojekyll`. This repo publishes to `prose.amitkaps.com` (DNS on Cloudflare, DNS-only, to `amitkaps.github.io`), so no site needs a base path yet.
+- **Every file in the walk** — every file git lists has a page (spec §4.1, §4.2): dotfiles, `LICENSE`, lockfiles, images. Text past 1,000 lines or 100 KB is cut with what's left said; a binary file gives its type and size, an image shown inline as a `data:` URL; lockfiles and files over 200 KB aren't parsed for prose. Ignored files stay out of the rail; locally a folder's page ends with `Ignored here:`, which the build leaves out. The walk never follows a symbolic link, so a build can't publish a file outside the commit.
 - **`docs/`** — the folder for writing that spans the code is `docs/`, not `prose/`, so "prose" names only the package and the `@prose` marker; `.gitignore` cut to what this repo produces.
 
 ## Open work, in order
 
-### 2d. Every file in the walk
+### 2d. Before the release
 
-- [ ] Show every file git lists, not a set of extensions: dotfiles (`.gitignore`, `.github/`), `LICENSE`, snapshots, lockfiles. A text file is a highlighted run (plain text for an unknown language), capped with "… N more lines" past a size; a binary file is a small page with its size and type, an image shown inline. Spec §4.2.
-- [ ] Ignored files stay out of the rail, which shows the same files locally and published. Locally, a folder's page ends with one dim line naming what's ignored there, at the level `.gitignore` names it (`git ls-files --others --ignored --exclude-standard --directory`): `Ignored here: node_modules/  dist/  .env`. No counts, since counting means walking `node_modules/`; no tree and no links, since there's no page to read. The build leaves the line out (spec §4.4).
 - [ ] Look at it in a browser on sitez and markz before the release: typography, folded code, mobile width.
 
 ### 3. Release 0.2.0
