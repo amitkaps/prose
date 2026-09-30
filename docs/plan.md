@@ -18,7 +18,7 @@ Roadmap for building `docs/spec.md`; section numbers refer to it. This file hold
 ### 2d. Every file in the walk
 
 - [ ] Show every file git lists, not a set of extensions: dotfiles (`.gitignore`, `.github/`), `LICENSE`, snapshots, lockfiles. A text file is a highlighted run (plain text for an unknown language), capped with "… N more lines" past a size; a binary file is a small page with its size and type, an image shown inline. Spec §4.2.
-- [ ] Locally, ignored entries appear dimmed and closed, at the level `.gitignore` names them (`git ls-files --others --ignored --exclude-standard --directory`: `node_modules/`, `dist/`), never walked into. Dim means ignored and nothing else. The build leaves them out (spec §4.4).
+- [ ] Ignored files stay out of the rail, which shows the same files locally and published. Locally, a folder's page ends with one dim line naming what's ignored there, at the level `.gitignore` names it (`git ls-files --others --ignored --exclude-standard --directory`): `Ignored here: node_modules/  dist/  .env`. No counts, since counting means walking `node_modules/`; no tree and no links, since there's no page to read. The build leaves the line out (spec §4.4).
 - [ ] Look at it in a browser on sitez and markz before the release: typography, folded code, mobile width.
 
 ### 3. Release 0.2.0
