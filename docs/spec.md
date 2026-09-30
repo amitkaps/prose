@@ -33,7 +33,7 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 | ----------------------------------------------------------------------- | ---------------------------------------------------- |
 | `@prose` in `.ts`, `.js`, `.css`, `.html`, `.svelte`, `.yaml`/`.yml`, `.toml` | New file types, tangling, `.ts.md`             |
 | Rendering any repository read-only: Markdown, source with its prose, other text | Editing anything, notes, review state        |
-| Local reading, and the same pages as a static site (`prose build`)     | Hosting and deploys; a docs site with its own navigation |
+| Local reading, and the same pages as a static site (`prose build`, `prose publish`) | Hosting and deploys; a docs site with its own navigation |
 | First paragraphs as summaries                                           | Checks, coverage reports, LLM summaries              |
 
 Target: one person's repositories, up to about 500 files.
@@ -204,6 +204,14 @@ Every page has the repository's file tree on the left, as an editor's explorer s
 - **No live parts.** No live reload, no render time, no **Open in editor**; in its place, the snapshot: the nearest tag and the short commit (`v0.1.0 · 1c77293`). The same commit gives the same bytes, so a rebuild changes only the pages that changed.
 - **Its own folder only.** The build clears its output first, so it refuses a folder it didn't make: one holding the repository or tracked files, or a non-empty one without its marker. It never edits `.gitignore`; it warns when the output isn't ignored.
 
+### 4.5 `prose publish`
+
+`prose publish [dir]` commits the build to a branch a host deploys from: `prose` by default (`--branch` to change it), an orphan branch holding only the site. GitHub Pages serves it with the branch as its source.
+
+- **Nothing else changes.** The branch is never checked out: the working tree, the index and `HEAD` stay as they were. The commit says which source commit it was built from; a publish that changes no page makes no commit.
+- **It doesn't push.** `git push origin prose` is a separate step, so nothing leaves the machine unasked.
+- **A domain in one file.** `--domain docs.example.com` writes a `CNAME` file at the branch's root, the file Pages reads the domain from, and later publishes keep it (`--domain` again replaces it, `--no-domain` drops it). The site sits at the domain's root (§4.4); the DNS record, a CNAME to `<user>.github.io`, is the owner's to add. The branch also gets a `.nojekyll`, so Pages serves every path as it is.
+
 ## 5. Agent contract
 
 A snippet for the project's `CLAUDE.md` / `AGENTS.md`:
@@ -228,7 +236,7 @@ A snippet for the project's `CLAUDE.md` / `AGENTS.md`:
 - **A *since* view for reviewing changes.** The human didn't review block by block; they read the prose that says what the code means now.
 - **Agent-written dev tools and an import-graph diagram.** Never built; nothing asked for them.
 - **The Vite plugin that stripped `@prose` from built HTML.** Only hand-written `.html` needs it (§3.1).
-- **A docs site, hosting and deploys.** `prose build` writes the reader as it is (§4.4). A site with its own navigation, chosen pages and design is a static site generator's job (§3.4), and where the files are hosted is the host's.
+- **A docs site, hosting and deploys.** `prose build` writes the reader as it is and `prose publish` commits it to a branch (§4.4, §4.5); pushing it is a separate step. A site with its own navigation, chosen pages and design is a static site generator's job (§3.4), and where the files are hosted is the host's.
 
 ## 7. Test cases
 

@@ -2,26 +2,33 @@
 /** @prose
  * # `prose [dir]`
  *
- * The command: serve a repository and open it in the browser (spec §4), or, as `prose build`,
- * write the same pages for a static host (`build.ts`). No config, and only the few flags a person
- * would reach for: a port, not opening the browser, and where a build goes.
+ * The command: serve a repository and open it in the browser (spec §4); as `prose build`, write
+ * the same pages for a static host (`build.ts`); as `prose publish`, commit them to a branch a
+ * host deploys from (`publish.ts`). No config, and only the few flags a person would reach for:
+ * a port, not opening the browser, where a build goes, and a published site's branch and domain.
  */
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { build } from "./build.js";
+import { publish } from "./publish.js";
 import { serve } from "./server.js";
 
 const HELP = `Usage: prose [dir] [options]
        prose build [dir] [--out <dir>]
+       prose publish [dir] [--branch <name>] [--domain <host> | --no-domain]
 
 Open a repository in the browser as a Markdown-first document. Read-only.
 \`prose build\` writes the same pages as a static site, from the last commit.
+\`prose publish\` commits that site to a branch for a host to serve; it doesn't push.
 
 Options:
   --port <n>   Port to try first (default 1234; the next free one if taken)
   --no-open    Don't open the browser
   --out <dir>  Where \`prose build\` writes (default .prose/site)
+  --branch <name>  The branch \`prose publish\` commits to (default prose)
+  --domain <host>  The site's domain, kept on the branch as CNAME for later publishes
+  --no-domain      Drop the branch's CNAME
   -h, --help   Show this help
   -v, --version
 `;
@@ -51,8 +58,12 @@ async function main(argv: string[]): Promise<void> {
   let port = 1234;
   let open = true;
   let out: string | undefined;
-  const building = argv[0] === "build";
-  if (building) argv = argv.slice(1);
+  let branch: string | undefined;
+  let domain: string | null | undefined;
+  const command = argv[0] === "build" || argv[0] === "publish" ? argv[0] : null;
+  const building = command === "build";
+  const publishing = command === "publish";
+  if (command) argv = argv.slice(1);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
     if (arg === "-h" || arg === "--help") return void process.stdout.write(HELP);
@@ -62,7 +73,14 @@ async function main(argv: string[]): Promise<void> {
     else if (building && (arg === "--out" || arg.startsWith("--out="))) {
       out = value();
       if (!out) throw new Error("--out needs a folder");
-    } else if (arg === "--port" || arg.startsWith("--port=")) {
+    } else if (publishing && (arg === "--branch" || arg.startsWith("--branch="))) {
+      branch = value();
+      if (!branch) throw new Error("--branch needs a name");
+    } else if (publishing && (arg === "--domain" || arg.startsWith("--domain="))) {
+      domain = value();
+      if (!domain) throw new Error("--domain needs a host, like docs.example.com");
+    } else if (publishing && arg === "--no-domain") domain = null;
+    else if (arg === "--port" || arg.startsWith("--port=")) {
       const given = value();
       port = Number(given);
       if (!Number.isInteger(port) || port < 0 || port > 65535) {
@@ -75,6 +93,17 @@ async function main(argv: string[]): Promise<void> {
     const built = await build(dir, { out });
     for (const warning of built.warnings) process.stderr.write(`prose: warning: ${warning}\n`);
     process.stdout.write(`prose: ${built.pages} pages from ${built.version}\n  ${built.out}\n`);
+    return;
+  }
+  if (publishing) {
+    const done = await publish(dir, { branch, domain });
+    for (const warning of done.built.warnings) process.stderr.write(`prose: warning: ${warning}\n`);
+    const where = done.domain ? `, at ${done.domain}` : "";
+    process.stdout.write(
+      done.changed
+        ? `prose: published ${done.built.version} to ${done.branch} (${done.commit.slice(0, 7)})${where}\n  git push origin ${done.branch}\n`
+        : `prose: ${done.branch} already has these pages (${done.commit.slice(0, 7)})${where}\n`,
+    );
     return;
   }
   const served = await serve(resolve(dir), { port });
