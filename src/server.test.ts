@@ -74,7 +74,8 @@ describe("serve: examples/single", () => {
 		expect(body).toMatch(/class="block pending" id="persistence"/);
 		// The State chunk's code starts on line 12 of main.js, so the gutter counts on from 11.
 		expect(body).toMatch(/<div class="code" style="counter-reset: line 11;/);
-		expect(body).toContain("data-prose-only");
+		expect(body).toContain('data-mode="prose"');
+		expect(body).toContain('class="code-head"');
 		expect(body).not.toContain("#file L");
 		expect(body).not.toContain("@prose");
 	});

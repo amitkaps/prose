@@ -96,10 +96,12 @@ export async function rawBody(node: TreeNode): Promise<string> {
 /** @prose
  * # Code runs
  *
- * A run of code with its real file line numbers in a gutter: the run knows the line it starts on,
- * and a CSS counter carries on from there, so the numbers match the editor across prose blocks.
- * The gutter is as wide as the largest number. The button above the code is shown only when the
- * page is set to prose only, so one run can be opened on its own.
+ * A run of code in a panel with a header of its own: a chevron, how many lines and which, and the
+ * language. The header stays in both modes, so a prose-only page still shows where the code is
+ * and how much of it; clicking it opens or closes that one run, against the page's mode, until the
+ * mode changes. Line numbers are the file's own: the run knows the line it starts on, and a CSS
+ * counter carries on from there, in a gutter as wide as the largest number. A file with no prose
+ * is one run with no header, always open.
  */
 async function codeRun(
 	text: string,
@@ -109,10 +111,11 @@ async function codeRun(
 ): Promise<string> {
 	const count = text.split("\n").length;
 	const last = startLine + count - 1;
-	const label = `${count} line${count === 1 ? "" : "s"}, ${startLine}–${last}`;
-	return `<div class="code${solo ? " solo" : ""}" style="counter-reset: line ${startLine - 1}; --gutter: ${String(last).length}ch">${
-		solo ? "" : `<button type="button" class="code-fold" aria-expanded="false">${label}</button>`
-	}${await highlight(text, lang)}</div>`;
+	const lines = `${count} line${count === 1 ? "" : "s"} · ${startLine}–${last}`;
+	const head = solo
+		? ""
+		: `<button type="button" class="code-head" aria-expanded="true"><span class="chevron" aria-hidden="true"></span><span>${lines}</span><span class="lang">${escapeHtml(lang)}</span></button>`;
+	return `<div class="code${solo ? " solo" : ""}" style="counter-reset: line ${startLine - 1}; --gutter: ${String(last).length}ch">${head}${await highlight(text, lang)}</div>`;
 }
 
 /** @prose
@@ -176,8 +179,8 @@ function breadcrumb(project: string, path: string): string {
  * # The page shell
  *
  * One stylesheet inline, the file tree on the left (`rail.ts`), a breadcrumb, and a few lines of
- * script: the **Prose only** switch, remembered across pages and applied in `<head>` so the page
- * never flashes its code first; the rail's open folders and scroll position, restored before the
+ * script: the **Prose & Code / Prose only** switch, remembered across pages and applied in
+ * `<head>` so the page never flashes its code first, and each code run's header; the rail's open folders and scroll position, restored before the
  * first paint; the **Files** button that shows the rail on a narrow screen; and live reload. The server
  * tells a page when something it shows changed (`server.ts`), and it reloads, keeping its scroll
  * position. It listens only while visible, and says when it was rendered, so it catches up on
@@ -186,12 +189,10 @@ function breadcrumb(project: string, path: string): string {
 export function page(options: PageOptions): string {
 	const { project, path, rail, body, editorLink, hasProseAndCode } = options;
 	const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
-	const actions = [
-		hasProseAndCode
-			? `<button type="button" data-prose-only aria-pressed="false">Prose only</button>`
-			: "",
-		editorLink ? `<a href="${escapeHtml(editorLink)}">Open in editor</a>` : "",
-	].join("");
+	const mode = hasProseAndCode
+		? `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true">Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false">Prose only</button></div>`
+		: "";
+	const editor = editorLink ? `<a href="${escapeHtml(editorLink)}">Open in editor</a>` : "";
 	return `<!doctype html>
 <html lang="en">
 <head>
@@ -201,12 +202,12 @@ export function page(options: PageOptions): string {
 <style>${STYLE}</style>
 <script>try { if (localStorage.getItem("prose:mode") === "prose") document.documentElement.classList.add("prose-only"); } catch {}</script>
 </head>
-<body data-path="${escapeHtml(path)}" data-rendered="${Date.now()}">
+<body class="${hasProseAndCode ? "source" : ""}" data-path="${escapeHtml(path)}" data-rendered="${Date.now()}">
 <div class="layout">
 ${rail}
 <script>${RAIL_SCRIPT}</script>
 <div class="page">
-<header class="bar"><button type="button" class="rail-toggle" data-toggle-rail aria-label="Show files">Files</button><nav class="crumbs">${breadcrumb(project, path)}</nav><div class="actions">${actions}</div></header>
+<header class="bar"><div class="bar-start"><button type="button" class="rail-toggle" data-toggle-rail aria-label="Show files">Files</button><nav class="crumbs">${breadcrumb(project, path)}</nav></div><div class="bar-mode">${mode}</div><div class="bar-end">${editor}</div></header>
 <main>${body}</main>
 </div>
 </div>
@@ -256,22 +257,32 @@ const RAIL_SCRIPT = `
 
 const SCRIPT = `
 const root = document.documentElement;
-const proseOnly = document.querySelector("[data-prose-only]");
-if (proseOnly) {
-	proseOnly.setAttribute("aria-pressed", String(root.classList.contains("prose-only")));
-	proseOnly.addEventListener("click", () => {
-		const on = root.classList.toggle("prose-only");
-		proseOnly.setAttribute("aria-pressed", String(on));
-		for (const c of document.querySelectorAll(".code.shown")) c.classList.remove("shown");
-		try { localStorage.setItem("prose:mode", on ? "prose" : "code"); } catch {}
+const runs = [...document.querySelectorAll(".code:not(.solo)")];
+const isOpen = (run) =>
+	root.classList.contains("prose-only") ? run.classList.contains("opened") : !run.classList.contains("closed");
+const sync = () => {
+	const proseOnly = root.classList.contains("prose-only");
+	for (const b of document.querySelectorAll("[data-mode]")) {
+		b.setAttribute("aria-pressed", String((b.dataset.mode === "prose") === proseOnly));
+	}
+	for (const run of runs) run.querySelector(".code-head").setAttribute("aria-expanded", String(isOpen(run)));
+};
+for (const b of document.querySelectorAll("[data-mode]")) {
+	b.addEventListener("click", () => {
+		const proseOnly = b.dataset.mode === "prose";
+		root.classList.toggle("prose-only", proseOnly);
+		for (const run of runs) run.classList.remove("opened", "closed");
+		try { localStorage.setItem("prose:mode", proseOnly ? "prose" : "code"); } catch {}
+		sync();
 	});
 }
-for (const fold of document.querySelectorAll(".code-fold")) {
-	fold.addEventListener("click", () => {
-		const shown = fold.parentElement.classList.toggle("shown");
-		fold.setAttribute("aria-expanded", String(shown));
+for (const run of runs) {
+	run.querySelector(".code-head").addEventListener("click", () => {
+		run.classList.toggle(root.classList.contains("prose-only") ? "opened" : "closed");
+		sync();
 	});
 }
+sync();
 document.querySelector("[data-toggle-rail]").addEventListener("click", () => {
 	document.body.classList.toggle("rail-open");
 });

@@ -3,7 +3,9 @@
  *
  * The file tree on the left, then one readable column, light and dark from the reader's setting.
  * Prose is the page and code is the aside: code sits folded in a quieter panel, so a file reads as
- * its prose first. Below 52rem the tree hides behind the **Files** button, over the page.
+ * its prose first. On a source page, prose keeps the reading measure while code runs widen to 100
+ * columns, oxfmt's print width, left edges aligned, so code wraps only on a narrow window. Below
+ * 52rem the tree hides behind the **Files** button, over the page, and the editor link goes.
  *
  * Code takes its colours from the same tokens: shiki's CSS-variables theme names each token's
  * colour (`--shiki-token-keyword`), and the palette below sets them, for light and for dark, in
@@ -23,6 +25,9 @@ export const STYLE = `
 	--accent: #9a6700;
 	--measure: 44rem;
 	--rail: 16rem;
+	/* 100 columns of code (oxfmt's print width), plus a gutter and padding, in the code font. */
+	--code-width: 60rem;
+	--gutter-ink: color-mix(in srgb, var(--muted) 70%, var(--panel));
 	--shiki-foreground: #2f2c27;
 	--shiki-background: var(--panel);
 	--shiki-token-comment: #8c8577;
@@ -86,8 +91,6 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 .rail a:hover { background: var(--rule); }
 .rail a[aria-current] { background: var(--rule); font-weight: 600; }
 .rail .rail-project { font-weight: 600; margin-bottom: 0.4rem; }
-.rail a.file { color: var(--muted); }
-.rail a.file[aria-current] { color: var(--ink); }
 .rail summary { display: flex; align-items: center; cursor: pointer; list-style: none; }
 .rail summary::-webkit-details-marker { display: none; }
 .rail summary::before {
@@ -107,25 +110,41 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 	}
 	.rail-open .rail { display: block; }
 	.rail-toggle { display: inline-block; }
-	.actions a { display: none; }
+	.bar { grid-template-columns: minmax(0, 1fr) auto; }
+	.bar-end { display: none; }
 	main { padding-top: 1rem; }
 }
 .bar {
 	position: sticky; top: 0; z-index: 1;
-	display: flex; gap: 1rem; align-items: center; justify-content: space-between;
+	display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 1rem; align-items: center;
 	padding: 0.6rem 1rem; background: var(--paper); border-bottom: 1px solid var(--rule);
 	font-size: 0.9rem;
 }
 .page { min-width: 0; }
-.crumbs { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.bar-start { display: flex; gap: 0.75rem; align-items: center; min-width: 0; }
+.bar-end { justify-self: end; white-space: nowrap; }
+.crumbs { min-width: 0; overflow-wrap: anywhere; }
 .crumbs .sep { color: var(--muted); margin: 0 0.35rem; }
 .crumbs [aria-current] { font-weight: 600; }
-.actions { display: flex; gap: 0.75rem; align-items: center; flex-shrink: 0; }
-.actions button, .rail-toggle {
+.rail-toggle {
 	font: inherit; color: var(--ink); background: var(--panel);
 	border: 1px solid var(--rule); border-radius: 6px; padding: 0.2rem 0.6rem; cursor: pointer;
 }
+.mode {
+	display: inline-flex; padding: 2px; gap: 2px;
+	background: var(--panel); border: 1px solid var(--rule); border-radius: 7px;
+}
+.mode button {
+	font: inherit; font-size: 0.85rem; color: var(--muted); background: none;
+	border: 0; border-radius: 5px; padding: 0.15rem 0.7rem; cursor: pointer; white-space: nowrap;
+}
+.mode button:hover { color: var(--ink); }
+:root:not(.prose-only) .mode [data-mode="code"], .prose-only .mode [data-mode="prose"] {
+	background: var(--rule); color: var(--ink);
+}
 main { max-width: var(--measure); margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+.source main { max-width: calc(var(--code-width) + 2rem); }
+.source main > .block { max-width: var(--measure); }
 .prose { overflow-wrap: anywhere; }
 .prose h1, .prose h2, .prose h3 { line-height: 1.25; text-wrap: balance; }
 .prose h1 { font-size: 1.75rem; }
@@ -147,20 +166,33 @@ pre.shiki .line {
 	display: block; min-height: 1lh; white-space: pre-wrap; overflow-wrap: anywhere;
 	padding-left: 2ch; text-indent: -2ch;
 }
-.code pre.shiki .line { position: relative; padding-left: calc(var(--gutter) + 3.5ch); }
+.code {
+	margin: 0.5rem 0 1.25rem; border-radius: 8px; overflow: hidden;
+	background: var(--shiki-background); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	font-size: 0.85rem; max-width: calc(100ch + var(--gutter) + 5ch + 2rem);
+}
+.code pre.shiki { margin: 0; border-radius: 0; font-size: 1em; }
+.code pre.shiki .line { position: relative; padding-left: calc(var(--gutter) + 5ch); }
 .code pre.shiki .line::before {
 	counter-increment: line; content: counter(line);
 	position: absolute; left: 0; width: var(--gutter); text-indent: 0; text-align: right;
-	color: var(--muted); opacity: 0.6; user-select: none;
+	color: var(--gutter-ink); user-select: none;
 }
-.code { margin: 0.5rem 0 1rem; }
-.code-fold {
-	display: none; font: inherit; font-size: 0.8rem; color: var(--muted); cursor: pointer;
-	padding: 0.2rem 0.6rem; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
+.code-head {
+	display: flex; width: 100%; align-items: center; gap: 0.6rem;
+	font: inherit; color: var(--gutter-ink); background: none; border: 0;
+	border-bottom: 1px solid var(--rule); padding: 0.45rem 1rem; cursor: pointer; text-align: left;
 }
-.prose-only .code-fold { display: inline-block; }
-.prose-only .code:not(.shown):not(.solo) pre { display: none; }
-.actions [aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.code-head:hover { color: var(--ink); }
+.code-head .lang { margin-left: auto; }
+.code-head .chevron {
+	width: 0.9em; height: 0.9em; flex: none; background: currentColor; transform: rotate(90deg);
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E") center / contain no-repeat;
+	transition: transform 0.1s;
+}
+:root:not(.prose-only) .code.closed pre, .prose-only .code:not(.opened):not(.solo) pre { display: none; }
+:root:not(.prose-only) .code.closed .code-head, .prose-only .code:not(.opened) .code-head { border-bottom-color: transparent; }
+:root:not(.prose-only) .code.closed .chevron, .prose-only .code:not(.opened) .chevron { transform: none; }
 code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 .block { position: relative; margin: 1.5rem 0 0.5rem; scroll-margin-top: 4rem; }
 .block .anchor {
