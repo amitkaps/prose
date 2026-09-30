@@ -8,6 +8,9 @@
 		"type": "git",
 		"url": "git+https://github.com/amitkaps/prose.git"
 	},
+	"bin": {
+		"prose": "./dist/cli.js"
+	},
 	"files": [
 		"dist"
 	],
@@ -29,7 +32,9 @@
 		"test": "vp test --run"
 	},
 	"dependencies": {
-		"oxc-parser": "^0.151.0"
+		"@amitkaps/markz": "^0.1.1",
+		"oxc-parser": "^0.151.0",
+		"shiki": "^3.23.0"
 	},
 	"devDependencies": {
 		"@types/node": "^22.0.0",
@@ -38,7 +43,7 @@
 		"vite-plus": "1.0.0-rc.0"
 	},
 	"engines": {
-		"node": ">=22.12"
+		"node": ">=26"
 	},
 	"packageManager": "pnpm@12.6.0"
 }

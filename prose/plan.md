@@ -7,17 +7,14 @@ Roadmap for building `prose/spec.md`; section numbers refer to it. This file hol
 - **0.1.0 and after** — a dev route on Devframe with a Svelte client, the `@note` annotator with safe writes, symbol and staleness checks, the HTML strip, and a released tarball (#2–#14). The parser (comments from `oxc-parser`, content-derived anchors, `.svelte`/YAML/TOML scanners) and the git-aware tree walk carry over; the rest is dropped (spec §6).
 - **Field use and the rewrite** — sitez and markz used 0.1.0; the route, notes and checks went unused, the `prose/` docs and `@prose` were read (`lessons.md`). The spec is now the convention plus a read-only renderer (#15–#17).
 - **Cut the dropped code** — Devframe, the client, the Vite plugin, notes, checks and git blame are gone; the parser keeps blocks, chunks, pending and anchors (`declaredIdentifiers` moved to `src/names.ts`), and `src/tree.ts` is a plain walk with `prose/` as an ordinary folder. The library exports the parser and the tree until `prose .` lands.
+- **`prose .`** — `src/cli.ts`, `src/server.ts`, `src/render.ts`, `src/highlight.ts`, `src/style.ts`: folder, Markdown, source and JSON pages as server-rendered HTML, weaving ported from the 0.1.0 client, Markdown through markz, shiki on the WASM engine with a content-keyed cache, live reload over server-sent events, default port 1234, Node 26 (markz requires it).
 
 ## Open work, in order
 
-### 2. `prose .` (spec §4)
+### 2b. Rest of the renderer
 
-- [ ] A `prose` bin: `prose [dir]`, `--port`, opens the browser. `node:http`, loopback only.
-- [ ] Pages: folder, Markdown, source file as one document with folded code and a **Show code** toggle, other text files (§4.1). Anchors as fragments; breadcrumb; editor link.
-- [ ] Markdown through `@amitkaps/markz`, replacing `markdown-exit`; code through shiki (`shiki/core`, explicit languages, per `lessons.md`).
-- [ ] One stylesheet: a readable column, light and dark.
-- [ ] Live reload: a watcher and a server-sent event.
-- [ ] Tests against `examples/single`: each page kind renders with the expected headings; a path outside the root is a 404.
+- [ ] Any other text file shown highlighted (spec §4.1); today only `.json`/`.jsonc` beyond the source extensions. Binary files listed, not rendered (§4.2).
+- [ ] Look at it in a browser on sitez and markz before the release: typography, folded code, mobile width.
 
 ### 3. Release 0.2.0
 

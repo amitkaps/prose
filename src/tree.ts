@@ -80,7 +80,7 @@ function readReadme(dir: string): string | null {
  * marker, no chunks. Every other source file goes through `parseFile`, and its blocks hang off
  * the file node in source order, the file prose first.
  */
-function fileToNode(root: string, relPath: string): TreeNode {
+export function fileToNode(root: string, relPath: string): TreeNode {
 	const source = readFileSync(join(root, relPath), "utf-8");
 	if (extensionOf(relPath) === "md") {
 		const prose = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
@@ -128,7 +128,7 @@ function fileToNode(root: string, relPath: string): TreeNode {
 
 /** A file that can't carry prose (JSON has no comments): its text, shown as it is, and counted
  *  as neither documented nor undocumented. Oversized files are skipped. */
-function rawToNode(root: string, relPath: string): TreeNode | null {
+export function rawToNode(root: string, relPath: string): TreeNode | null {
 	const absPath = join(root, relPath);
 	if (statSync(absPath).size > RAW_MAX_BYTES) return null;
 	return {
@@ -258,6 +258,56 @@ function folderToNode(root: string, relDir: string, name: string, index: DirInde
 	return {
 		name,
 		kind: "folder",
+		path: relDir || ".",
+		summary: readme ? firstParagraph(readme) : "undocumented",
+		prose: readme,
+		children,
+	};
+}
+
+/** @prose
+ * # One folder, one level deep
+ *
+ * What a folder page needs, and no more (spec §4.1): its `README.md` as prose, then its
+ * subfolders, each summarized by its own `README.md`, and its files, each summarized by its
+ * first paragraph. Subfolders aren't walked and raw files aren't read, so a page costs the files
+ * directly in the folder, whatever the size of the repository. Returns `null` for a folder that
+ * holds nothing the walk lists.
+ */
+export function folderListing(root: string, files: string[], relDir: string): TreeNode | null {
+	let index: DirIndex | undefined = indexFiles(files);
+	for (const segment of relDir ? relDir.split("/") : []) index = index?.dirs.get(segment);
+	if (!index) return null;
+
+	const readme = index.files.includes("README.md")
+		? readReadme(relDir ? join(root, relDir) : root)
+		: null;
+	const children: TreeNode[] = [];
+	for (const name of [...index.dirs.keys()].sort()) {
+		const path = relDir ? `${relDir}/${name}` : name;
+		const sub = index.dirs.get(name)!;
+		const subReadme = sub.files.includes("README.md") ? readReadme(join(root, path)) : null;
+		children.push({
+			name,
+			kind: "folder",
+			path,
+			summary: subReadme ? firstParagraph(subReadme) : "undocumented",
+			prose: subReadme,
+			children: [],
+		});
+	}
+	for (const name of [...index.files].sort()) {
+		if (name === "README.md") continue;
+		const path = relDir ? `${relDir}/${name}` : name;
+		children.push(
+			SOURCE_EXTENSIONS.has(extensionOf(name))
+				? fileToNode(root, path)
+				: { name: path, kind: "raw", path, summary: "", prose: null, children: [] },
+		);
+	}
+	return {
+		name: relDir ? relDir.split("/").at(-1)! : basename(resolve(root)),
+		kind: relDir ? "folder" : "project",
 		path: relDir || ".",
 		summary: readme ? firstParagraph(readme) : "undocumented",
 		prose: readme,

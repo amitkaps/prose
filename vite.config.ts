@@ -25,11 +25,11 @@ export default defineConfig({
 	},
 
 	/** @prose
-	 * Builds the library (`src/index.ts` → `dist/index.js` + `.d.ts`) for Node, where the parser
-	 * and the renderer run.
+	 * Builds the library and the command (`src/index.ts`, `src/cli.ts` → `dist/*.js` + `.d.ts`)
+	 * for Node, where the parser and the renderer run.
 	 */
 	pack: {
-		entry: ["src/index.ts"],
+		entry: ["src/index.ts", "src/cli.ts"],
 		format: "esm",
 		platform: "node",
 		// `type: "module"` already makes `.js` ESM; tsdown's Node default would emit `.mjs`.

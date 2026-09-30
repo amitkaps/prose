@@ -1,0 +1,152 @@
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
+import { segments } from "./render.js";
+import { serve, type Served } from "./server.js";
+import type { TreeNode } from "./tree.js";
+
+/** A raw GET, so a path like `/../x` reaches the server as written instead of being normalized. */
+function get(
+	url: string,
+	path: string,
+): Promise<{ status: number; body: string; location?: string }> {
+	return new Promise((done, fail) => {
+		const req = request(new URL(url), { path, method: "GET" }, (res) => {
+			let body = "";
+			res.setEncoding("utf-8");
+			res.on("data", (chunk: string) => (body += chunk));
+			res.on("end", () =>
+				done({ status: res.statusCode ?? 0, body, location: res.headers.location }),
+			);
+		});
+		req.on("error", fail);
+		req.end();
+	});
+}
+
+describe("segments (spec §4.1)", () => {
+	it("lays a file out as code runs around its blocks, dropping the comment text", () => {
+		const source = "/** @prose A. */\nimport x;\n\n/** @prose B. */\n\nconst b = 1;\n";
+		const block = (start: number, end: number): TreeNode => ({
+			name: "",
+			kind: "chunk",
+			path: "f.ts#x",
+			summary: "",
+			span: [start, end],
+			children: [],
+		});
+		const a = source.indexOf("/** @prose A. */");
+		const b = source.indexOf("/** @prose B. */");
+		const parts = segments(source, [block(b, b + 16), block(a, a + 16)]);
+		expect(parts.map((p) => (p.kind === "code" ? [p.text, p.line] : "block"))).toEqual([
+			"block",
+			["import x;", 2],
+			"block",
+			["const b = 1;", 6],
+		]);
+	});
+});
+
+describe("serve: examples/single", () => {
+	let served: Served;
+	beforeAll(async () => {
+		served = await serve(resolve("examples/single"), { port: 0, watch: false });
+	});
+	afterAll(() => served.close());
+
+	it("renders the project page: the README, then each file with its first paragraph", async () => {
+		const { status, body } = await get(served.url, "/");
+		expect(status).toBe(200);
+		expect(body).toContain("<h1");
+		expect(body).toContain('href="main.js"');
+		expect(body).toContain("holds the count, applies a step");
+	});
+
+	it("renders a source file as one document: blocks by anchor, code folded, pending marked", async () => {
+		const { status, body } = await get(served.url, "/main.js");
+		expect(status).toBe(200);
+		expect(body).toContain('id="file"');
+		expect(body).toContain('id="count"');
+		expect(body).toContain('id="input"');
+		expect(body).toMatch(/class="block pending" id="persistence"/);
+		expect(body).toContain('<details class="code">');
+		expect(body).toContain("data-toggle-code");
+		expect(body).not.toContain("@prose");
+	});
+
+	it("renders CSS and HTML files the same way", async () => {
+		expect((await get(served.url, "/style.css")).body).toContain('class="block');
+		expect((await get(served.url, "/index.html")).body).toContain('class="block');
+	});
+
+	it("renders a Markdown file with markz", async () => {
+		const { status, body } = await get(served.url, "/README.md");
+		expect(status).toBe(200);
+		expect(body).toContain('<div class="prose"><h1');
+	});
+
+	it("refuses anything the walk doesn't list, a path outside the root included", async () => {
+		expect((await get(served.url, "/nope.js")).status).toBe(404);
+		// `/../x` and `/%2e%2e/x` normalize to `/x`, inside the root; an encoded slash doesn't.
+		expect((await get(served.url, "/..%2F..%2Fpackage.json")).status).toBe(404);
+		expect((await get(served.url, "/..%2Fsrc%2Fparser.ts")).status).toBe(404);
+		expect((await get(served.url, "/node_modules/")).status).toBe(404);
+	});
+});
+
+describe("serve: folders", () => {
+	let root: string;
+	let served: Served;
+	beforeAll(async () => {
+		root = mkdtempSync(join(tmpdir(), "prose-serve-test-"));
+		const files: Record<string, string> = {
+			"README.md": "# Demo\n\nThe project.\n",
+			"src/README.md": "# src\n\nThe source.\n",
+			"src/a.ts": "/** @prose\n * Does a.\n */\nexport const a = 1;\n",
+			"src/b.ts": "export const b = 2;\n",
+			"prose/plan.md": "# Plan\n\nWhat's next.\n",
+		};
+		for (const [path, text] of Object.entries(files)) {
+			mkdirSync(join(root, path, ".."), { recursive: true });
+			writeFileSync(join(root, path), text);
+		}
+		execFileSync("git", ["init", "-q"], { cwd: root });
+		served = await serve(root, { port: 0, watch: false });
+	});
+	afterAll(async () => {
+		await served.close();
+		rmSync(root, { recursive: true, force: true });
+	});
+
+	it("lists a folder's files with their summaries, and marks the undocumented", async () => {
+		const { body } = await get(served.url, "/src/");
+		expect(body).toContain("The source.");
+		expect(body).toContain("Does a.");
+		expect(body).toMatch(/b\.ts<\/a><p><span class="undocumented">undocumented/);
+	});
+
+	it("shows prose/ as an ordinary folder on the project page", async () => {
+		const { body } = await get(served.url, "/");
+		expect(body).toContain('href="prose/"');
+		expect(body).toContain('href="src/"');
+	});
+
+	it("redirects a folder asked for without its slash", async () => {
+		const res = await get(served.url, "/src");
+		expect(res.status).toBe(301);
+		expect(res.location).toBe("/src/");
+	});
+
+	it("refuses to write", async () => {
+		const status = await new Promise<number>((done) => {
+			const req = request(new URL(served.url), { method: "POST", path: "/src/a.ts" }, (res) =>
+				done(res.statusCode ?? 0),
+			);
+			req.end();
+		});
+		expect(status).toBe(405);
+	});
+});
