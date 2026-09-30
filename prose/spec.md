@@ -192,7 +192,7 @@ Every page has the repository's file tree on the left, as an editor's explorer s
 - Markdown, in files and in prose blocks, is rendered with [markz](https://github.com/amitkaps/markz). What markz doesn't support stays literal text.
 - Code is highlighted on the server with shiki, in the page's own palette: each token's colour is a CSS variable the stylesheet sets for light and dark.
 - One stylesheet: a readable column, light and dark, tabs two columns wide. Moving between pages is a cross-document view transition with the file tree held still.
-- A file is parsed when its page is requested; a folder page reads only its children's first paragraphs. At the target size (§2) that's fast enough with nothing cached but the highlighter.
+- A file is parsed when its page is requested, and kept by its modification time and size, so a changed file is always read afresh; highlighted code is kept by its text. A folder page reads only its children's first paragraphs. The highlighter starts with the server, and Chrome prerenders a link when the pointer rests on it, so most pages are already built when clicked.
 - It binds to `127.0.0.1`; `--port` picks the port (default `1234`, or the next free one).
 
 ## 5. Agent contract

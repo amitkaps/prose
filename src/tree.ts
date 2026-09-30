@@ -81,7 +81,24 @@ function readReadme(dir: string): string | null {
  * the file node in source order, the file prose first.
  */
 export function fileToNode(root: string, relPath: string): TreeNode {
-	const source = readFileSync(join(root, relPath), "utf-8");
+	const absPath = join(root, relPath);
+	const stat = statSync(absPath);
+	const cached = parseCache.get(absPath);
+	if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) return cached.node;
+	const node = readFileNode(absPath, relPath);
+	parseCache.set(absPath, { mtimeMs: stat.mtimeMs, size: stat.size, node });
+	return node;
+}
+
+/** @prose
+ * Parsed files are kept by path, with the modification time and size they were read at, so a
+ * folder page doesn't parse every child again on each visit: an edited file has a new time and is
+ * read afresh. `fileToNode` checks the cache; the nodes it hands out are never changed.
+ */
+const parseCache = new Map<string, { mtimeMs: number; size: number; node: TreeNode }>();
+
+function readFileNode(absPath: string, relPath: string): TreeNode {
+	const source = readFileSync(absPath, "utf-8");
 	if (extensionOf(relPath) === "md") {
 		const prose = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
 		return {

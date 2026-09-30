@@ -179,9 +179,9 @@ function breadcrumb(project: string, path: string): string {
  * script: the **Prose only** switch, remembered across pages and applied in `<head>` so the page
  * never flashes its code first; the rail's open folders and scroll position, restored before the
  * first paint; the **Files** button that shows the rail on a narrow screen; and live reload. The server
- * sends the path of each changed file, and a page reloads when it's the file it shows, or inside
- * the folder it lists, keeping its scroll position. Browser storage can be unavailable, so it's
- * only ever tried.
+ * tells a page when something it shows changed (`server.ts`), and it reloads, keeping its scroll
+ * position. It listens only while visible, and says when it was rendered, so it catches up on
+ * what changed while hidden. Browser storage can be unavailable, so it's only ever tried.
  */
 export function page(options: PageOptions): string {
 	const { project, path, rail, body, editorLink, hasProseAndCode } = options;
@@ -201,7 +201,7 @@ export function page(options: PageOptions): string {
 <style>${STYLE}</style>
 <script>try { if (localStorage.getItem("prose:mode") === "prose") document.documentElement.classList.add("prose-only"); } catch {}</script>
 </head>
-<body data-path="${escapeHtml(path)}">
+<body data-path="${escapeHtml(path)}" data-rendered="${Date.now()}">
 <div class="layout">
 ${rail}
 <script>${RAIL_SCRIPT}</script>
@@ -211,10 +211,20 @@ ${rail}
 </div>
 </div>
 <script>${SCRIPT}</script>
+<script type="speculationrules">${SPECULATION}</script>
 </body>
 </html>
 `;
 }
+
+/** @prose
+ * Links on the page are prerendered when the pointer rests on one (Chrome's speculation rules,
+ * "moderate"), so a click in the rail or a listing shows a page that's already built. A
+ * prerendered page doesn't connect for live reload until it's shown. Other browsers ignore it.
+ */
+const SPECULATION = JSON.stringify({
+	prerender: [{ where: { href_matches: "/*" }, eagerness: "moderate" }],
+});
 
 /** Runs straight after the rail, before the page paints, so its folders and scroll are back in
  *  place on the first frame instead of jumping after it. */
@@ -271,11 +281,20 @@ try {
 	if (y !== null) { sessionStorage.removeItem(key); scrollTo(0, Number(y)); }
 } catch {}
 const here = document.body.dataset.path;
-new EventSource("/.prose/events").onmessage = (event) => {
-	const changed = event.data;
-	if (changed === here || here === "" || (here.endsWith("/") && changed.startsWith(here))) {
+const since = document.body.dataset.rendered;
+let events = null;
+const connect = () => {
+	if (events || document.hidden || document.prerendering) return;
+	events = new EventSource("/.prose/events?path=" + encodeURIComponent(here) + "&since=" + since);
+	events.onmessage = () => {
 		try { sessionStorage.setItem(key, String(scrollY)); } catch {}
 		location.reload();
-	}
+	};
 };
+const disconnect = () => { events?.close(); events = null; };
+document.addEventListener("visibilitychange", () => (document.hidden ? disconnect() : connect()));
+document.addEventListener("prerenderingchange", connect);
+addEventListener("pagehide", disconnect);
+addEventListener("pageshow", connect);
+connect();
 `;

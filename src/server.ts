@@ -9,7 +9,7 @@
 import { type FSWatcher, watch } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { basename, resolve, sep } from "node:path";
-import { escapeHtml } from "./highlight.js";
+import { escapeHtml, warmHighlighter } from "./highlight.js";
 import { folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
 import { renderRail } from "./rail.js";
 import { fileToNode, folderListing, projectFiles, rawToNode } from "./tree.js";
@@ -43,7 +43,7 @@ const PORT_ATTEMPTS = 20;
 async function respond(root: string, req: IncomingMessage, res: ServerResponse): Promise<void> {
 	let path: string;
 	try {
-		path = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname).slice(1);
+		path = decodeURIComponent((req.url ?? "/").split("?")[0]!.replace(/^\/+/, ""));
 	} catch {
 		return send(res, 400, "Bad request");
 	}
@@ -105,23 +105,71 @@ function send(res: ServerResponse, status: number, body: string): void {
 /** @prose
  * # Live reload
  *
- * One recursive watcher on the root sends each changed path, repo-relative, to every open page
- * as a server-sent event, and each page decides whether the change is one it shows (`render.ts`).
- * Changes inside dot-folders and `node_modules` are dropped, as the walk drops them. Where the
- * platform has no recursive watch, pages simply don't reload.
+ * One recursive watcher on the root records each changed path, repo-relative, with the time it
+ * changed. A page connects with its own path and the time it was rendered, and is told to reload
+ * only when a change touches what it shows: its own file, or anything inside the folder it lists.
+ * A page connects only while it's visible (`render.ts`), since a browser allows six connections to
+ * one server and each open page would otherwise hold one, so a few idle tabs could leave a new
+ * page waiting to load. A page that comes back into view reconnects with its render time, and
+ * hears at once about anything it missed. Changes inside dot-folders and `node_modules` are
+ * dropped, as the walk drops them. Where the platform has no recursive watch, pages don't reload.
  */
-function watchRoot(root: string, clients: Set<ServerResponse>): FSWatcher | null {
+interface Listener {
+	res: ServerResponse;
+	/** The page's repo path: `""`, `src/` or `src/store.ts`. */
+	path: string;
+}
+
+/** Whether a change to `changed` alters the page at `page`. */
+export function touches(changed: string, page: string): boolean {
+	return page === "" || changed === page || (page.endsWith("/") && changed.startsWith(page));
+}
+
+const CHANGES_KEPT = 2000;
+
+class Changes {
+	private log: { path: string; at: number }[] = [];
+	readonly listeners = new Set<Listener>();
+
+	record(path: string): void {
+		this.log.push({ path, at: Date.now() });
+		if (this.log.length > CHANGES_KEPT) this.log.splice(0, this.log.length - CHANGES_KEPT);
+		for (const listener of this.listeners) {
+			if (touches(path, listener.path)) listener.res.write("data: reload\n\n");
+		}
+	}
+
+	/** Whether anything the page at `path` shows changed after `since`. */
+	missed(path: string, since: number): boolean {
+		return this.log.some((change) => change.at > since && touches(change.path, path));
+	}
+}
+
+function watchRoot(root: string, changes: Changes): FSWatcher | null {
 	try {
 		return watch(root, { recursive: true }, (_event, filename) => {
 			if (!filename) return;
 			const path = filename.toString().split(sep).join("/");
-			const segments = path.split("/");
-			if (segments.some((s) => s.startsWith(".") || s === "node_modules")) return;
-			for (const client of clients) client.write(`data: ${path}\n\n`);
+			if (path.split("/").some((s) => s.startsWith(".") || s === "node_modules")) return;
+			changes.record(path);
 		});
 	} catch {
 		return null;
 	}
+}
+
+function listenForChanges(req: IncomingMessage, res: ServerResponse, changes: Changes): void {
+	const query = new URLSearchParams((req.url ?? "").split("?")[1] ?? "");
+	const listener: Listener = { res, path: query.get("path") ?? "" };
+	res.writeHead(200, {
+		"content-type": "text/event-stream",
+		"cache-control": "no-cache",
+		connection: "keep-alive",
+	});
+	res.write(": connected\n\n");
+	if (changes.missed(listener.path, Number(query.get("since") ?? 0))) res.write("data: reload\n\n");
+	changes.listeners.add(listener);
+	req.on("close", () => changes.listeners.delete(listener));
 }
 
 function listen(
@@ -152,33 +200,25 @@ function listen(
 
 export async function serve(root: string, options: ServeOptions = {}): Promise<Served> {
 	const { port = 1234, host = "127.0.0.1" } = options;
-	const clients = new Set<ServerResponse>();
+	const changes = new Changes();
+	// Start the highlighter now, so the first source page doesn't wait for it.
+	void warmHighlighter();
 	const server = createServer((req, res) => {
 		if (req.method !== "GET" && req.method !== "HEAD") return send(res, 405, "Read-only");
-		if (req.url?.split("?")[0] === EVENTS_PATH) {
-			res.writeHead(200, {
-				"content-type": "text/event-stream",
-				"cache-control": "no-cache",
-				connection: "keep-alive",
-			});
-			res.write(": connected\n\n");
-			clients.add(res);
-			req.on("close", () => clients.delete(res));
-			return;
-		}
+		if (req.url?.split("?")[0] === EVENTS_PATH) return listenForChanges(req, res, changes);
 		respond(root, req, res).catch((error: unknown) => {
 			if (!res.headersSent) send(res, 500, `<pre>${escapeHtml(String(error))}</pre>`);
 			else res.end();
 		});
 	});
 	const actualPort = await listen(server, port, host);
-	const watcher = options.watch === false ? null : watchRoot(root, clients);
+	const watcher = options.watch === false ? null : watchRoot(root, changes);
 	return {
 		url: `http://${host === "0.0.0.0" ? "localhost" : host}:${actualPort}/`,
 		close: () =>
 			new Promise<void>((done) => {
 				watcher?.close();
-				for (const client of clients) client.end();
+				for (const listener of changes.listeners) listener.res.end();
 				server.close(() => done());
 			}),
 	};

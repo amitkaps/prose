@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { segments } from "./render.js";
-import { serve, type Served } from "./server.js";
+import { serve, type Served, touches } from "./server.js";
 import type { TreeNode } from "./tree.js";
 
 /** A raw GET, so a path like `/../x` reaches the server as written instead of being normalized. */
@@ -162,5 +162,53 @@ describe("serve: folders", () => {
 			req.end();
 		});
 		expect(status).toBe(405);
+	});
+});
+
+describe("serve: live reload", () => {
+	/** Opens the event stream for a page and collects what arrives within `ms`. */
+	function listen(url: string, page: string, since: number, ms: number): Promise<string> {
+		return new Promise((done) => {
+			let text = "";
+			const path = `/.prose/events?path=${encodeURIComponent(page)}&since=${since}`;
+			const req = request(new URL(url), { path }, (res) => {
+				res.setEncoding("utf-8");
+				res.on("data", (chunk: string) => (text += chunk));
+			});
+			req.end();
+			setTimeout(() => {
+				req.destroy();
+				done(text);
+			}, ms);
+		});
+	}
+
+	it("tells a page when something it shows changes, and not otherwise", () => {
+		expect(touches("src/a.ts", "src/a.ts")).toBe(true);
+		expect(touches("src/a.ts", "src/")).toBe(true);
+		expect(touches("src/a.ts", "")).toBe(true);
+		expect(touches("src/b.ts", "src/a.ts")).toBe(false);
+		expect(touches("prose/plan.md", "src/")).toBe(false);
+	});
+
+	it("catches a page up on a change it missed while it wasn't listening", async () => {
+		const root = mkdtempSync(join(tmpdir(), "prose-reload-test-"));
+		writeFileSync(join(root, "a.ts"), "export const a = 1;\n");
+		writeFileSync(join(root, "b.ts"), "export const b = 1;\n");
+		const served = await serve(root, { port: 0 });
+		try {
+			// macOS can report the two files' creation late; let that settle before the page renders.
+			await new Promise((r) => setTimeout(r, 500));
+			const renderedAt = Date.now();
+			await new Promise((r) => setTimeout(r, 50));
+			writeFileSync(join(root, "a.ts"), "export const a = 2;\n");
+			await new Promise((r) => setTimeout(r, 300));
+			expect(await listen(served.url, "a.ts", renderedAt, 200)).toContain("data: reload");
+			expect(await listen(served.url, "b.ts", renderedAt, 200)).not.toContain("data: reload");
+			expect(await listen(served.url, "a.ts", Date.now(), 200)).not.toContain("data: reload");
+		} finally {
+			await served.close();
+			rmSync(root, { recursive: true, force: true });
+		}
 	});
 });

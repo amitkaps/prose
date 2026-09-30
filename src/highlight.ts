@@ -67,6 +67,11 @@ function getHighlighter(): Promise<HighlighterCore> {
 	return highlighter;
 }
 
+/** Creates the highlighter ahead of the first page that needs it. */
+export async function warmHighlighter(): Promise<void> {
+	await getHighlighter().catch(() => {});
+}
+
 export function escapeHtml(text: string): string {
 	return text
 		.replace(/&/g, "&amp;")
