@@ -136,6 +136,7 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 .page { min-width: 0; }
 .bar-start { display: flex; gap: 0.75rem; align-items: center; min-width: 0; }
 .bar-end { justify-self: end; white-space: nowrap; }
+.version { color: var(--muted); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.8rem; }
 .crumbs { min-width: 0; overflow-wrap: anywhere; }
 .crumbs .sep { color: var(--muted); margin: 0 0.35rem; }
 .crumbs [aria-current] { font-weight: 600; }

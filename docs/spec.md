@@ -33,7 +33,7 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 | ----------------------------------------------------------------------- | ---------------------------------------------------- |
 | `@prose` in `.ts`, `.js`, `.css`, `.html`, `.svelte`, `.yaml`/`.yml`, `.toml` | New file types, tangling, `.ts.md`             |
 | Rendering any repository read-only: Markdown, source with its prose, other text | Editing anything, notes, review state        |
-| Local reading, on the human's machine                                   | Publishing: any static site generator can publish the Markdown |
+| Local reading, and the same pages as a static site (`prose build`)     | Hosting and deploys; a docs site with its own navigation |
 | First paragraphs as summaries                                           | Checks, coverage reports, LLM summaries              |
 
 Target: one person's repositories, up to about 500 files.
@@ -195,6 +195,15 @@ Every page has the repository's file tree on the left, as an editor's explorer s
 - A file is parsed when its page is requested, and kept by its modification time and size, so a changed file is always read afresh; highlighted code is kept by its text. A folder page reads only its children's first paragraphs. The highlighter starts with the server, and Chrome prerenders a link when the pointer rests on it, so most pages are already built when clicked.
 - It binds to `127.0.0.1`; `--port` picks the port (default `1234`, or the next free one).
 
+### 4.4 `prose build`
+
+`prose build [dir]` writes the same pages as static files, for any static host, into `.prose/site` (`--out` to change it). The pages come from the same code as the server's, so the site is the reader, not a second design.
+
+- **One commit, as the public repository shows it.** The build renders `HEAD`'s tracked files (`git archive`), not the working tree: no untracked or ignored file reaches the site, and it warns when there are uncommitted changes, since they aren't in it.
+- **URLs as they are locally.** `/src/store.ts` is `/src/store.ts`: a folder's page is `folder/index.html` and a file's is its path plus `.html` (`src/store.ts.html`), which GitHub Pages serves at the path without the `.html`, with no redirect. The site sits at a domain's root. A source file named `index.html` would be its folder's page there, so its page is `index.html.html`, and links to it say so.
+- **No live parts.** No live reload, no render time, no **Open in editor**; in its place, the snapshot: the nearest tag and the short commit (`v0.1.0 · 1c77293`). The same commit gives the same bytes, so a rebuild changes only the pages that changed.
+- **Its own folder only.** The build clears its output first, so it refuses a folder it didn't make: one holding the repository or tracked files, or a non-empty one without its marker. It never edits `.gitignore`; it warns when the output isn't ignored.
+
 ## 5. Agent contract
 
 A snippet for the project's `CLAUDE.md` / `AGENTS.md`:
@@ -219,7 +228,7 @@ A snippet for the project's `CLAUDE.md` / `AGENTS.md`:
 - **A *since* view for reviewing changes.** The human didn't review block by block; they read the prose that says what the code means now.
 - **Agent-written dev tools and an import-graph diagram.** Never built; nothing asked for them.
 - **The Vite plugin that stripped `@prose` from built HTML.** Only hand-written `.html` needs it (§3.1).
-- **Publishing.** Prose reads locally; publishing Markdown is a static site generator's job (§3.4).
+- **A docs site, hosting and deploys.** `prose build` writes the reader as it is (§4.4). A site with its own navigation, chosen pages and design is a static site generator's job (§3.4), and where the files are hosted is the host's.
 
 ## 7. Test cases
 

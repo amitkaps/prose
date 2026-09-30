@@ -39,7 +39,73 @@ const PORT_ATTEMPTS = 20;
  * for without its slash is redirected to it, so relative links in its README resolve from inside
  * it. A path is served only if the walk lists it: anything else, a path outside the root
  * included, is a 404.
+ *
+ * `renderRoute` is the whole of it, with no HTTP: the server answers a request with it, and
+ * `prose build` calls it once per page (`build.ts`), so the static site is these same pages.
  */
+export interface Site {
+  /** Where the files are read from: the repository, or a build's export of one commit. */
+  root: string;
+  project: string;
+  /** The files the walk lists (`projectFiles`), repo-relative. */
+  files: string[];
+  /** A local page: live reload, its render time, and **Open in editor**. A built page has none of
+   *  them, and shows `version` instead. */
+  live: boolean;
+  version?: string;
+}
+
+export type Route = { status: 200 | 404; html: string } | { status: 301; location: string };
+
+export async function renderRoute(site: Site, path: string): Promise<Route> {
+  const { root, project, files, live, version } = site;
+  const shell = (body: string, editorLink: string | null = null, hasCode = false) =>
+    page({
+      project,
+      path,
+      rail: renderRail(files, path, project),
+      body,
+      editorLink: live ? editorLink : null,
+      hasCode,
+      live,
+      version,
+    });
+  const notFound = (): Route => ({
+    status: 404,
+    html: shell(
+      `<p class="missing">Nothing at <code>${escapeHtml(path)}</code> in this repository.</p>`,
+    ),
+  });
+
+  if (path === "" || path.endsWith("/")) {
+    const node = folderListing(root, files, path.replace(/\/$/, ""));
+    if (!node) return notFound();
+    return { status: 200, html: shell(await folderBody(node)) };
+  }
+
+  if (files.includes(path)) {
+    const editorLink = `vscode://file${resolve(root, path).split(sep).join("/")}`;
+    const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
+    if (ext === "md") {
+      return { status: 200, html: shell(await markdownBody(fileToNode(root, path)), editorLink) };
+    }
+    if (ext === "json" || ext === "jsonc") {
+      const node = rawToNode(root, path);
+      const body = node ? await rawBody(node) : `<p class="missing">Too large to show.</p>`;
+      return { status: 200, html: shell(body, editorLink, node !== null) };
+    }
+    return {
+      status: 200,
+      html: shell(await sourceBody(fileToNode(root, path)), editorLink, true),
+    };
+  }
+
+  if (folderListing(root, files, path)) {
+    return { status: 301, location: `/${path.split("/").map(encodeURIComponent).join("/")}/` };
+  }
+  return notFound();
+}
+
 async function respond(root: string, req: IncomingMessage, res: ServerResponse): Promise<void> {
   let path: string;
   try {
@@ -47,52 +113,19 @@ async function respond(root: string, req: IncomingMessage, res: ServerResponse):
   } catch {
     return send(res, 400, "Bad request");
   }
-  const project = basename(resolve(root));
-  const files = projectFiles(root);
-  const shell = (body: string, editorLink: string | null = null, hasCode = false) =>
-    page({
-      project,
-      path,
-      rail: renderRail(files, path, project),
-      body,
-      editorLink,
-      hasCode,
-    });
-  const notFound = () =>
-    send(
-      res,
-      404,
-      shell(
-        `<p class="missing">Nothing at <code>${escapeHtml(path)}</code> in this repository.</p>`,
-      ),
-    );
-
-  if (path === "" || path.endsWith("/")) {
-    const node = folderListing(root, files, path.replace(/\/$/, ""));
-    if (!node) return notFound();
-    return send(res, 200, shell(await folderBody(node)));
-  }
-
-  if (files.includes(path)) {
-    const editorLink = `vscode://file${resolve(root, path).split(sep).join("/")}`;
-    const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
-    if (ext === "md") {
-      return send(res, 200, shell(await markdownBody(fileToNode(root, path)), editorLink));
-    }
-    if (ext === "json" || ext === "jsonc") {
-      const node = rawToNode(root, path);
-      const body = node ? await rawBody(node) : `<p class="missing">Too large to show.</p>`;
-      return send(res, 200, shell(body, editorLink, node !== null));
-    }
-    return send(res, 200, shell(await sourceBody(fileToNode(root, path)), editorLink, true));
-  }
-
-  if (folderListing(root, files, path)) {
-    res.writeHead(301, { location: `/${path.split("/").map(encodeURIComponent).join("/")}/` });
+  const site: Site = {
+    root,
+    project: basename(resolve(root)),
+    files: projectFiles(root),
+    live: true,
+  };
+  const route = await renderRoute(site, path);
+  if (route.status === 301) {
+    res.writeHead(301, { location: route.location });
     res.end();
     return;
   }
-  return notFound();
+  send(res, route.status, route.html);
 }
 
 function send(res: ServerResponse, status: number, body: string): void {

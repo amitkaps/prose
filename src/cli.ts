@@ -2,21 +2,26 @@
 /** @prose
  * # `prose [dir]`
  *
- * The command: serve a repository and open it in the browser (spec §4). No config, and only
- * the few flags a person would reach for: a port, and not opening the browser.
+ * The command: serve a repository and open it in the browser (spec §4), or, as `prose build`,
+ * write the same pages for a static host (`build.ts`). No config, and only the few flags a person
+ * would reach for: a port, not opening the browser, and where a build goes.
  */
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { build } from "./build.js";
 import { serve } from "./server.js";
 
 const HELP = `Usage: prose [dir] [options]
+       prose build [dir] [--out <dir>]
 
 Open a repository in the browser as a Markdown-first document. Read-only.
+\`prose build\` writes the same pages as a static site, from the last commit.
 
 Options:
   --port <n>   Port to try first (default 1234; the next free one if taken)
   --no-open    Don't open the browser
+  --out <dir>  Where \`prose build\` writes (default .prose/site)
   -h, --help   Show this help
   -v, --version
 `;
@@ -45,19 +50,32 @@ async function main(argv: string[]): Promise<void> {
   let dir = ".";
   let port = 1234;
   let open = true;
+  let out: string | undefined;
+  const building = argv[0] === "build";
+  if (building) argv = argv.slice(1);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
     if (arg === "-h" || arg === "--help") return void process.stdout.write(HELP);
     if (arg === "-v" || arg === "--version") return void process.stdout.write(`${version()}\n`);
+    const value = () => (arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : argv[++i]);
     if (arg === "--no-open") open = false;
-    else if (arg === "--port" || arg.startsWith("--port=")) {
-      const value = arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : argv[++i];
-      port = Number(value);
+    else if (building && (arg === "--out" || arg.startsWith("--out="))) {
+      out = value();
+      if (!out) throw new Error("--out needs a folder");
+    } else if (arg === "--port" || arg.startsWith("--port=")) {
+      const given = value();
+      port = Number(given);
       if (!Number.isInteger(port) || port < 0 || port > 65535) {
-        throw new Error(`--port needs a number from 0 to 65535, not ${value ?? "nothing"}`);
+        throw new Error(`--port needs a number from 0 to 65535, not ${given ?? "nothing"}`);
       }
     } else if (arg.startsWith("-")) throw new Error(`Unknown option ${arg}\n\n${HELP}`);
     else dir = arg;
+  }
+  if (building) {
+    const built = await build(dir, { out });
+    for (const warning of built.warnings) process.stderr.write(`prose: warning: ${warning}\n`);
+    process.stdout.write(`prose: ${built.pages} pages from ${built.version}\n  ${built.out}\n`);
+    return;
   }
   const served = await serve(resolve(dir), { port });
   process.stdout.write(`prose: ${resolve(dir)}\n  ${served.url}\n`);

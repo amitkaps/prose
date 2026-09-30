@@ -162,11 +162,16 @@ export interface PageOptions {
   /** The file tree for the left rail (`rail.ts`). */
   rail: string;
   body: string;
-  /** A `vscode://file/…` link for the file, or null for a folder. */
+  /** A `vscode://file/…` link for the file, or null for a folder and on a built page. */
   editorLink: string | null;
   /** Whether the page shows a file's code, which the **Prose only** switch folds. The switch is
    *  on every page, in the same place, and disabled where there's no code to fold. */
   hasCode: boolean;
+  /** Served by `prose .`: the page listens for changes and says when it was rendered. A built
+   *  page (`prose build`) does neither, so the same commit always gives the same bytes. */
+  live: boolean;
+  /** On a built page, which snapshot it is: `v0.1.0 · 1c77293`. */
+  version?: string;
 }
 
 function breadcrumb(project: string, path: string): string {
@@ -196,14 +201,19 @@ function breadcrumb(project: string, path: string): string {
  * first paint; the **Files** button that shows the rail on a narrow screen; and live reload. The server
  * tells a page when something it shows changed (`server.ts`), and it reloads, keeping its scroll
  * position. It listens only while visible, and says when it was rendered, so it catches up on
- * what changed while hidden. Browser storage can be unavailable, so it's only ever tried.
+ * what changed while hidden. A built page leaves live reload out, and shows which commit it is
+ * where the editor link was. Browser storage can be unavailable, so it's only ever tried.
  */
 export function page(options: PageOptions): string {
-  const { project, path, rail, body, editorLink, hasCode } = options;
+  const { project, path, rail, body, editorLink, hasCode, live, version } = options;
   const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
   const off = hasCode ? "" : ` disabled title="No code on this page"`;
   const mode = `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true"${off}>Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false"${off}>Prose only</button></div>`;
-  const editor = editorLink ? `<a href="${escapeHtml(editorLink)}">Open in editor</a>` : "";
+  const end = editorLink
+    ? `<a href="${escapeHtml(editorLink)}">Open in editor</a>`
+    : version
+      ? `<span class="version">${escapeHtml(version)}</span>`
+      : "";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -213,16 +223,16 @@ export function page(options: PageOptions): string {
 <style>${STYLE}</style>
 <script>try { if (localStorage.getItem("prose:mode") === "prose") document.documentElement.classList.add("prose-only"); } catch {}</script>
 </head>
-<body data-path="${escapeHtml(path)}" data-rendered="${Date.now()}">
+<body data-path="${escapeHtml(path)}"${live ? ` data-rendered="${Date.now()}"` : ""}>
 <div class="layout">
 ${rail}
 <script>${RAIL_SCRIPT}</script>
 <div class="page">
-<header class="bar"><div class="bar-start"><button type="button" class="rail-toggle" data-toggle-rail aria-label="Show files">Files</button><nav class="crumbs">${breadcrumb(project, path)}</nav></div><div class="bar-mode">${mode}</div><div class="bar-end">${editor}</div></header>
+<header class="bar"><div class="bar-start"><button type="button" class="rail-toggle" data-toggle-rail aria-label="Show files">Files</button><nav class="crumbs">${breadcrumb(project, path)}</nav></div><div class="bar-mode">${mode}</div><div class="bar-end">${end}</div></header>
 <main>${body}</main>
 </div>
 </div>
-<script>${SCRIPT}</script>
+<script>${SCRIPT}${live ? LIVE_SCRIPT : ""}</script>
 <script type="speculationrules">${SPECULATION}</script>
 </body>
 </html>
@@ -302,6 +312,10 @@ try {
 	const y = sessionStorage.getItem(key);
 	if (y !== null) { sessionStorage.removeItem(key); scrollTo(0, Number(y)); }
 } catch {}
+`;
+
+/** Live reload, on a page `prose .` serves; `key` is the scroll position `SCRIPT` restores. */
+const LIVE_SCRIPT = `
 const here = document.body.dataset.path;
 const since = document.body.dataset.rendered;
 let events = null;
