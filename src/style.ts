@@ -3,8 +3,13 @@
  *
  * The file tree on the left, then one readable column, light and dark from the reader's setting.
  * Prose is the page and code is the aside: code sits folded in a quieter panel, so a file reads as
- * its prose first. Below 52rem the tree hides behind the **Files** button, over the page. Shiki
- * writes both themes' colours on every token; the dark rule swaps to the `--shiki-dark` ones.
+ * its prose first. Below 52rem the tree hides behind the **Files** button, over the page.
+ *
+ * Code takes its colours from the same tokens: shiki's CSS-variables theme names each token's
+ * colour (`--shiki-token-keyword`), and the palette below sets them, for light and for dark, in
+ * the page's warm ink. Lines wrap with a hanging indent rather than scroll, tabs are two columns,
+ * and file line numbers sit in a gutter that isn't copied with the code. Moving between pages is
+ * a cross-document view transition with the rail held still, so only the page changes.
  */
 export const STYLE = `
 :root {
@@ -18,6 +23,20 @@ export const STYLE = `
 	--accent: #9a6700;
 	--measure: 44rem;
 	--rail: 16rem;
+	--shiki-foreground: #2f2c27;
+	--shiki-background: var(--panel);
+	--shiki-token-comment: #8c8577;
+	--shiki-token-keyword: #9c4221;
+	--shiki-token-string: #4d7030;
+	--shiki-token-string-expression: #4d7030;
+	--shiki-token-function: #25589c;
+	--shiki-token-constant: #7d4c98;
+	--shiki-token-parameter: #2f2c27;
+	--shiki-token-punctuation: #6f695e;
+	--shiki-token-link: #25589c;
+	--shiki-token-inserted: #4d7030;
+	--shiki-token-deleted: #9c4221;
+	--shiki-token-changed: #9a6700;
 	font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 	line-height: 1.6;
 }
@@ -30,12 +49,25 @@ export const STYLE = `
 		--rule: #34322e;
 		--link: #7cb7ff;
 		--accent: #e3b341;
-	}
-	.shiki, .shiki span {
-		color: var(--shiki-dark) !important;
-		background-color: var(--shiki-dark-bg) !important;
+		--shiki-foreground: #e6e3dd;
+		--shiki-token-comment: #8f887c;
+		--shiki-token-keyword: #e0976b;
+		--shiki-token-string: #a8c282;
+		--shiki-token-string-expression: #a8c282;
+		--shiki-token-function: #8fb7e6;
+		--shiki-token-constant: #c9a2dc;
+		--shiki-token-parameter: #e6e3dd;
+		--shiki-token-punctuation: #a39c90;
+		--shiki-token-link: #8fb7e6;
+		--shiki-token-inserted: #a8c282;
+		--shiki-token-deleted: #e0976b;
+		--shiki-token-changed: #e3b341;
 	}
 }
+@view-transition { navigation: auto; }
+.rail { view-transition-name: rail; }
+::view-transition-old(rail), ::view-transition-new(rail) { animation: none; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.12s; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--paper); color: var(--ink); }
 a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
@@ -75,6 +107,8 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 	}
 	.rail-open .rail { display: block; }
 	.rail-toggle { display: inline-block; }
+	.actions a { display: none; }
+	main { padding-top: 1rem; }
 }
 .bar {
 	position: sticky; top: 0; z-index: 1;
@@ -82,7 +116,8 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 	padding: 0.6rem 1rem; background: var(--paper); border-bottom: 1px solid var(--rule);
 	font-size: 0.9rem;
 }
-.crumbs { overflow-wrap: anywhere; }
+.page { min-width: 0; }
+.crumbs { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .crumbs .sep { color: var(--muted); margin: 0 0.35rem; }
 .crumbs [aria-current] { font-weight: 600; }
 .actions { display: flex; gap: 0.75rem; align-items: center; flex-shrink: 0; }
@@ -104,22 +139,39 @@ main { max-width: var(--measure); margin: 0 auto; padding: 1.5rem 1rem 4rem; }
 .prose th, .prose td { border: 1px solid var(--rule); padding: 0.3rem 0.6rem; text-align: left; }
 .prose blockquote { margin: 0; padding-left: 1rem; border-left: 3px solid var(--rule); color: var(--muted); }
 pre.shiki {
-	margin: 0.75rem 0; padding: 0.75rem 1rem; border-radius: 8px; overflow-x: auto;
-	font-size: 0.85rem; line-height: 1.5;
+	margin: 0.75rem 0; padding: 0.75rem 1rem; border-radius: 8px;
+	font-size: 0.85rem; line-height: 1.5; tab-size: 2;
 }
+pre.shiki code { display: block; white-space: normal; }
+pre.shiki .line {
+	display: block; min-height: 1lh; white-space: pre-wrap; overflow-wrap: anywhere;
+	padding-left: 2ch; text-indent: -2ch;
+}
+.code pre.shiki .line { position: relative; padding-left: calc(var(--gutter) + 3.5ch); }
+.code pre.shiki .line::before {
+	counter-increment: line; content: counter(line);
+	position: absolute; left: 0; width: var(--gutter); text-indent: 0; text-align: right;
+	color: var(--muted); opacity: 0.6; user-select: none;
+}
+.code { margin: 0.5rem 0 1rem; }
+.code-fold {
+	display: none; font: inherit; font-size: 0.8rem; color: var(--muted); cursor: pointer;
+	padding: 0.2rem 0.6rem; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
+}
+.prose-only .code-fold { display: inline-block; }
+.prose-only .code:not(.shown):not(.solo) pre { display: none; }
+.actions [aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
-.block { margin: 1.5rem 0 0.5rem; scroll-margin-top: 4rem; }
+.block { position: relative; margin: 1.5rem 0 0.5rem; scroll-margin-top: 4rem; }
+.block .anchor {
+	position: absolute; left: -1.25rem; top: 0; width: 1rem; text-align: center;
+	color: var(--muted); text-decoration: none; opacity: 0;
+}
+.block:hover .anchor, .block .anchor:focus { opacity: 1; }
 .block > .prose > :first-child { margin-top: 0; }
-.block .meta, .block .pending-mark { margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--muted); }
-.block .meta a, .block .pending-mark a { color: var(--muted); }
-.block .meta .line, .block .pending-mark .line { margin-left: 0.5rem; }
+.block .pending-mark { margin: 0.25rem 0 0; font-size: 0.8rem; }
 .block.pending { border-left: 3px dashed var(--accent); padding-left: 0.9rem; }
 .block .pending-mark { color: var(--accent); font-weight: 600; }
-details.code { margin: 0.5rem 0 1rem; }
-details.code > summary {
-	cursor: pointer; font-size: 0.8rem; color: var(--muted);
-	padding: 0.25rem 0.6rem; background: var(--panel); border-radius: 6px; width: fit-content;
-}
 .listing { list-style: none; padding: 0; margin: 1.5rem 0; border-top: 1px solid var(--rule); }
 .listing li { padding: 0.6rem 0; border-bottom: 1px solid var(--rule); }
 .listing li > a { font-weight: 600; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.92rem; }

@@ -90,37 +90,51 @@ export async function markdownBody(node: TreeNode): Promise<string> {
 }
 
 export async function rawBody(node: TreeNode): Promise<string> {
-	return `<div class="code open">${await highlight(node.code ?? "", extensionOf(node.path))}</div>`;
+	return codeRun(node.code ?? "", extensionOf(node.path), 1, true);
+}
+
+/** @prose
+ * # Code runs
+ *
+ * A run of code with its real file line numbers in a gutter: the run knows the line it starts on,
+ * and a CSS counter carries on from there, so the numbers match the editor across prose blocks.
+ * The gutter is as wide as the largest number. The button above the code is shown only when the
+ * page is set to prose only, so one run can be opened on its own.
+ */
+async function codeRun(
+	text: string,
+	lang: string,
+	startLine: number,
+	solo = false,
+): Promise<string> {
+	const count = text.split("\n").length;
+	const last = startLine + count - 1;
+	const label = `${count} line${count === 1 ? "" : "s"}, ${startLine}–${last}`;
+	return `<div class="code${solo ? " solo" : ""}" style="counter-reset: line ${startLine - 1}; --gutter: ${String(last).length}ch">${
+		solo ? "" : `<button type="button" class="code-fold" aria-expanded="false">${label}</button>`
+	}${await highlight(text, lang)}</div>`;
 }
 
 /** @prose
  * # A source file as one document
  *
- * The file prose, then each chunk's prose in source order, with its code folded between them
- * (spec §4.1). A block's anchor is its `id`, so `src/store.ts#addTodo` lands on it, and a pending
- * chunk says so. A file with no prose is only its code, unfolded. Folded code is a `<details>`,
- * so it opens without script, and its summary says how long it is and where it starts.
+ * The file prose, then each chunk's prose in source order, with its code between them (spec
+ * §4.1). A block's anchor is its `id`, so `src/store.ts#addTodo` lands on it; a `#` in the margin
+ * links to it, and a pending chunk says so. Code shows by default; the page's **Prose only**
+ * switch hides it (`page`). A file with no prose is only its code, which the switch leaves alone.
  */
-export async function sourceBody(node: TreeNode, editorBase: string | null): Promise<string> {
+export async function sourceBody(node: TreeNode): Promise<string> {
 	const blocks = node.blocks ?? [];
 	const lang = extensionOf(node.path);
-	if (blocks.length === 0) {
-		return `<div class="code open">${await highlight(node.source ?? "", lang)}</div>`;
-	}
+	if (blocks.length === 0) return codeRun(node.source ?? "", lang, 1, true);
 	const parts = await Promise.all(
 		segments(node.source ?? "", blocks).map(async (segment) => {
-			if (segment.kind === "block") {
-				const { block } = segment;
-				const anchor = block.path.slice(block.path.indexOf("#") + 1);
-				const open = editorBase
-					? ` <a class="line" href="${escapeHtml(`${editorBase}:${block.line}`)}" title="Open in editor">L${block.line}</a>`
-					: "";
-				return `<section class="block${block.pending ? " pending" : ""}" id="${escapeHtml(anchor)}"><div class="prose">${await renderMarkdown(block.prose ?? "")}</div>${
-					block.pending ? `<p class="pending-mark">pending${open}</p>` : ""
-				}${block.pending ? "" : `<p class="meta"><a href="#${escapeHtml(anchor)}">#${escapeHtml(anchor)}</a>${open}</p>`}</section>`;
-			}
-			const lines = segment.text.split("\n").length;
-			return `<details class="code"><summary>${lines} line${lines === 1 ? "" : "s"} · from line ${segment.line}</summary>${await highlight(segment.text, lang)}</details>`;
+			if (segment.kind === "code") return codeRun(segment.text, lang, segment.line);
+			const { block } = segment;
+			const anchor = escapeHtml(block.path.slice(block.path.indexOf("#") + 1));
+			return `<section class="block${block.pending ? " pending" : ""}" id="${anchor}"><a class="anchor" href="#${anchor}" aria-label="Link to this block">#</a><div class="prose">${await renderMarkdown(block.prose ?? "")}</div>${
+				block.pending ? `<p class="pending-mark">pending</p>` : ""
+			}</section>`;
 		}),
 	);
 	return parts.join("");
@@ -136,8 +150,8 @@ export interface PageOptions {
 	body: string;
 	/** A `vscode://file/…` link for the file, or null for a folder. */
 	editorLink: string | null;
-	/** Whether the page has folded code for the **Show code** toggle to open. */
-	hasFoldedCode: boolean;
+	/** Whether the page has prose and code both, for the **Prose only** switch. */
+	hasProseAndCode: boolean;
 }
 
 function breadcrumb(project: string, path: string): string {
@@ -162,17 +176,20 @@ function breadcrumb(project: string, path: string): string {
  * # The page shell
  *
  * One stylesheet inline, the file tree on the left (`rail.ts`), a breadcrumb, and a few lines of
- * script: the **Show code** toggle; the rail's open folders and scroll position, kept across
- * pages; the **Files** button that shows the rail on a narrow screen; and live reload. The server
+ * script: the **Prose only** switch, remembered across pages and applied in `<head>` so the page
+ * never flashes its code first; the rail's open folders and scroll position, restored before the
+ * first paint; the **Files** button that shows the rail on a narrow screen; and live reload. The server
  * sends the path of each changed file, and a page reloads when it's the file it shows, or inside
  * the folder it lists, keeping its scroll position. Browser storage can be unavailable, so it's
  * only ever tried.
  */
 export function page(options: PageOptions): string {
-	const { project, path, rail, body, editorLink, hasFoldedCode } = options;
+	const { project, path, rail, body, editorLink, hasProseAndCode } = options;
 	const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
 	const actions = [
-		hasFoldedCode ? `<button type="button" data-toggle-code>Show code</button>` : "",
+		hasProseAndCode
+			? `<button type="button" data-prose-only aria-pressed="false">Prose only</button>`
+			: "",
 		editorLink ? `<a href="${escapeHtml(editorLink)}">Open in editor</a>` : "",
 	].join("");
 	return `<!doctype html>
@@ -182,10 +199,12 @@ export function page(options: PageOptions): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <style>${STYLE}</style>
+<script>try { if (localStorage.getItem("prose:mode") === "prose") document.documentElement.classList.add("prose-only"); } catch {}</script>
 </head>
 <body data-path="${escapeHtml(path)}">
 <div class="layout">
 ${rail}
+<script>${RAIL_SCRIPT}</script>
 <div class="page">
 <header class="bar"><button type="button" class="rail-toggle" data-toggle-rail aria-label="Show files">Files</button><nav class="crumbs">${breadcrumb(project, path)}</nav><div class="actions">${actions}</div></header>
 <main>${body}</main>
@@ -197,32 +216,52 @@ ${rail}
 `;
 }
 
-const SCRIPT = `
-const toggle = document.querySelector("[data-toggle-code]");
-if (toggle) toggle.addEventListener("click", () => {
-	const all = [...document.querySelectorAll("details.code")];
-	const open = !all.every((d) => d.open);
-	for (const d of all) d.open = open;
-	toggle.textContent = open ? "Hide code" : "Show code";
-});
-const rail = document.querySelector(".rail");
-const railKey = "prose:rail";
-try {
-	const saved = JSON.parse(sessionStorage.getItem(railKey) || "null");
-	if (saved) {
-		for (const d of rail.querySelectorAll("details[data-folder]")) {
-			if (saved.open.includes(d.dataset.folder)) d.open = true;
-		}
-		rail.scrollTop = saved.scroll;
-	}
-} catch {}
-rail.querySelector("[aria-current]")?.scrollIntoView({ block: "nearest" });
-addEventListener("pagehide", () => {
+/** Runs straight after the rail, before the page paints, so its folders and scroll are back in
+ *  place on the first frame instead of jumping after it. */
+const RAIL_SCRIPT = `
+{
+	const rail = document.querySelector(".rail");
 	try {
-		const open = [...rail.querySelectorAll("details[data-folder][open]")].map((d) => d.dataset.folder);
-		sessionStorage.setItem(railKey, JSON.stringify({ open, scroll: rail.scrollTop }));
+		const saved = JSON.parse(sessionStorage.getItem("prose:rail") || "null");
+		if (saved) {
+			for (const d of rail.querySelectorAll("details[data-folder]")) {
+				if (saved.open.includes(d.dataset.folder)) d.open = true;
+			}
+			rail.scrollTop = saved.scroll;
+		}
 	} catch {}
-});
+	const current = rail.querySelector("[aria-current]");
+	if (current) {
+		const r = current.getBoundingClientRect();
+		if (r.top < 0 || r.bottom > innerHeight) current.scrollIntoView({ block: "center" });
+	}
+	addEventListener("pagehide", () => {
+		try {
+			const open = [...rail.querySelectorAll("details[data-folder][open]")].map((d) => d.dataset.folder);
+			sessionStorage.setItem("prose:rail", JSON.stringify({ open, scroll: rail.scrollTop }));
+		} catch {}
+	});
+}
+`;
+
+const SCRIPT = `
+const root = document.documentElement;
+const proseOnly = document.querySelector("[data-prose-only]");
+if (proseOnly) {
+	proseOnly.setAttribute("aria-pressed", String(root.classList.contains("prose-only")));
+	proseOnly.addEventListener("click", () => {
+		const on = root.classList.toggle("prose-only");
+		proseOnly.setAttribute("aria-pressed", String(on));
+		for (const c of document.querySelectorAll(".code.shown")) c.classList.remove("shown");
+		try { localStorage.setItem("prose:mode", on ? "prose" : "code"); } catch {}
+	});
+}
+for (const fold of document.querySelectorAll(".code-fold")) {
+	fold.addEventListener("click", () => {
+		const shown = fold.parentElement.classList.toggle("shown");
+		fold.setAttribute("aria-expanded", String(shown));
+	});
+}
 document.querySelector("[data-toggle-rail]").addEventListener("click", () => {
 	document.body.classList.toggle("rail-open");
 });

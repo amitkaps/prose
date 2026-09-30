@@ -49,14 +49,14 @@ async function respond(root: string, req: IncomingMessage, res: ServerResponse):
 	}
 	const project = basename(resolve(root));
 	const files = projectFiles(root);
-	const shell = (body: string, editorLink: string | null = null, hasFoldedCode = false) =>
+	const shell = (body: string, editorLink: string | null = null, hasProseAndCode = false) =>
 		page({
 			project,
 			path,
 			rail: renderRail(files, path, project),
 			body,
 			editorLink,
-			hasFoldedCode,
+			hasProseAndCode,
 		});
 	const notFound = () =>
 		send(
@@ -85,8 +85,8 @@ async function respond(root: string, req: IncomingMessage, res: ServerResponse):
 			return send(res, 200, shell(body, editorLink));
 		}
 		const node = fileToNode(root, path);
-		const hasFoldedCode = (node.blocks?.length ?? 0) > 0;
-		return send(res, 200, shell(await sourceBody(node, editorLink), editorLink, hasFoldedCode));
+		const hasProseAndCode = (node.blocks?.length ?? 0) > 0;
+		return send(res, 200, shell(await sourceBody(node), editorLink, hasProseAndCode));
 	}
 
 	if (folderListing(root, files, path)) {

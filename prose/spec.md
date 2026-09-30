@@ -175,7 +175,7 @@ URLs mirror repo paths, so a relative link in the prose works the same in the re
 
 - **A folder** (`/`, `/src/`): its `README.md`, then its subfolders and files, each with its first paragraph: a folder's from its `README.md`, a Markdown file's from its first paragraph, a source file's from its file prose. A source file without prose says *undocumented*, so coverage is visible where you read, without a report.
 - **A Markdown file** (`/prose/plan.md`): rendered as it is.
-- **A source file** (`/src/store.ts`): one document. The file prose first, then each chunk's prose in source order, with its code between them in a folded, highlighted block. A pending chunk shows as its prose with a *pending* mark. A file with no prose is its code, unfolded. A **Show code** toggle unfolds every block on the page. Each block's anchor (§3.2) is its fragment.
+- **A source file** (`/src/store.ts`): one document. The file prose first, then each chunk's prose in source order, with its code between them: highlighted, wrapped rather than scrolled, and numbered with the file's own line numbers. A pending chunk shows as its prose with a *pending* mark. Each block's anchor (§3.2) is its fragment, with a `#` in the margin to link to it. A **Prose only** switch hides the code on every page until it's turned off, leaving a line count to open one run; a file with no prose is its code either way.
 - **Any other text file** (`package.json`, a lockfile excepted): highlighted, unfolded.
 
 Every page has the repository's file tree on the left, as an editor's explorer shows it: folders first, the folders around the current page open, and the reader's own opened folders kept from page to page. On a narrow screen it sits behind a **Files** button. Every page also has a breadcrumb to its ancestors and a link to open the file in the editor. The page reloads when a file it shows changes, keeping the scroll position.
@@ -190,8 +190,8 @@ Every page has the repository's file tree on the left, as an editor's explorer s
 
 - JS and TS comments, including a `.svelte` file's `<script>`, come from `oxc-parser` (its comment list and the AST for depth). CSS, HTML, YAML and TOML use a small scanner.
 - Markdown, in files and in prose blocks, is rendered with [markz](https://github.com/amitkaps/markz). What markz doesn't support stays literal text.
-- Code is highlighted on the server with shiki.
-- One stylesheet: a readable column, light and dark.
+- Code is highlighted on the server with shiki, in the page's own palette: each token's colour is a CSS variable the stylesheet sets for light and dark.
+- One stylesheet: a readable column, light and dark, tabs two columns wide. Moving between pages is a cross-document view transition with the file tree held still.
 - A file is parsed when its page is requested; a folder page reads only its children's first paragraphs. At the target size (§2) that's fast enough with nothing cached but the highlighter.
 - It binds to `127.0.0.1`; `--port` picks the port (default `1234`, or the next free one).
 
