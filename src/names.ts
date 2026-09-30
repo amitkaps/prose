@@ -17,29 +17,29 @@ type AstNode = Record<string, unknown>;
  * value itself binds nothing.
  */
 function bindingNames(pattern: AstNode | null | undefined, names: Set<string>): void {
-	if (!pattern) return;
-	switch (pattern.type) {
-		case "Identifier": {
-			const name = pattern.name as string;
-			if (name !== "this") names.add(name);
-			return;
-		}
-		case "ObjectPattern":
-			for (const prop of pattern.properties as AstNode[]) {
-				if (prop.type === "RestElement") bindingNames(prop.argument as AstNode, names);
-				else bindingNames(prop.value as AstNode, names);
-			}
-			return;
-		case "ArrayPattern":
-			for (const el of pattern.elements as (AstNode | null)[]) bindingNames(el, names);
-			return;
-		case "AssignmentPattern":
-			bindingNames(pattern.left as AstNode, names);
-			return;
-		case "RestElement":
-			bindingNames(pattern.argument as AstNode, names);
-			return;
-	}
+  if (!pattern) return;
+  switch (pattern.type) {
+    case "Identifier": {
+      const name = pattern.name as string;
+      if (name !== "this") names.add(name);
+      return;
+    }
+    case "ObjectPattern":
+      for (const prop of pattern.properties as AstNode[]) {
+        if (prop.type === "RestElement") bindingNames(prop.argument as AstNode, names);
+        else bindingNames(prop.value as AstNode, names);
+      }
+      return;
+    case "ArrayPattern":
+      for (const el of pattern.elements as (AstNode | null)[]) bindingNames(el, names);
+      return;
+    case "AssignmentPattern":
+      bindingNames(pattern.left as AstNode, names);
+      return;
+    case "RestElement":
+      bindingNames(pattern.argument as AstNode, names);
+      return;
+  }
 }
 
 /** @prose
@@ -50,41 +50,41 @@ function bindingNames(pattern: AstNode | null | undefined, names: Set<string>): 
  * returns an empty body, but the language is checked first anyway.
  */
 export function declaredIdentifiers(
-	code: string,
-	codeLang: "js" | "css" | "html" | "yaml" | "toml" = "js",
+  code: string,
+  codeLang: "js" | "css" | "html" | "yaml" | "toml" = "js",
 ): Set<string> {
-	const names = new Set<string>();
-	if (codeLang !== "js") return names;
-	let body: AstNode[];
-	try {
-		body = parseSync("chunk.ts", code).program.body as unknown as AstNode[];
-	} catch {
-		return names;
-	}
-	for (const raw of body) {
-		const node =
-			raw.type === "ExportNamedDeclaration" || raw.type === "ExportDefaultDeclaration"
-				? ((raw.declaration as AstNode | null) ?? raw)
-				: raw;
-		switch (node.type) {
-			case "VariableDeclaration":
-				for (const d of node.declarations as AstNode[]) bindingNames(d.id as AstNode, names);
-				break;
-			case "FunctionDeclaration":
-			case "ClassDeclaration":
-			case "TSInterfaceDeclaration":
-			case "TSTypeAliasDeclaration":
-			case "TSEnumDeclaration": {
-				const id = node.id as AstNode | null;
-				if (id) names.add(id.name as string);
-				break;
-			}
-			case "ImportDeclaration":
-				for (const spec of node.specifiers as AstNode[]) {
-					names.add((spec.local as AstNode).name as string);
-				}
-				break;
-		}
-	}
-	return names;
+  const names = new Set<string>();
+  if (codeLang !== "js") return names;
+  let body: AstNode[];
+  try {
+    body = parseSync("chunk.ts", code).program.body as unknown as AstNode[];
+  } catch {
+    return names;
+  }
+  for (const raw of body) {
+    const node =
+      raw.type === "ExportNamedDeclaration" || raw.type === "ExportDefaultDeclaration"
+        ? ((raw.declaration as AstNode | null) ?? raw)
+        : raw;
+    switch (node.type) {
+      case "VariableDeclaration":
+        for (const d of node.declarations as AstNode[]) bindingNames(d.id as AstNode, names);
+        break;
+      case "FunctionDeclaration":
+      case "ClassDeclaration":
+      case "TSInterfaceDeclaration":
+      case "TSTypeAliasDeclaration":
+      case "TSEnumDeclaration": {
+        const id = node.id as AstNode | null;
+        if (id) names.add(id.name as string);
+        break;
+      }
+      case "ImportDeclaration":
+        for (const spec of node.specifiers as AstNode[]) {
+          names.add((spec.local as AstNode).name as string);
+        }
+        break;
+    }
+  }
+  return names;
 }

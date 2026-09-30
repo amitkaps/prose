@@ -8,39 +8,37 @@ import { defineConfig } from "vite-plus";
 const ignored = ["dist/**", "examples/**", "prose/**", "README.md", "pnpm-lock.yaml"];
 
 export default defineConfig({
-	plugins: [],
+  plugins: [],
 
-	fmt: {
-		useTabs: true,
-		printWidth: 100,
-		svelte: { indentScriptAndStyle: true },
-		ignorePatterns: ignored,
-	},
+  // oxfmt's defaults, as the editor has them.
+  fmt: {
+    ignorePatterns: ignored,
+  },
 
-	lint: {
-		plugins: ["typescript", "unicorn", "import"],
-		categories: { correctness: "error" },
-		options: { typeAware: true, typeCheck: true },
-		ignorePatterns: ignored,
-	},
+  lint: {
+    plugins: ["typescript", "unicorn", "import"],
+    categories: { correctness: "error" },
+    options: { typeAware: true, typeCheck: true },
+    ignorePatterns: ignored,
+  },
 
-	/** @prose
-	 * Builds the library and the command (`src/index.ts`, `src/cli.ts` → `dist/*.js` + `.d.ts`)
-	 * for Node, where the parser and the renderer run.
-	 */
-	pack: {
-		entry: ["src/index.ts", "src/cli.ts"],
-		format: "esm",
-		platform: "node",
-		// `type: "module"` already makes `.js` ESM; tsdown's Node default would emit `.mjs`.
-		fixedExtension: false,
-		dts: true,
-		sourcemap: true,
-	},
+  /** @prose
+   * Builds the library and the command (`src/index.ts`, `src/cli.ts` → `dist/*.js` + `.d.ts`)
+   * for Node, where the parser and the renderer run.
+   */
+  pack: {
+    entry: ["src/index.ts", "src/cli.ts"],
+    format: "esm",
+    platform: "node",
+    // `type: "module"` already makes `.js` ESM; tsdown's Node default would emit `.mjs`.
+    fixedExtension: false,
+    dts: true,
+    sourcemap: true,
+  },
 
-	test: {
-		expect: { requireAssertions: true },
-		environment: "node",
-		include: ["src/**/*.test.ts"],
-	},
+  test: {
+    expect: { requireAssertions: true },
+    environment: "node",
+    include: ["src/**/*.test.ts"],
+  },
 });
