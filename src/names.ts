@@ -5,7 +5,7 @@
  * made from (spec §3.2): `export function addTodo` anchors as `#addTodo`. The names come from
  * `oxc-parser`'s AST, not a regex: the regex versions this replaced each missed the next shape a
  * real file used (imports, then destructuring), which is the predictable failure of matching
- * text instead of parsing it (`prose/lessons.md`).
+ * text instead of parsing it (`docs/lessons.md`).
  */
 import { parseSync } from "oxc-parser";
 

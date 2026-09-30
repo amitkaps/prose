@@ -153,15 +153,15 @@ describe("buildTree: raw files", () => {
   });
 });
 
-describe("buildTree: prose/ (spec §3.4)", () => {
+describe("buildTree: docs/ (spec §3.4)", () => {
   it("is an ordinary folder, in its sorted place", () => {
     const dir = makeProject({
-      "prose/lessons.md": "Lessons body.",
+      "docs/lessons.md": "Lessons body.",
       "main.ts": "const a = 1;\n",
     });
     const tree = buildTree(dir);
-    expect(tree.children.map((n) => n.path)).toEqual(["main.ts", "prose"]);
-    expect(findNode(tree, "prose/lessons.md")?.prose).toBe("Lessons body.");
+    expect(tree.children.map((n) => n.path)).toEqual(["docs", "main.ts"]);
+    expect(findNode(tree, "docs/lessons.md")?.prose).toBe("Lessons body.");
   });
 });
 

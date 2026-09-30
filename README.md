@@ -7,8 +7,8 @@ repository as a document. It is two things:
 - **`prose .`**, a read-only renderer that opens any repository in the browser as a
   Markdown-first document.
 
-The design is in [prose/spec.md](prose/spec.md) and the order of the work in
-[prose/plan.md](prose/plan.md). The renderer isn't released yet; from a checkout, `pnpm build`
+The design is in [docs/spec.md](docs/spec.md) and the order of the work in
+[docs/plan.md](docs/plan.md). The renderer isn't released yet; from a checkout, `pnpm build`
 then `node dist/cli.js <dir>`. 0.1.0, the last release of the earlier Vite plugin and its
 `/__prose/` route, stays available on the
 [releases page](https://github.com/amitkaps/prose/releases/tag/v0.1.0).
@@ -35,7 +35,7 @@ delimiter each sit on their own line.
 ```
 
 Writing that spans the code (what the project promises, the plan, lessons) goes in Markdown,
-by convention in a root `prose/` folder, linked to the code by repo path.
+by convention in a root `docs/` folder, linked to the code by repo path.
 
 ## Develop
 

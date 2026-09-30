@@ -60,7 +60,7 @@ describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
 
   it("does not let a backtick inside a regex literal corrupt depth tracking for the rest of the file", () => {
     // The old hand tokenizer read a bare backtick in a regex (e.g. `/\`/g`) as a template literal
-    // and miscounted depth for the rest of the file (`prose/lessons.md`). oxc reads it right.
+    // and miscounted depth for the rest of the file (`docs/lessons.md`). oxc reads it right.
     const source = [
       "const RE = /`/g;",
       "function useless() { const x = 1; }",
