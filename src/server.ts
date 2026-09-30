@@ -11,7 +11,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { basename, resolve, sep } from "node:path";
 import { escapeHtml } from "./highlight.js";
 import { folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
-import { fileToNode, folderListing, projectFiles, rawToNode, type TreeNode } from "./tree.js";
+import { renderRail } from "./rail.js";
+import { fileToNode, folderListing, projectFiles, rawToNode } from "./tree.js";
 
 export interface ServeOptions {
 	/** The port to try first; the next free one is used if it's taken. `0` lets the OS pick. */
@@ -48,46 +49,44 @@ async function respond(root: string, req: IncomingMessage, res: ServerResponse):
 	}
 	const project = basename(resolve(root));
 	const files = projectFiles(root);
+	const shell = (body: string, editorLink: string | null = null, hasFoldedCode = false) =>
+		page({
+			project,
+			path,
+			rail: renderRail(files, path, project),
+			body,
+			editorLink,
+			hasFoldedCode,
+		});
+	const notFound = () =>
+		send(
+			res,
+			404,
+			shell(
+				`<p class="missing">Nothing at <code>${escapeHtml(path)}</code> in this repository.</p>`,
+			),
+		);
 
 	if (path === "" || path.endsWith("/")) {
 		const node = folderListing(root, files, path.replace(/\/$/, ""));
-		if (!node) return notFound(res, project, path);
-		return send(
-			res,
-			200,
-			page({ project, path, body: await folderBody(node), editorLink: null, hasFoldedCode: false }),
-		);
+		if (!node) return notFound();
+		return send(res, 200, shell(await folderBody(node)));
 	}
 
 	if (files.includes(path)) {
 		const editorLink = `vscode://file${resolve(root, path).split(sep).join("/")}`;
 		const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
-		let node: TreeNode | null;
-		let body: string;
 		if (ext === "md") {
-			node = fileToNode(root, path);
-			body = await markdownBody(node);
-		} else if (ext === "json" || ext === "jsonc") {
-			node = rawToNode(root, path);
-			if (!node)
-				return send(
-					res,
-					200,
-					page({
-						project,
-						path,
-						body: `<p class="missing">Too large to show.</p>`,
-						editorLink,
-						hasFoldedCode: false,
-					}),
-				);
-			body = await rawBody(node);
-		} else {
-			node = fileToNode(root, path);
-			body = await sourceBody(node, editorLink);
+			return send(res, 200, shell(await markdownBody(fileToNode(root, path)), editorLink));
 		}
+		if (ext === "json" || ext === "jsonc") {
+			const node = rawToNode(root, path);
+			const body = node ? await rawBody(node) : `<p class="missing">Too large to show.</p>`;
+			return send(res, 200, shell(body, editorLink));
+		}
+		const node = fileToNode(root, path);
 		const hasFoldedCode = (node.blocks?.length ?? 0) > 0;
-		return send(res, 200, page({ project, path, body, editorLink, hasFoldedCode }));
+		return send(res, 200, shell(await sourceBody(node, editorLink), editorLink, hasFoldedCode));
 	}
 
 	if (folderListing(root, files, path)) {
@@ -95,26 +94,12 @@ async function respond(root: string, req: IncomingMessage, res: ServerResponse):
 		res.end();
 		return;
 	}
-	return notFound(res, project, path);
+	return notFound();
 }
 
 function send(res: ServerResponse, status: number, body: string): void {
 	res.writeHead(status, { "content-type": "text/html; charset=utf-8" });
 	res.end(body);
-}
-
-function notFound(res: ServerResponse, project: string, path: string): void {
-	send(
-		res,
-		404,
-		page({
-			project,
-			path,
-			body: `<p class="missing">Nothing at <code>${escapeHtml(path)}</code> in this repository.</p>`,
-			editorLink: null,
-			hasFoldedCode: false,
-		}),
-	);
 }
 
 /** @prose

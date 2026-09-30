@@ -178,7 +178,7 @@ URLs mirror repo paths, so a relative link in the prose works the same in the re
 - **A source file** (`/src/store.ts`): one document. The file prose first, then each chunk's prose in source order, with its code between them in a folded, highlighted block. A pending chunk shows as its prose with a *pending* mark. A file with no prose is its code, unfolded. A **Show code** toggle unfolds every block on the page. Each block's anchor (§3.2) is its fragment.
 - **Any other text file** (`package.json`, a lockfile excepted): highlighted, unfolded.
 
-Every page has a breadcrumb to its ancestors and a link to open the file in the editor. The page reloads when a file it shows changes, keeping the scroll position.
+Every page has the repository's file tree on the left, as an editor's explorer shows it: folders first, the folders around the current page open, and the reader's own opened folders kept from page to page. On a narrow screen it sits behind a **Files** button. Every page also has a breadcrumb to its ancestors and a link to open the file in the editor. The page reloads when a file it shows changes, keeping the scroll position.
 
 ### 4.2 What it reads
 

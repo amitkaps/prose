@@ -104,6 +104,7 @@ describe("serve: folders", () => {
 		root = mkdtempSync(join(tmpdir(), "prose-serve-test-"));
 		const files: Record<string, string> = {
 			"README.md": "# Demo\n\nThe project.\n",
+			"app.ts": "export {};\n",
 			"src/README.md": "# src\n\nThe source.\n",
 			"src/a.ts": "/** @prose\n * Does a.\n */\nexport const a = 1;\n",
 			"src/b.ts": "export const b = 2;\n",
@@ -132,6 +133,17 @@ describe("serve: folders", () => {
 		const { body } = await get(served.url, "/");
 		expect(body).toContain('href="prose/"');
 		expect(body).toContain('href="src/"');
+	});
+
+	it("shows the file tree on every page: folders first, the current page's folders open", async () => {
+		const { body } = await get(served.url, "/src/a.ts");
+		const rail = body.slice(body.indexOf('<nav class="rail"'), body.indexOf("</nav>") + 6);
+		// `app.ts` sorts before both folders, and still comes after them.
+		expect(rail.indexOf('data-folder="src"')).toBeLessThan(rail.indexOf('href="/app.ts"'));
+		expect(rail).toContain('<details data-folder="src" open>');
+		expect(rail).toContain('<details data-folder="prose">');
+		expect(rail).toContain('<a class="file" href="/src/a.ts" aria-current="page">a.ts</a>');
+		expect(rail).not.toContain('href="/src/README.md"');
 	});
 
 	it("redirects a folder asked for without its slash", async () => {

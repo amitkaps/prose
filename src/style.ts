@@ -1,9 +1,10 @@
 /** @prose
  * # The stylesheet
  *
- * One readable column, light and dark from the reader's setting. Prose is the page and code is
- * the aside: code sits folded in a quieter panel, so a file reads as its prose first. Shiki writes
- * both themes' colours on every token; the dark rule swaps to the `--shiki-dark` ones.
+ * The file tree on the left, then one readable column, light and dark from the reader's setting.
+ * Prose is the page and code is the aside: code sits folded in a quieter panel, so a file reads as
+ * its prose first. Below 52rem the tree hides behind the **Files** button, over the page. Shiki
+ * writes both themes' colours on every token; the dark rule swaps to the `--shiki-dark` ones.
  */
 export const STYLE = `
 :root {
@@ -16,6 +17,7 @@ export const STYLE = `
 	--link: #0b5cad;
 	--accent: #9a6700;
 	--measure: 44rem;
+	--rail: 16rem;
 	font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 	line-height: 1.6;
 }
@@ -37,6 +39,43 @@ export const STYLE = `
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--paper); color: var(--ink); }
 a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.layout { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); min-height: 100vh; }
+.rail {
+	position: sticky; top: 0; height: 100vh; overflow-y: auto;
+	padding: 0.75rem 0.5rem 2rem 1.1rem; border-right: 1px solid var(--rule); background: var(--panel);
+	font-size: 0.82rem; line-height: 1.35;
+}
+.rail ul { list-style: none; margin: 0; padding: 0 0 0 0.75rem; }
+.rail > ul { padding-left: 0; }
+.rail a {
+	display: block; padding: 0.2rem 0.4rem; border-radius: 4px;
+	color: var(--ink); text-decoration: none; overflow-wrap: anywhere;
+}
+.rail a:hover { background: var(--rule); }
+.rail a[aria-current] { background: var(--rule); font-weight: 600; }
+.rail .rail-project { font-weight: 600; margin-bottom: 0.4rem; }
+.rail a.file { color: var(--muted); }
+.rail a.file[aria-current] { color: var(--ink); }
+.rail summary { display: flex; align-items: center; cursor: pointer; list-style: none; }
+.rail summary::-webkit-details-marker { display: none; }
+.rail summary::before {
+	content: ""; flex: none; width: 0.9rem; height: 0.9rem; margin-left: -0.9rem;
+	background: currentColor; opacity: 0.5;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E") center / contain no-repeat;
+	transition: transform 0.1s;
+}
+.rail details[open] > summary::before { transform: rotate(90deg); }
+.rail summary a { flex: 1; }
+.rail-toggle { display: none; }
+@media (max-width: 52rem) {
+	.layout { grid-template-columns: minmax(0, 1fr); }
+	.rail {
+		display: none; position: fixed; inset: 0 auto 0 0; z-index: 2;
+		width: min(20rem, 85vw); box-shadow: 0 0 2rem rgb(0 0 0 / 0.25);
+	}
+	.rail-open .rail { display: block; }
+	.rail-toggle { display: inline-block; }
+}
 .bar {
 	position: sticky; top: 0; z-index: 1;
 	display: flex; gap: 1rem; align-items: center; justify-content: space-between;
@@ -47,7 +86,7 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 .crumbs .sep { color: var(--muted); margin: 0 0.35rem; }
 .crumbs [aria-current] { font-weight: 600; }
 .actions { display: flex; gap: 0.75rem; align-items: center; flex-shrink: 0; }
-.actions button {
+.actions button, .rail-toggle {
 	font: inherit; color: var(--ink); background: var(--panel);
 	border: 1px solid var(--rule); border-radius: 6px; padding: 0.2rem 0.6rem; cursor: pointer;
 }

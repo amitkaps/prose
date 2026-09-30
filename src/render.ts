@@ -131,6 +131,8 @@ export interface PageOptions {
 	project: string;
 	/** The page's repo path: `""` for the root, `src/` for a folder, `src/store.ts` for a file. */
 	path: string;
+	/** The file tree for the left rail (`rail.ts`). */
+	rail: string;
 	body: string;
 	/** A `vscode://file/…` link for the file, or null for a folder. */
 	editorLink: string | null;
@@ -159,13 +161,15 @@ function breadcrumb(project: string, path: string): string {
 /** @prose
  * # The page shell
  *
- * One stylesheet inline, a breadcrumb, and a few lines of script: the **Show code** toggle, and
- * live reload. The server sends the path of each changed file; a page reloads when it's the file
- * it shows, or when it's inside the folder it lists, and keeps its scroll position across the
- * reload. Browser storage can be unavailable, so it's only ever tried.
+ * One stylesheet inline, the file tree on the left (`rail.ts`), a breadcrumb, and a few lines of
+ * script: the **Show code** toggle; the rail's open folders and scroll position, kept across
+ * pages; the **Files** button that shows the rail on a narrow screen; and live reload. The server
+ * sends the path of each changed file, and a page reloads when it's the file it shows, or inside
+ * the folder it lists, keeping its scroll position. Browser storage can be unavailable, so it's
+ * only ever tried.
  */
 export function page(options: PageOptions): string {
-	const { project, path, body, editorLink, hasFoldedCode } = options;
+	const { project, path, rail, body, editorLink, hasFoldedCode } = options;
 	const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
 	const actions = [
 		hasFoldedCode ? `<button type="button" data-toggle-code>Show code</button>` : "",
@@ -180,8 +184,13 @@ export function page(options: PageOptions): string {
 <style>${STYLE}</style>
 </head>
 <body data-path="${escapeHtml(path)}">
-<header class="bar"><nav class="crumbs">${breadcrumb(project, path)}</nav><div class="actions">${actions}</div></header>
+<div class="layout">
+${rail}
+<div class="page">
+<header class="bar"><button type="button" class="rail-toggle" data-toggle-rail aria-label="Show files">Files</button><nav class="crumbs">${breadcrumb(project, path)}</nav><div class="actions">${actions}</div></header>
 <main>${body}</main>
+</div>
+</div>
 <script>${SCRIPT}</script>
 </body>
 </html>
@@ -195,6 +204,27 @@ if (toggle) toggle.addEventListener("click", () => {
 	const open = !all.every((d) => d.open);
 	for (const d of all) d.open = open;
 	toggle.textContent = open ? "Hide code" : "Show code";
+});
+const rail = document.querySelector(".rail");
+const railKey = "prose:rail";
+try {
+	const saved = JSON.parse(sessionStorage.getItem(railKey) || "null");
+	if (saved) {
+		for (const d of rail.querySelectorAll("details[data-folder]")) {
+			if (saved.open.includes(d.dataset.folder)) d.open = true;
+		}
+		rail.scrollTop = saved.scroll;
+	}
+} catch {}
+rail.querySelector("[aria-current]")?.scrollIntoView({ block: "nearest" });
+addEventListener("pagehide", () => {
+	try {
+		const open = [...rail.querySelectorAll("details[data-folder][open]")].map((d) => d.dataset.folder);
+		sessionStorage.setItem(railKey, JSON.stringify({ open, scroll: rail.scrollTop }));
+	} catch {}
+});
+document.querySelector("[data-toggle-rail]").addEventListener("click", () => {
+	document.body.classList.toggle("rail-open");
 });
 const key = "prose:scroll:" + location.pathname;
 try {
