@@ -1,8 +1,9 @@
 /** @prose
- * The package's only public export is `prose()`, the Vite plugin factory (spec §6). The parser
- * and tree types are exported alongside it so a consumer can type against the shape of `tree`/
- * `node` RPC results without reaching into the package's internals.
+ * The package's library surface: the parser and the tree walk, for the renderer and for anyone
+ * who wants the same view of a repository in code. `prose .` (spec §4) will be the package's
+ * `bin`.
  */
-export { prose } from "./plugin.js";
-export type { FileParse, ProseChunk, ProseSection } from "./parser.js";
+export { firstParagraph, parseFile } from "./parser.js";
+export type { CodeLang, FileParse, ProseChunk, ProseSection } from "./parser.js";
+export { buildTree, findNode, projectFiles } from "./tree.js";
 export type { TreeNode } from "./tree.js";

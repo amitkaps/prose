@@ -5,16 +5,10 @@ Roadmap for building `prose/spec.md`; section numbers refer to it. This file hol
 ## Done
 
 - **0.1.0 and after** — a dev route on Devframe with a Svelte client, the `@note` annotator with safe writes, symbol and staleness checks, the HTML strip, and a released tarball (#2–#14). The parser (comments from `oxc-parser`, content-derived anchors, `.svelte`/YAML/TOML scanners) and the git-aware tree walk carry over; the rest is dropped (spec §6).
-- **Field use and the rewrite** — sitez and markz used 0.1.0; the route, notes and checks went unused, the `prose/` docs and `@prose` were read (`lessons.md`). The spec is now the convention plus a read-only renderer (#15, #16, this change).
+- **Field use and the rewrite** — sitez and markz used 0.1.0; the route, notes and checks went unused, the `prose/` docs and `@prose` were read (`lessons.md`). The spec is now the convention plus a read-only renderer (#15–#17).
+- **Cut the dropped code** — Devframe, the client, the Vite plugin, notes, checks and git blame are gone; the parser keeps blocks, chunks, pending and anchors (`declaredIdentifiers` moved to `src/names.ts`), and `src/tree.ts` is a plain walk with `prose/` as an ordinary folder. The library exports the parser and the tree until `prose .` lands.
 
 ## Open work, in order
-
-### 1. Cut the dropped code
-
-- [ ] Remove Devframe (`devframe`, `@devframes/vite`), the Svelte client (`client/`), `scripts/check-client-bundle.mjs`, `src/server/`, `src/plugin.ts`, `src/notes.ts`, `src/insertion.ts`, `src/checks.ts`, `src/git.ts`, `src/hash.ts` and `vite.prose.config.ts`, with their tests. Drop `fast-check` if nothing else uses it, and the `vite` peer.
-- [ ] `src/parser.ts`: remove `@note` handling and the write hash; keep blocks, chunks, pending, anchors (spec §3.1–§3.2).
-- [ ] `src/tree.ts`: remove warnings, blame and the `prose/` special case; keep the git-aware walk and first paragraphs (spec §4.1–§4.2).
-- [ ] Update the remaining code's `@prose` and its `§N` references to the new spec.
 
 ### 2. `prose .` (spec §4)
 
