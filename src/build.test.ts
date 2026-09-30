@@ -53,6 +53,7 @@ describe("build: examples/single", () => {
     expect(pages.sort()).toEqual(
       [
         ".gitignore.html",
+        "404.html",
         "index.html",
         "index.html.html",
         "main.js.html",
@@ -70,6 +71,13 @@ describe("build: examples/single", () => {
     const main = readFileSync(join(out, "main.js.html"), "utf-8");
     expect(main).toContain('id="state"');
     expect(main).toContain('class="code-head"');
+  });
+
+  it("writes the host's 404 page with the file tree, since it's served at any missing address", () => {
+    const missing = readFileSync(join(out, "404.html"), "utf-8");
+    expect(missing).toContain('<nav class="rail"');
+    expect(missing).toContain("Nothing at this address");
+    expect(missing).toContain('href="/main.js"');
   });
 
   it("leaves the live parts out and says which commit it is", () => {

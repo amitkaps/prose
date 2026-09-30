@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { warmHighlighter } from "./highlight.js";
-import { renderRoute, type Site } from "./server.js";
+import { notFoundPage, renderRoute, type Site } from "./server.js";
 import { walkFiles } from "./tree.js";
 
 export interface BuildOptions {
@@ -140,6 +140,8 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
     const files = walkFiles(snapshot, "").sort();
     const site: Site = { root: snapshot, project: basename(root), files, live: false, version };
     const paths = ["", ...folders(files), ...files];
+    // Written first, so a source file named `404` keeps its page.
+    writeFileSync(join(out, "404.html"), notFoundPage(site));
     for (const path of paths) {
       const route = await renderRoute(site, path);
       if (route.status !== 200) continue;
