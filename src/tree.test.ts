@@ -89,15 +89,6 @@ describe("buildTree", () => {
 		expect(file.source!.slice(...second.span!)).toBe("/** @prose A chunk. */");
 	});
 
-	it("carries a note left on the file prose block", () => {
-		const dir = makeProject({
-			"main.js": "/** @prose File. */\n/** @note\n * Split this up.\n */\nconst a = 1;\n",
-		});
-		const file = buildTree(dir).children[0]!;
-		expect(findNode(buildTree(dir), "main.js#file")?.note).toBe("Split this up.");
-		expect(file.blocks?.[0]!.note).toBe("Split this up.");
-	});
-
 	it("skips node_modules, dist and other generated directories", () => {
 		const dir = makeProject({
 			"node_modules/dep/index.js": "const a = 1;\n",
@@ -148,13 +139,12 @@ describe("buildTree: file source", () => {
 });
 
 describe("buildTree: raw files", () => {
-	it("shows JSON files as raw nodes carrying their text, with no chunks or warnings", () => {
+	it("shows JSON files as raw nodes carrying their text, with no chunks", () => {
 		const dir = makeProject({ "package.json": '{ "name": "x" }\n', "main.ts": "const a = 1;\n" });
 		const raw = buildTree(dir).children.find((n) => n.path === "package.json");
 		expect(raw?.kind).toBe("raw");
 		expect(raw?.code).toBe('{ "name": "x" }\n');
 		expect(raw?.children).toEqual([]);
-		expect(raw?.warningCount).toBe(0);
 	});
 
 	it("still excludes generated lockfiles", () => {
@@ -163,36 +153,19 @@ describe("buildTree: raw files", () => {
 	});
 });
 
-describe("buildTree: prose/ cross-cutting docs (spec §3.4)", () => {
-	it("surfaces prose/*.md files at L3, ahead of the folder tree, sorted alphabetically", () => {
+describe("buildTree: prose/ (spec §3.4)", () => {
+	it("is an ordinary folder, in its sorted place", () => {
 		const dir = makeProject({
 			"prose/lessons.md": "Lessons body.",
-			"prose/architecture.md": "Architecture body.",
-			"src/main.ts": "const a = 1;\n",
+			"main.ts": "const a = 1;\n",
 		});
 		const tree = buildTree(dir);
-		expect(tree.children.map((n) => n.path)).toEqual([
-			"prose/architecture.md",
-			"prose/lessons.md",
-			"src",
-		]);
-		expect(tree.children[0]!.prose).toBe("Architecture body.");
-	});
-
-	it("never turns prose itself into an ordinary folder node", () => {
-		const dir = makeProject({ "prose/lessons.md": "Lessons body." });
-		const tree = buildTree(dir);
-		expect(tree.children.find((n) => n.name === "prose")).toBeUndefined();
-	});
-
-	it("is a no-op when there is no prose/ directory", () => {
-		const dir = makeProject({ "main.js": "const a = 1;\n" });
-		const tree = buildTree(dir);
-		expect(tree.children.map((n) => n.path)).toEqual(["main.js"]);
+		expect(tree.children.map((n) => n.path)).toEqual(["main.ts", "prose"]);
+		expect(findNode(tree, "prose/lessons.md")?.prose).toBe("Lessons body.");
 	});
 });
 
-describe("projectFiles: a git-aware walk (spec §3.4)", () => {
+describe("projectFiles: a git-aware walk (spec §4.2)", () => {
 	it("lists tracked and untracked files, leaving out what .gitignore excludes", () => {
 		const dir = makeProject({
 			".gitignore": "coverage/\nbuild/\n",
@@ -225,16 +198,6 @@ describe("projectFiles: a git-aware walk (spec §3.4)", () => {
 		});
 		expect(projectFiles(dir)).toEqual(["src/a.ts"]);
 	});
-
-	it("treats only the root prose/ as cross-cutting docs; src/prose/ is an ordinary folder", () => {
-		const dir = makeProject({
-			"prose/lessons.md": "Lessons.",
-			"src/prose/render.ts": "/** @prose Renders prose. */\nexport {};\n",
-		});
-		const tree = buildTree(dir);
-		expect(tree.children.map((n) => n.path)).toEqual(["prose/lessons.md", "src"]);
-		expect(findNode(tree, "src/prose/render.ts")?.summary).toBe("Renders prose.");
-	});
 });
 
 describe("findNode", () => {
@@ -252,79 +215,5 @@ describe("findNode", () => {
 		const dir = makeProject({ "main.js": "const a = 1;\n" });
 		const tree = buildTree(dir);
 		expect(findNode(tree, "nope.js")).toBeNull();
-	});
-});
-
-describe("buildTree: checks (spec §5)", () => {
-	it("flags a symbol that resolves nowhere in the project, and rolls the count up to every ancestor", () => {
-		const dir = makeProject({
-			"main.js": "/** @prose File. */\n\n/** @prose Calls `doesNotExist`. */\nconst a = 1;\n",
-		});
-		const tree = buildTree(dir);
-		const chunk = findNode(tree, "main.js#a");
-		expect(chunk?.symbols).toEqual([{ text: "doesNotExist", status: "unresolved" }]);
-		expect(chunk?.warnings).toEqual([
-			{
-				kind: "unresolved-symbol",
-				symbol: "doesNotExist",
-				message: "`doesNotExist` isn't declared anywhere in this project.",
-			},
-		]);
-		expect(chunk?.warningCount).toBe(1);
-		const file = findNode(tree, "main.js");
-		expect(file?.warningCount).toBe(1);
-		expect(tree.warningCount).toBe(1);
-	});
-
-	it("links a symbol declared in a different chunk, project-wide, with no warning", () => {
-		const dir = makeProject({
-			"store.ts":
-				"/** @prose Store. */\n\n/** @prose The store. */\nexport function addTodo() {}\n",
-			"main.js": "/** @prose File. */\n\n/** @prose Calls `addTodo`. */\nconst a = 1;\n",
-		});
-		const tree = buildTree(dir);
-		const chunk = findNode(tree, "main.js#a");
-		expect(chunk?.symbols).toEqual([
-			{ text: "addTodo", status: "linked", target: "store.ts#addTodo" },
-		]);
-		expect(chunk?.warningCount).toBe(0);
-		expect(tree.warningCount).toBe(0);
-	});
-
-	it("resolves a symbol imported only in the file's preamble, shared across every chunk in that file", () => {
-		const dir = makeProject({
-			"docs.ts": [
-				"/** @prose File. */",
-				'import { marked } from "marked";',
-				"",
-				"/** @prose Uses `marked` to render docs. */",
-				"export function render() {}",
-			].join("\n"),
-		});
-		const tree = buildTree(dir);
-		const chunk = findNode(tree, "docs.ts#render");
-		expect(chunk?.symbols).toEqual([{ text: "marked", status: "local" }]);
-		expect(chunk?.warningCount).toBe(0);
-	});
-
-	it("has no warnings for a project with no git repo and no unresolved symbols", () => {
-		const dir = makeProject({
-			"main.js": "/** @prose File. */\n\n/** @prose A plain chunk, no symbols. */\nconst a = 1;\n",
-		});
-		const tree = buildTree(dir);
-		expect(tree.warningCount).toBe(0);
-	});
-});
-
-describe("buildTree: file-level findings", () => {
-	it("warns on a misplaced block and lists line notes on the file", () => {
-		const dir = makeProject({
-			"main.js":
-				"/** @prose File. */\nfunction f() {\n  /** @prose Lost. */\n  /** @note Look. */\n  g();\n}\n",
-		});
-		const file = findNode(buildTree(dir), "main.js");
-		expect(file?.warnings?.map((w) => w.kind)).toEqual(["misplaced-block"]);
-		expect(file?.warningCount).toBe(1);
-		expect(file?.lineNotes?.map((n) => [n.path, n.text])).toEqual([["main.js:4", "Look."]]);
 	});
 });

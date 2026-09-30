@@ -122,7 +122,6 @@ describe("parseFile: YAML/TOML (# @prose)", () => {
 		const parsed = parseFile(source, "toml");
 		expect(parsed.sections[0]!.chunks[0]!.prose).toBe("A chunk.");
 		expect(parsed.sections[0]!.chunks[0]!.code).toBe("port = 8080");
-		expect(parsed.sections[0]!.chunks[0]!.commentStyle).toBe("hash");
 		expect(parsed.sections[0]!.chunks[0]!.codeLang).toBe("toml");
 	});
 
@@ -195,92 +194,6 @@ describe("parseFile: .svelte (script/style as JS/CSS, markup as HTML, merged in 
 		expect(chunks[1]!.code).not.toContain("<style>");
 		expect(chunks[2]!.code).toBe("h1 { color: red; }");
 		expect(chunks[2]!.code).not.toContain("</style>");
-	});
-});
-
-describe("parseFile: @note", () => {
-	it("folds an @note directly after a chunk's @prose block into that chunk", () => {
-		const source = [
-			"/** @prose File. */",
-			"",
-			"/** @prose A chunk. */",
-			"/** @note Should this reject duplicates? */",
-			"const a = 1;",
-		].join("\n");
-		const parsed = parseFile(source, "js");
-		const chunk = parsed.sections[0]!.chunks[0]!;
-		expect(chunk.note).toBe("Should this reject duplicates?");
-		expect(chunk.code).toBe("const a = 1;");
-		expect(chunk.code).not.toContain("@note");
-	});
-
-	it("folds a hash-style @note after a YAML @prose block into that chunk, with no blank line between the two markers", () => {
-		const source =
-			"# @prose\n# File.\n\n# @prose\n# A chunk.\n# @note Double-check this port.\nport: 8080\n";
-		const parsed = parseFile(source, "yaml");
-		const chunk = parsed.sections[0]!.chunks[0]!;
-		expect(chunk.prose).toBe("A chunk.");
-		expect(chunk.note).toBe("Double-check this port.");
-		expect(chunk.code).toBe("port: 8080");
-		expect(chunk.commentStyle).toBe("hash");
-	});
-
-	it("records commentStyle and exact byte offsets for a chunk with no note yet", () => {
-		const source = ["/** @prose File. */", "", "/** @prose A chunk. */", "const a = 1;"].join("\n");
-		const parsed = parseFile(source, "js");
-		const chunk = parsed.sections[0]!.chunks[0]!;
-		expect(chunk.commentStyle).toBe("js");
-		expect(chunk.note).toBeUndefined();
-		expect(chunk.noteStartIndex).toBeUndefined();
-		expect(source.slice(chunk.proseEndIndex)).toBe("\nconst a = 1;");
-	});
-
-	it("records the note's exact byte span when one exists", () => {
-		const source = [
-			"/** @prose File. */",
-			"",
-			"/** @prose A chunk. */",
-			"/** @note A question. */",
-			"const a = 1;",
-		].join("\n");
-		const parsed = parseFile(source, "js");
-		const chunk = parsed.sections[0]!.chunks[0]!;
-		expect(source.slice(chunk.noteStartIndex, chunk.noteEndIndex)).toBe("/** @note A question. */");
-	});
-
-	it("drops a note that has real code between it and the preceding prose block", () => {
-		const source = [
-			"/** @prose File. */",
-			"",
-			"/** @prose A chunk. */",
-			"const a = 1;",
-			"/** @note Too late, code is already here. */",
-			"const b = 2;",
-		].join("\n");
-		const parsed = parseFile(source, "js");
-		const chunks = parsed.sections.flatMap((s) => s.chunks);
-		expect(chunks.every((c) => c.note === undefined)).toBe(true);
-		expect(chunks[0]!.code).toContain("const a = 1;");
-	});
-
-	it("drops a leading note with no preceding prose block to attach to", () => {
-		const source = "/** @note Nothing came before this. */\nconst a = 1;\n";
-		const parsed = parseFile(source, "js");
-		expect(parsed.fileProse).toBeNull();
-		expect(parsed.preamble).toBe(source.trim());
-	});
-
-	it("supports @note in HTML comment style too, with no gutter stripped", () => {
-		const source = [
-			"<!-- @prose File. -->",
-			"<!-- @prose A chunk. -->",
-			"<!-- @note A question. -->",
-			"<h1>hi</h1>",
-		].join("\n");
-		const parsed = parseFile(source, "html");
-		const chunk = parsed.sections[0]!.chunks[0]!;
-		expect(chunk.note).toBe("A question.");
-		expect(chunk.commentStyle).toBe("html");
 	});
 });
 
@@ -359,56 +272,36 @@ describe("anchors (spec §3.2)", () => {
 	});
 });
 
-describe("misplaced blocks (spec §3.1)", () => {
-	it("reports a @prose block inside a function or a rule, and does not make it a block", () => {
+describe("nested blocks (spec §3.1)", () => {
+	it("leaves a @prose block inside a function or a rule in the code, not as a block", () => {
 		const js = "/** @prose File. */\nfunction f() {\n  /** @prose Inside. */\n  g();\n}\n";
 		const parsed = parseFile(js, "ts");
-		expect(parsed.misplaced).toEqual([3]);
 		expect(parsed.sections.flatMap((s) => s.chunks)).toEqual([]);
+		expect(parsed.preamble).toContain("/** @prose Inside. */");
 		const css = "/** @prose File. */\n.a {\n  /** @prose Inside. */\n  color: red;\n}\n";
-		expect(parseFile(css, "css").misplaced).toEqual([3]);
+		expect(parseFile(css, "css").preamble).toContain("/** @prose Inside. */");
 	});
 
-	it("does not report a top-level block after a function, or an object literal's comment that isn't a block", () => {
+	it("still finds a top-level block after a function, and ignores an object literal's plain doc comment", () => {
 		const s =
 			"/** @prose File. */\nfunction f() {}\n/** @prose Next. */\nconst a = { /** doc */ b: 1 };\n";
-		const parsed = parseFile(s, "ts");
-		expect(parsed.misplaced).toEqual([]);
-		expect(parsed.sections[0]!.chunks).toHaveLength(1);
+		expect(parseFile(s, "ts").sections[0]!.chunks).toHaveLength(1);
+	});
+
+	it("leaves an indented YAML @prose in the code", () => {
+		const s = "# @prose\n# File.\na:\n  # @prose\n  # Ignored.\n  c: 2\n";
+		const parsed = parseFile(s, "yaml");
+		expect(parsed.sections.flatMap((s) => s.chunks)).toEqual([]);
+		expect(parsed.preamble).toContain("# Ignored.");
 	});
 });
 
-describe("line notes (spec §6.2)", () => {
-	it("makes a note straight after a @prose block its block note, and any other a line note", () => {
-		const s = [
-			"/** @prose File. */",
-			"/** @prose A chunk. */",
-			"/** @note Block note. */",
-			"/** @note Second, so a line note. */",
-			"function f() {",
-			"  /** @note In the body. */",
-			"  g();",
-			"}",
-		].join("\n");
-		const parsed = parseFile(s, "ts");
-		expect(parsed.sections[0]!.chunks[0]!.note).toBe("Block note.");
-		expect(parsed.lineNotes.map((n) => [n.startLine, n.text])).toEqual([
-			[4, "Second, so a line note."],
-			[6, "In the body."],
-		]);
-	});
-
-	it("finds a note in a file with no @prose block at all", () => {
-		const parsed = parseFile("const a = 1;\n/** @note Alone. */\nconst b = 2;\n", "ts");
-		expect(parsed.fileBlock).toBeNull();
-		expect(parsed.lineNotes.map((n) => n.text)).toEqual(["Alone."]);
-	});
-
-	it("reads an indented YAML note, but not an indented @prose", () => {
-		const s =
-			"# @prose\n# File.\na:\n  # @note\n  # Deep.\n  b: 1\n  # @prose\n  # Ignored.\n  c: 2\n";
-		const parsed = parseFile(s, "yaml");
-		expect(parsed.lineNotes.map((n) => n.text)).toEqual(["Deep."]);
-		expect(parsed.sections.flatMap((s) => s.chunks)).toEqual([]);
+describe("@note (dropped in 0.2.0)", () => {
+	it("is an ordinary comment, left in the chunk's code", () => {
+		const source =
+			"/** @prose File. */\n\n/** @prose A chunk. */\n/** @note A question. */\nconst a = 1;";
+		const chunk = parseFile(source, "js").sections[0]!.chunks[0]!;
+		expect(chunk.prose).toBe("A chunk.");
+		expect(chunk.code).toBe("/** @note A question. */\nconst a = 1;");
 	});
 });

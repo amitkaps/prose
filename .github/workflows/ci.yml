@@ -25,8 +25,8 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Format, lint, types (`vp check`) and Svelte diagnostics (`svelte-check`).
+      # Format, lint and types.
       - run: pnpm run check
       - run: pnpm run test
-      # Library + client SPA + the client-bundle regression guard.
+      # The library.
       - run: pnpm run build
