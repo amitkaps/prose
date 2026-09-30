@@ -125,8 +125,8 @@ The last block is a pending chunk: a plan item with no code yet.
 **Anchors.** Each block has an anchor, used as the fragment of its URL in the renderer (`src/store.ts#addTodo`) and in links from other prose. It's derived from content, so it names the same block after unrelated edits elsewhere in the file:
 
 1. The file prose is `file`.
-2. Otherwise, the first name the chunk's code declares: `addTodo`, `toggleTodo`. (JS and TS.)
-3. Otherwise, the slug of the block's heading: `filtering` for the pending chunk above.
+2. Otherwise, the slug of the block's heading, when it opens with one: `filtering` for the pending chunk above. The heading is what a reader sees, so it names the block before the code does.
+3. Otherwise, the first name the chunk's code declares: `addTodo`, `toggleTodo`. (JS and TS.)
 4. Otherwise, a positional fallback (`chunk-3`), the only kind that moves when blocks are inserted above it.
 
 A repeated anchor within a file gets a `-2`, `-3` suffix in source order.
@@ -175,10 +175,10 @@ URLs mirror repo paths, so a relative link in the prose works the same in the re
 
 - **A folder** (`/`, `/src/`): its `README.md`, then its subfolders and files, each with its first paragraph: a folder's from its `README.md`, a Markdown file's from its first paragraph, a source file's from its file prose. A source file without prose says *undocumented*, so coverage is visible where you read, without a report.
 - **A Markdown file** (`/prose/plan.md`): rendered as it is.
-- **A source file** (`/src/store.ts`): one document. The file prose first, then each chunk's prose in source order, with its code between them in a folded, highlighted block. A pending chunk shows as its prose with a *pending* mark. A file with no prose is its code, unfolded. A **Show code** toggle unfolds every block on the page. Each block's anchor (§3.2) is its fragment.
+- **A source file** (`/src/store.ts`): one document. The file prose first, then each chunk's prose in source order, with its code between them. Each run of code is a panel with a header that stays in every mode (a chevron, how many lines and which, the language), numbered with the file's own line numbers, highlighted, and wrapped only past 100 columns: prose keeps the reading measure, code widens to the formatter's print width. A pending chunk shows as its prose with a *pending* mark. Each block's anchor (§3.2) is its fragment, with a `#` in the margin beside its first line, heading or text, to link to it; the file prose, being the top of the page, has none. A **Prose & Code / Prose only** switch sets whether runs start open, remembered across pages; a run's header opens or closes that run on its own. The switch is on every page, in the same place, disabled where there's no code. A file with no prose says so, and is one run with the same header.
 - **Any other text file** (`package.json`, a lockfile excepted): highlighted, unfolded.
 
-Every page has a breadcrumb to its ancestors and a link to open the file in the editor. The page reloads when a file it shows changes, keeping the scroll position.
+Every page has the repository's file tree on the left, as an editor's explorer shows it: folders first, the folders around the current page open, and the reader's own opened folders kept from page to page. On a narrow screen it sits behind a **Files** button. Every page also has a breadcrumb to its ancestors and a link to open the file in the editor. The page reloads when a file it shows changes, keeping the scroll position.
 
 ### 4.2 What it reads
 
@@ -190,9 +190,9 @@ Every page has a breadcrumb to its ancestors and a link to open the file in the 
 
 - JS and TS comments, including a `.svelte` file's `<script>`, come from `oxc-parser` (its comment list and the AST for depth). CSS, HTML, YAML and TOML use a small scanner.
 - Markdown, in files and in prose blocks, is rendered with [markz](https://github.com/amitkaps/markz). What markz doesn't support stays literal text.
-- Code is highlighted on the server with shiki.
-- One stylesheet: a readable column, light and dark.
-- A file is parsed when its page is requested; a folder page reads only its children's first paragraphs. At the target size (§2) that's fast enough with nothing cached but the highlighter.
+- Code is highlighted on the server with shiki, in the page's own palette: each token's colour is a CSS variable the stylesheet sets for light and dark.
+- One stylesheet: a readable column, light and dark, tabs two columns wide. Moving between pages is a cross-document view transition with the file tree held still.
+- A file is parsed when its page is requested, and kept by its modification time and size, so a changed file is always read afresh; highlighted code is kept by its text. A folder page reads only its children's first paragraphs. The highlighter starts with the server, and Chrome prerenders a link when the pointer rests on it, so most pages are already built when clicked.
 - It binds to `127.0.0.1`; `--port` picks the port (default `1234`, or the next free one).
 
 ## 5. Agent contract

@@ -12,41 +12,41 @@ import { basename, join, resolve } from "node:path";
 import { type CodeLang, firstParagraph, parseFile, type ProseChunk } from "./parser.js";
 
 export interface TreeNode {
-	name: string;
-	kind: "project" | "folder" | "file" | "raw" | "chunk";
-	/** The repo path, with `#anchor` for a chunk: `src/store.ts#addTodo`. */
-	path: string;
-	summary: string;
-	pending?: boolean;
-	prose?: string | null;
-	code?: string;
-	/** File-only (not `.md`): the whole file's text, so its code shows whether or not it has prose. */
-	source?: string;
-	/** File-only: every prose block in the file, the file prose first, in source order. A file is
-	 *  the smallest unit (spec §3.2), so `children` is always empty for a file. */
-	blocks?: TreeNode[];
-	/** Chunk-only: the byte range `[start, end)` of this block's comment in the file's `source`,
-	 *  so a renderer can put the prose where the comment was and show the code around it. */
-	span?: [number, number];
-	/** Chunk-only: the 1-based line the comment starts on. */
-	line?: number;
-	/** Chunk-only: the language of this chunk's code. */
-	codeLang?: CodeLang;
-	children: TreeNode[];
+  name: string;
+  kind: "project" | "folder" | "file" | "raw" | "chunk";
+  /** The repo path, with `#anchor` for a chunk: `src/store.ts#addTodo`. */
+  path: string;
+  summary: string;
+  pending?: boolean;
+  prose?: string | null;
+  code?: string;
+  /** File-only (not `.md`): the whole file's text, so its code shows whether or not it has prose. */
+  source?: string;
+  /** File-only: every prose block in the file, the file prose first, in source order. A file is
+   *  the smallest unit (spec §3.2), so `children` is always empty for a file. */
+  blocks?: TreeNode[];
+  /** Chunk-only: the byte range `[start, end)` of this block's comment in the file's `source`,
+   *  so a renderer can put the prose where the comment was and show the code around it. */
+  span?: [number, number];
+  /** Chunk-only: the 1-based line the comment starts on. */
+  line?: number;
+  /** Chunk-only: the language of this chunk's code. */
+  codeLang?: CodeLang;
+  children: TreeNode[];
 }
 
 /** Only used outside a git repository; inside one, `.gitignore` decides (`projectFiles`). */
 const SKIP_DIRS = new Set(["node_modules", "dist"]);
 const SOURCE_EXTENSIONS = new Set([
-	"js",
-	"ts",
-	"css",
-	"html",
-	"svelte",
-	"md",
-	"yaml",
-	"yml",
-	"toml",
+  "js",
+  "ts",
+  "css",
+  "html",
+  "svelte",
+  "md",
+  "yaml",
+  "yml",
+  "toml",
 ]);
 // JSON has no comment for `@prose` to live in, but its structure (dependencies, scripts,
 // compiler options) is worth reading, so it's shown as `raw` text.
@@ -54,23 +54,23 @@ const RAW_EXTENSIONS = new Set(["json", "jsonc"]);
 const RAW_MAX_BYTES = 200_000;
 // Generated, never written by hand: excluded by name, since `.yaml` and `.json` are otherwise shown.
 const RESERVED_FILENAMES = new Set([
-	"pnpm-lock.yaml",
-	"package-lock.json",
-	"yarn.lock",
-	"bun.lock",
-	"bun.lockb",
+  "pnpm-lock.yaml",
+  "package-lock.json",
+  "yarn.lock",
+  "bun.lock",
+  "bun.lockb",
 ]);
 
 function extensionOf(name: string): string {
-	return name.slice(name.lastIndexOf(".") + 1).toLowerCase();
+  return name.slice(name.lastIndexOf(".") + 1).toLowerCase();
 }
 
 function readReadme(dir: string): string | null {
-	try {
-		return readFileSync(join(dir, "README.md"), "utf-8");
-	} catch {
-		return null;
-	}
+  try {
+    return readFileSync(join(dir, "README.md"), "utf-8");
+  } catch {
+    return null;
+  }
 }
 
 /** @prose
@@ -80,66 +80,83 @@ function readReadme(dir: string): string | null {
  * marker, no chunks. Every other source file goes through `parseFile`, and its blocks hang off
  * the file node in source order, the file prose first.
  */
-function fileToNode(root: string, relPath: string): TreeNode {
-	const source = readFileSync(join(root, relPath), "utf-8");
-	if (extensionOf(relPath) === "md") {
-		const prose = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
-		return {
-			name: relPath,
-			kind: "file",
-			path: relPath,
-			summary: firstParagraph(prose),
-			prose,
-			children: [],
-		};
-	}
+export function fileToNode(root: string, relPath: string): TreeNode {
+  const absPath = join(root, relPath);
+  const stat = statSync(absPath);
+  const cached = parseCache.get(absPath);
+  if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) return cached.node;
+  const node = readFileNode(absPath, relPath);
+  parseCache.set(absPath, { mtimeMs: stat.mtimeMs, size: stat.size, node });
+  return node;
+}
 
-	const parsed = parseFile(source, extensionOf(relPath));
-	const chunkNode = (chunk: ProseChunk): TreeNode => ({
-		name: chunk.heading ?? chunk.anchor,
-		kind: "chunk",
-		path: `${relPath}#${chunk.anchor}`,
-		summary: firstParagraph(chunk.prose),
-		pending: chunk.pending,
-		prose: chunk.prose,
-		code: chunk.code,
-		codeLang: chunk.codeLang,
-		line: chunk.startLine,
-		span: [chunk.startIndex, chunk.endIndex],
-		children: [],
-	});
-	const blocks: TreeNode[] = [];
-	if (parsed.fileBlock) blocks.push(chunkNode(parsed.fileBlock));
-	for (const section of parsed.sections) {
-		for (const chunk of section.chunks) blocks.push(chunkNode(chunk));
-	}
+/** @prose
+ * Parsed files are kept by path, with the modification time and size they were read at, so a
+ * folder page doesn't parse every child again on each visit: an edited file has a new time and is
+ * read afresh. `fileToNode` checks the cache; the nodes it hands out are never changed.
+ */
+const parseCache = new Map<string, { mtimeMs: number; size: number; node: TreeNode }>();
 
-	return {
-		name: relPath,
-		kind: "file",
-		path: relPath,
-		summary: parsed.fileProse ? firstParagraph(parsed.fileProse) : "undocumented",
-		prose: parsed.fileProse,
-		source,
-		blocks,
-		children: [],
-	};
+function readFileNode(absPath: string, relPath: string): TreeNode {
+  const source = readFileSync(absPath, "utf-8");
+  if (extensionOf(relPath) === "md") {
+    const prose = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
+    return {
+      name: relPath,
+      kind: "file",
+      path: relPath,
+      summary: firstParagraph(prose),
+      prose,
+      children: [],
+    };
+  }
+
+  const parsed = parseFile(source, extensionOf(relPath));
+  const chunkNode = (chunk: ProseChunk): TreeNode => ({
+    name: chunk.heading ?? chunk.anchor,
+    kind: "chunk",
+    path: `${relPath}#${chunk.anchor}`,
+    summary: firstParagraph(chunk.prose),
+    pending: chunk.pending,
+    prose: chunk.prose,
+    code: chunk.code,
+    codeLang: chunk.codeLang,
+    line: chunk.startLine,
+    span: [chunk.startIndex, chunk.endIndex],
+    children: [],
+  });
+  const blocks: TreeNode[] = [];
+  if (parsed.fileBlock) blocks.push(chunkNode(parsed.fileBlock));
+  for (const section of parsed.sections) {
+    for (const chunk of section.chunks) blocks.push(chunkNode(chunk));
+  }
+
+  return {
+    name: relPath,
+    kind: "file",
+    path: relPath,
+    summary: parsed.fileProse ? firstParagraph(parsed.fileProse) : "undocumented",
+    prose: parsed.fileProse,
+    source,
+    blocks,
+    children: [],
+  };
 }
 
 /** A file that can't carry prose (JSON has no comments): its text, shown as it is, and counted
  *  as neither documented nor undocumented. Oversized files are skipped. */
-function rawToNode(root: string, relPath: string): TreeNode | null {
-	const absPath = join(root, relPath);
-	if (statSync(absPath).size > RAW_MAX_BYTES) return null;
-	return {
-		name: relPath,
-		kind: "raw",
-		path: relPath,
-		summary: "",
-		prose: null,
-		code: readFileSync(absPath, "utf-8"),
-		children: [],
-	};
+export function rawToNode(root: string, relPath: string): TreeNode | null {
+  const absPath = join(root, relPath);
+  if (statSync(absPath).size > RAW_MAX_BYTES) return null;
+  return {
+    name: relPath,
+    kind: "raw",
+    path: relPath,
+    summary: "",
+    prose: null,
+    code: readFileSync(absPath, "utf-8"),
+    children: [],
+  };
 }
 
 /** @prose
@@ -152,77 +169,77 @@ function rawToNode(root: string, relPath: string): TreeNode | null {
  * the root, with `/` separators.
  */
 export function projectFiles(root: string): string[] {
-	const listed = gitFiles(root) ?? walkFiles(root, "");
-	return listed
-		.filter((path) => {
-			const segments = path.split("/");
-			const name = segments.at(-1)!;
-			if (segments.some((segment) => segment.startsWith("."))) return false;
-			if (RESERVED_FILENAMES.has(name)) return false;
-			const ext = extensionOf(name);
-			return SOURCE_EXTENSIONS.has(ext) || RAW_EXTENSIONS.has(ext);
-		})
-		.sort();
+  const listed = gitFiles(root) ?? walkFiles(root, "");
+  return listed
+    .filter((path) => {
+      const segments = path.split("/");
+      const name = segments.at(-1)!;
+      if (segments.some((segment) => segment.startsWith("."))) return false;
+      if (RESERVED_FILENAMES.has(name)) return false;
+      const ext = extensionOf(name);
+      return SOURCE_EXTENSIONS.has(ext) || RAW_EXTENSIONS.has(ext);
+    })
+    .sort();
 }
 
 /** Tracked files plus untracked ones not ignored, or `null` outside a git repository. A file
  *  deleted from the working tree but still in the index is dropped, as is a submodule's entry
  *  (a directory, not a file). */
 function gitFiles(root: string): string[] | null {
-	let output: string;
-	try {
-		output = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
-			cwd: root,
-			encoding: "utf-8",
-			stdio: ["ignore", "pipe", "ignore"],
-			maxBuffer: 64 * 1024 * 1024,
-		});
-	} catch {
-		return null;
-	}
-	const files = [...new Set(output.split("\0").filter(Boolean))];
-	return files.filter((path) => {
-		try {
-			return statSync(join(root, path)).isFile();
-		} catch {
-			return false;
-		}
-	});
+  let output: string;
+  try {
+    output = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
+      cwd: root,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+      maxBuffer: 64 * 1024 * 1024,
+    });
+  } catch {
+    return null;
+  }
+  const files = [...new Set(output.split("\0").filter(Boolean))];
+  return files.filter((path) => {
+    try {
+      return statSync(join(root, path)).isFile();
+    } catch {
+      return false;
+    }
+  });
 }
 
 function walkFiles(root: string, relDir: string): string[] {
-	const files: string[] = [];
-	for (const entry of readdirSync(join(root, relDir))) {
-		if (entry.startsWith(".") || SKIP_DIRS.has(entry)) continue;
-		const relPath = relDir ? `${relDir}/${entry}` : entry;
-		const stat = statSync(join(root, relPath));
-		if (stat.isDirectory()) files.push(...walkFiles(root, relPath));
-		else if (stat.isFile()) files.push(relPath);
-	}
-	return files;
+  const files: string[] = [];
+  for (const entry of readdirSync(join(root, relDir))) {
+    if (entry.startsWith(".") || SKIP_DIRS.has(entry)) continue;
+    const relPath = relDir ? `${relDir}/${entry}` : entry;
+    const stat = statSync(join(root, relPath));
+    if (stat.isDirectory()) files.push(...walkFiles(root, relPath));
+    else if (stat.isFile()) files.push(relPath);
+  }
+  return files;
 }
 
 interface DirIndex {
-	files: string[];
-	dirs: Map<string, DirIndex>;
+  files: string[];
+  dirs: Map<string, DirIndex>;
 }
 
 function indexFiles(paths: string[]): DirIndex {
-	const top: DirIndex = { files: [], dirs: new Map() };
-	for (const path of paths) {
-		const segments = path.split("/");
-		let dir = top;
-		for (const segment of segments.slice(0, -1)) {
-			let next = dir.dirs.get(segment);
-			if (!next) {
-				next = { files: [], dirs: new Map() };
-				dir.dirs.set(segment, next);
-			}
-			dir = next;
-		}
-		dir.files.push(segments.at(-1)!);
-	}
-	return top;
+  const top: DirIndex = { files: [], dirs: new Map() };
+  for (const path of paths) {
+    const segments = path.split("/");
+    let dir = top;
+    for (const segment of segments.slice(0, -1)) {
+      let next = dir.dirs.get(segment);
+      if (!next) {
+        next = { files: [], dirs: new Map() };
+        dir.dirs.set(segment, next);
+      }
+      dir = next;
+    }
+    dir.files.push(segments.at(-1)!);
+  }
+  return top;
 }
 
 /** @prose
@@ -233,58 +250,108 @@ function indexFiles(paths: string[]): DirIndex {
  * dead end.
  */
 function folderToNode(root: string, relDir: string, name: string, index: DirIndex): TreeNode {
-	const readme = index.files.includes("README.md")
-		? readReadme(relDir ? join(root, relDir) : root)
-		: null;
-	const children: TreeNode[] = [];
-	const entries = [...index.dirs.keys(), ...index.files].sort();
+  const readme = index.files.includes("README.md")
+    ? readReadme(relDir ? join(root, relDir) : root)
+    : null;
+  const children: TreeNode[] = [];
+  const entries = [...index.dirs.keys(), ...index.files].sort();
 
-	for (const entry of entries) {
-		const relPath = relDir ? `${relDir}/${entry}` : entry;
-		const sub = index.dirs.get(entry);
-		if (sub) {
-			const node = folderToNode(root, relPath, entry, sub);
-			if (node.children.length > 0 || node.prose) children.push(node);
-		} else if (entry === "README.md") {
-			continue;
-		} else if (SOURCE_EXTENSIONS.has(extensionOf(entry))) {
-			children.push(fileToNode(root, relPath));
-		} else {
-			const raw = rawToNode(root, relPath);
-			if (raw) children.push(raw);
-		}
-	}
+  for (const entry of entries) {
+    const relPath = relDir ? `${relDir}/${entry}` : entry;
+    const sub = index.dirs.get(entry);
+    if (sub) {
+      const node = folderToNode(root, relPath, entry, sub);
+      if (node.children.length > 0 || node.prose) children.push(node);
+    } else if (entry === "README.md") {
+      continue;
+    } else if (SOURCE_EXTENSIONS.has(extensionOf(entry))) {
+      children.push(fileToNode(root, relPath));
+    } else {
+      const raw = rawToNode(root, relPath);
+      if (raw) children.push(raw);
+    }
+  }
 
-	return {
-		name,
-		kind: "folder",
-		path: relDir || ".",
-		summary: readme ? firstParagraph(readme) : "undocumented",
-		prose: readme,
-		children,
-	};
+  return {
+    name,
+    kind: "folder",
+    path: relDir || ".",
+    summary: readme ? firstParagraph(readme) : "undocumented",
+    prose: readme,
+    children,
+  };
+}
+
+/** @prose
+ * # One folder, one level deep
+ *
+ * What a folder page needs, and no more (spec §4.1): its `README.md` as prose, then its
+ * subfolders, each summarized by its own `README.md`, and its files, each summarized by its
+ * first paragraph. Subfolders aren't walked and raw files aren't read, so a page costs the files
+ * directly in the folder, whatever the size of the repository. Returns `null` for a folder that
+ * holds nothing the walk lists.
+ */
+export function folderListing(root: string, files: string[], relDir: string): TreeNode | null {
+  let index: DirIndex | undefined = indexFiles(files);
+  for (const segment of relDir ? relDir.split("/") : []) index = index?.dirs.get(segment);
+  if (!index) return null;
+
+  const readme = index.files.includes("README.md")
+    ? readReadme(relDir ? join(root, relDir) : root)
+    : null;
+  const children: TreeNode[] = [];
+  for (const name of [...index.dirs.keys()].sort()) {
+    const path = relDir ? `${relDir}/${name}` : name;
+    const sub = index.dirs.get(name)!;
+    const subReadme = sub.files.includes("README.md") ? readReadme(join(root, path)) : null;
+    children.push({
+      name,
+      kind: "folder",
+      path,
+      summary: subReadme ? firstParagraph(subReadme) : "undocumented",
+      prose: subReadme,
+      children: [],
+    });
+  }
+  for (const name of [...index.files].sort()) {
+    if (name === "README.md") continue;
+    const path = relDir ? `${relDir}/${name}` : name;
+    children.push(
+      SOURCE_EXTENSIONS.has(extensionOf(name))
+        ? fileToNode(root, path)
+        : { name: path, kind: "raw", path, summary: "", prose: null, children: [] },
+    );
+  }
+  return {
+    name: relDir ? relDir.split("/").at(-1)! : basename(resolve(root)),
+    kind: relDir ? "folder" : "project",
+    path: relDir || ".",
+    summary: readme ? firstParagraph(readme) : "undocumented",
+    prose: readme,
+    children,
+  };
 }
 
 /** The project is the root folder's node, relabeled. */
 export function buildTree(root: string): TreeNode {
-	const projectNode = folderToNode(
-		root,
-		"",
-		basename(resolve(root)),
-		indexFiles(projectFiles(root)),
-	);
-	projectNode.kind = "project";
-	return projectNode;
+  const projectNode = folderToNode(
+    root,
+    "",
+    basename(resolve(root)),
+    indexFiles(projectFiles(root)),
+  );
+  projectNode.kind = "project";
+  return projectNode;
 }
 
 /** Finds a node by its path, a block included (`src/store.ts#addTodo`). A plain recursive search:
  *  the tree is small enough (spec §2) that an index would be premature. */
 export function findNode(tree: TreeNode, path: string): TreeNode | null {
-	if (tree.path === path) return tree;
-	for (const block of tree.blocks ?? []) if (block.path === path) return block;
-	for (const child of tree.children) {
-		const found = findNode(child, path);
-		if (found) return found;
-	}
-	return null;
+  if (tree.path === path) return tree;
+  for (const block of tree.blocks ?? []) if (block.path === path) return block;
+  for (const child of tree.children) {
+    const found = findNode(child, path);
+    if (found) return found;
+  }
+  return null;
 }

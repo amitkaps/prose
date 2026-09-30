@@ -8,9 +8,9 @@ repository as a document. It is two things:
   Markdown-first document.
 
 The design is in [prose/spec.md](prose/spec.md) and the order of the work in
-[prose/plan.md](prose/plan.md). The renderer is being built; until it is released, this package
-holds only the parser and the tree walk. 0.1.0, the last release of the earlier Vite plugin and
-its `/__prose/` route, stays available on the
+[prose/plan.md](prose/plan.md). The renderer isn't released yet; from a checkout, `pnpm build`
+then `node dist/cli.js <dir>`. 0.1.0, the last release of the earlier Vite plugin and its
+`/__prose/` route, stays available on the
 [releases page](https://github.com/amitkaps/prose/releases/tag/v0.1.0).
 
 ## The convention
@@ -42,7 +42,8 @@ by convention in a root `prose/` folder, linked to the code by repo path.
 ```sh
 pnpm install
 pnpm run check && pnpm run test
-pnpm run build        # the library (vp pack)
+pnpm run build        # the library and the command (vp pack)
+node dist/cli.js .    # read this repository with prose
 ```
 
 ## Release
