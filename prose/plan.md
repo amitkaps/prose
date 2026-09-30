@@ -4,76 +4,43 @@ Roadmap for building `prose/spec.md`; section numbers refer to it. This file hol
 
 ## Done
 
-In the order it landed. Everything up to 0.1.0 built the dev route that spec §7 now lists as dropped; the parser, the tree walk and the checks carry over.
-
-- **Skeleton** — plugin, parser, read-only `/__prose/` on Devframe, `examples/single`, `tsdown` + `vite-plus` toolchain, the repo dogfooded with `@prose`.
-- **Checks** — symbol check (`oxc-parser`) and staleness check (`git blame --porcelain`) (§5.1–§5.2).
-- **Annotator** — `@note` parser, write-back, client UI.
-- **More languages** — `.svelte`, `.md`, `.yaml`/`.toml`; HTML-strip build hook; the real app (now `amitkaps/base`) converted.
-- **Svelte client** — rail, palette, badges, project-health panel.
-- **File as the leaf** — files are the smallest navigable unit (§3.2).
-- **CI** — `check`, `test`, `build` on every PR (#2).
-- **Safe writes, anchors, parser on oxc, line notes** — content-derived anchors (§3.2) and JS/TS comments from `oxc-parser` (§3.1) carry over; the write path doesn't.
-- **Installable, 0.1.0** — `vp pack`, `release.yml` attaches the packed tarball to a GitHub Release on a `vX.Y.Z` tag (#8).
-- **Real-app test case** — `amitkaps/base` installs the released tarball (amitkaps/base#17).
-- **Field use and the pivot** — sitez and markz used 0.1.0; the route and `@note` went unused, the `prose/` docs and `@prose` were read (spec §1, §7; `lessons.md`). Spec rewritten around a Markdown viewer and a checker.
+- **0.1.0 and after** — a dev route on Devframe with a Svelte client, the `@note` annotator with safe writes, symbol and staleness checks, the HTML strip, and a released tarball (#2–#14). The parser (comments from `oxc-parser`, content-derived anchors, `.svelte`/YAML/TOML scanners) and the git-aware tree walk carry over; the rest is dropped (spec §6).
+- **Field use and the rewrite** — sitez and markz used 0.1.0; the route, notes and checks went unused, the `prose/` docs and `@prose` were read (`lessons.md`). The spec is now the convention plus a read-only renderer (#15, #16, this change).
 
 ## Open work, in order
 
 ### 1. Cut the dropped code
 
-- [ ] Remove Devframe (`devframe`, `@devframes/vite`), the Svelte client (`client/`), `scripts/check-client-bundle.mjs`, `src/server/`, `src/notes.ts`, `src/insertion.ts`, and `@note` handling in `src/parser.ts`, with their tests. `fast-check` goes if nothing else uses it.
-- [ ] `prose()` keeps only the HTML strip (§6.4), `@prose` only.
-- [ ] Update the code's `@prose` and its `§N` references to the new spec; README to match.
+- [ ] Remove Devframe (`devframe`, `@devframes/vite`), the Svelte client (`client/`), `scripts/check-client-bundle.mjs`, `src/server/`, `src/plugin.ts`, `src/notes.ts`, `src/insertion.ts`, `src/checks.ts`, `src/git.ts`, `src/hash.ts` and `vite.prose.config.ts`, with their tests. Drop `fast-check` if nothing else uses it, and the `vite` peer.
+- [ ] `src/parser.ts`: remove `@note` handling and the write hash; keep blocks, chunks, pending, anchors (spec §3.1–§3.2).
+- [ ] `src/tree.ts`: remove warnings, blame and the `prose/` special case; keep the git-aware walk and first paragraphs (spec §4.1–§4.2).
+- [ ] Update the remaining code's `@prose` and its `§N` references to the new spec.
 
-### 2. `prose check` (spec §5.4)
+### 2. `prose .` (spec §4)
 
-- [ ] A `prose` bin with `check [root]` and `--strict`, over the existing `tree.ts` and `checks.ts`. No Vite.
-- [ ] Output: `file:line  kind  message`, grouped by file, a count at the end.
-- [ ] Run it in this repo's CI with `--strict`.
+- [ ] A `prose` bin: `prose [dir]`, `--port`, opens the browser. `node:http`, loopback only.
+- [ ] Pages: folder, Markdown, source file as one document with folded code and a **Show code** toggle, other text files (§4.1). Anchors as fragments; breadcrumb; editor link.
+- [ ] Markdown through `@amitkaps/markz`, replacing `markdown-exit`; code through shiki (`shiki/core`, explicit languages, per `lessons.md`).
+- [ ] Stylesheet from sitez's reset.
+- [ ] Live reload: a watcher and a server-sent event.
+- [ ] Tests against `examples/single`: each page kind renders with the expected headings; a path outside the root is a 404.
 
-### 3. `prose serve` (spec §6)
+### 3. Release 0.2.0
 
-- [ ] `node:http` server, loopback by default, `--port`/`--host`; serves only files in the tree (§6.3).
-- [ ] Pages: project, folder, doc, source file as one Markdown document with folded code, **Show code** toggle, anchors as fragments (§6.1).
-- [ ] Server-side highlighting (shiki, `shiki/core` with explicit languages, per `lessons.md`); one stylesheet, light and dark.
-- [ ] Live reload: a watcher plus a server-sent event.
-- [ ] Links: relative Markdown links resolve to viewer pages; an editor link on every page.
+- [ ] README rewritten around the two things (spec intro), with the §5 snippet to copy.
+- [ ] Release 0.2.0 as a GitHub release tarball, as 0.1.0 was.
 
-### 4. Release 0.2.0 and move the field repos to it
+### 4. Use it
 
-- [ ] Release 0.2.0.
-- [ ] `amitkaps/base`, `amitkaps/sitez`, `amitkaps/markz`: install it, update the §8 snippet in `AGENTS.md`, fold the open `@note` in sitez's `src/site.ts` into its prose, and run `prose check`.
-- [ ] markz: make `@prose` blocks link to `grammar.md` instead of restating its rules (§3.5); use it as the first case for §5.3's duplication check.
-- [ ] Run the §9.2 checklist.
+- [ ] base, sitez, markz: install 0.2.0, remove `prose()` from their Vite configs, replace the snippet in `AGENTS.md` with spec §5, and fold sitez's open `@note` (`src/site.ts`) into its prose.
+- [ ] markz: make `@prose` blocks link to `grammar.md` instead of restating its rules (spec §3.5).
+- [ ] Two weeks of work on sitez and markz, then decide whether the renderer stays (spec §7).
 
-### 5. Sync `prose/` with `@prose` (spec §5.3)
+### Later
 
-Ordered by cost.
-
-- [ ] **(a) Section references** (`§N` against the named doc's numbered headings): first, since they have already drifted twice.
-- [ ] **(b) Anchor references**, both directions (§5.3 item 2).
-- [ ] **(c) Symbol check on `prose/*.md`**, in `proseDocs` (`src/tree.ts`) and `src/checks.ts`.
-- [ ] **(d) Duplication** between `@prose` and `prose/` (§5.3 item 5).
-- [ ] **(e) Doc staleness**: paragraph-level blame against the chunks a paragraph references.
-- [ ] **(f) Evaluate** `covers:` frontmatter.
-
-### Checks polish
-
-- [ ] **Symbol-check noise** (about 20 warnings in this repo, mostly external names): label them true/false first, then an ignore list or a per-block opt-out.
-- [ ] **Staleness ignores reformats**: pending chunk in `src/git.ts`.
-- [ ] **Staleness for the file prose**: compare against the newest code anywhere in the file.
-
-### Distribution
-
-- [ ] Publish to a registry (npm `@amitkaps/prose`) once the CLI has settled; decide the versioning policy before 1.0.
-
-### Testing, alongside the steps above
-
-- [ ] Parser over a corpus of real repos (the three in §9.2 first): never throws; reassembling blocks and code gives the original bytes.
-- [ ] Git fixture repos for staleness: code-only, prose-only, both, uncommitted, reformat-only.
-- [ ] `prose serve` against `examples/single` in a test: each page kind returns 200 with the expected headings; a path outside the root is a 404.
+- [ ] In sitez, not here: how internal docs (`plan.md`, `lessons.md`) stay off a published site, and whether its content folder keeps the name `prose/`.
+- [ ] Publish to npm once the CLI has settled; check whether an unscoped name is available for `npx`.
 
 ## Open questions
 
-See spec §10.
+See spec §8.
