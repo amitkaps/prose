@@ -33,7 +33,7 @@ Repo: [amitkaps/prose](https://github.com/amitkaps/prose) · npm: `@amitkaps/pro
 | ----------------------------------------------------------------------- | ---------------------------------------------------- |
 | `@prose` in `.ts`, `.js`, `.css`, `.html`, `.svelte`, `.yaml`/`.yml`, `.toml` | New file types, tangling, `.ts.md`             |
 | Rendering any repository read-only: Markdown, source with its prose, other text | Editing anything, notes, review state        |
-| Local reading, on the human's machine                                   | Publishing: that's [sitez](https://github.com/amitkaps/sitez)'s job |
+| Local reading, on the human's machine                                   | Publishing: any static site generator can publish the Markdown |
 | First paragraphs as summaries                                           | Checks, coverage reports, LLM summaries              |
 
 Target: one person's repositories, up to about 500 files.
@@ -148,7 +148,7 @@ prose/
 
 - **Keep one short promises doc.** `idea.md`, `spec.md`, whatever the project calls it: what the project promises and what it leaves out ("not in v1"). In use it was the most valuable file: decisions could be argued from it, and its non-goals stopped scope creep. It pays off because it's short enough to hold in mind.
 - **Decisions land in the prose.** A decision reached in the chat that spans files goes into the doc it changes, in the same change as the code (§5). One that concerns a single spot goes into that spot's `@prose`.
-- **`prose/` is a suggestion, not a mechanism.** The renderer treats it as an ordinary folder of Markdown (§4.1). Its name lines up with [sitez](https://github.com/amitkaps/sitez), which publishes a `prose/` folder as a site, so a project's docs can be read locally with Prose and published with sitez from the same files. What sitez publishes, and how internal docs like `plan.md` stay off the site, is sitez's concern.
+- **`prose/` is a suggestion, not a mechanism.** The renderer treats it as an ordinary folder of Markdown (§4.1). Because it's plain Markdown linked by repo path, a static site generator can publish it as it is; what gets published, and how internal docs like `plan.md` stay off a site, is that tool's concern.
 
 ### 3.5 References
 
@@ -189,11 +189,11 @@ Every page has a breadcrumb to its ancestors and a link to open the file in the 
 ### 4.3 How it renders
 
 - JS and TS comments, including a `.svelte` file's `<script>`, come from `oxc-parser` (its comment list and the AST for depth). CSS, HTML, YAML and TOML use a small scanner.
-- Markdown, in files and in prose blocks, is rendered with [markz](https://github.com/amitkaps/markz), the same parser sitez publishes with, so a doc reads the same locally and on a site. What markz doesn't support stays literal text.
+- Markdown, in files and in prose blocks, is rendered with [markz](https://github.com/amitkaps/markz). What markz doesn't support stays literal text.
 - Code is highlighted on the server with shiki.
-- The stylesheet starts from sitez's reset: one readable column, light and dark.
+- One stylesheet: a readable column, light and dark.
 - A file is parsed when its page is requested; a folder page reads only its children's first paragraphs. At the target size (§2) that's fast enough with nothing cached but the highlighter.
-- It binds to `127.0.0.1`; `--port` picks the port (default `4400`, or the next free one).
+- It binds to `127.0.0.1`; `--port` picks the port (default `1234`, or the next free one).
 
 ## 5. Agent contract
 
@@ -215,11 +215,11 @@ A snippet for the project's `CLAUDE.md` / `AGENTS.md`:
 - **Editing, from the browser or anywhere else.** The repository is the source of truth, changed by the editor and the agent (§1).
 - **A dev route inside the app's Vite server, on Devframe** (typed RPC, synced state, a Svelte client). It needed the app running and was rarely opened; a standalone renderer on any repo (§4) replaces it.
 - **`@note` annotations in source.** Discussion happened in the chat over several turns, and the agent wrote the outcome into the prose. In two repos, one note sat open for weeks and the other had none.
-- **Checks** (unresolved symbols, git-blame staleness, reference and duplication checks) **and a `prose check` CLI.** They never ran in the field repos. The one real drift found was about meaning, which no mechanical check catches; the agent updates prose and code together, so staleness rarely fires; broken links in published docs fail sitez's build.
+- **Checks** (unresolved symbols, git-blame staleness, reference and duplication checks) **and a `prose check` CLI.** They never ran in the field repos. The one real drift found was about meaning, which no mechanical check catches; the agent updates prose and code together, so staleness rarely fires; a site generator can check links when it publishes.
 - **A *since* view for reviewing changes.** The human didn't review block by block; they read the prose that says what the code means now.
 - **Agent-written dev tools and an import-graph diagram.** Never built; nothing asked for them.
 - **The Vite plugin that stripped `@prose` from built HTML.** Only hand-written `.html` needs it (§3.1).
-- **Publishing.** sitez publishes Markdown; Prose reads locally (§3.4).
+- **Publishing.** Prose reads locally; publishing Markdown is a static site generator's job (§3.4).
 
 ## 7. Test cases
 
@@ -237,6 +237,6 @@ Verify:
 
 - **Nested chunks.** Should prose blocks for class members and nested functions become sub-chunks?
 - **Anchors beyond JS/TS.** CSS, HTML and YAML chunks fall back to a heading or position (§3.2). A CSS chunk's first selector, or an HTML chunk's first `id`, could serve.
-- **Block anchors on GitHub.** `src/store.ts#addTodo` works in the renderer, but GitHub scrolls only to `#L42`. Accept it, or have sitez map anchors to lines when it links code.
+- **Block anchors on GitHub.** `src/store.ts#addTodo` works in the renderer, but GitHub scrolls only to `#L42`. Accept it, or have whatever publishes the docs map anchors to lines when it links code.
 - **A map command.** `prose outline` printing every first paragraph, if the grep in §5 proves too noisy for agents.
 - **Static export.** Writing the same pages as static HTML, to read without a server. Only if serving locally isn't enough.

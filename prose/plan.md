@@ -21,7 +21,7 @@ Roadmap for building `prose/spec.md`; section numbers refer to it. This file hol
 - [ ] A `prose` bin: `prose [dir]`, `--port`, opens the browser. `node:http`, loopback only.
 - [ ] Pages: folder, Markdown, source file as one document with folded code and a **Show code** toggle, other text files (§4.1). Anchors as fragments; breadcrumb; editor link.
 - [ ] Markdown through `@amitkaps/markz`, replacing `markdown-exit`; code through shiki (`shiki/core`, explicit languages, per `lessons.md`).
-- [ ] Stylesheet from sitez's reset.
+- [ ] One stylesheet: a readable column, light and dark.
 - [ ] Live reload: a watcher and a server-sent event.
 - [ ] Tests against `examples/single`: each page kind renders with the expected headings; a path outside the root is a 404.
 
@@ -38,7 +38,6 @@ Roadmap for building `prose/spec.md`; section numbers refer to it. This file hol
 
 ### Later
 
-- [ ] In sitez, not here: how internal docs (`plan.md`, `lessons.md`) stay off a published site, and whether its content folder keeps the name `prose/`.
 - [ ] Publish to npm once the CLI has settled; check whether an unscoped name is available for `npx`.
 
 ## Open questions
