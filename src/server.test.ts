@@ -69,7 +69,11 @@ describe("serve: examples/single", () => {
 		const { status, body } = await get(served.url, "/main.js");
 		expect(status).toBe(200);
 		expect(body).toContain('id="file"');
-		expect(body).toContain('id="count"');
+		// A block that opens with a heading is named by it, and its `#` sits inside that heading.
+		expect(body).toContain(
+			'id="state"><div class="prose"><h1><a class="anchor" href="#state" aria-label="Link to this block">#</a>',
+		);
+		expect(body).not.toContain('href="#file"');
 		expect(body).toContain('id="input"');
 		expect(body).toMatch(/class="block pending" id="persistence"/);
 		// The State chunk's code starts on line 12 of main.js, so the gutter counts on from 11.
@@ -85,10 +89,11 @@ describe("serve: examples/single", () => {
 		expect((await get(served.url, "/index.html")).body).toContain('class="block');
 	});
 
-	it("renders a Markdown file with markz", async () => {
+	it("renders a Markdown file with markz, the switch there but disabled", async () => {
 		const { status, body } = await get(served.url, "/README.md");
 		expect(status).toBe(200);
 		expect(body).toContain('<div class="prose"><h1');
+		expect(body).toContain('data-mode="prose" aria-pressed="false" disabled');
 	});
 
 	it("refuses anything the walk doesn't list, a path outside the root included", async () => {
@@ -130,6 +135,13 @@ describe("serve: folders", () => {
 		expect(body).toContain("The source.");
 		expect(body).toContain("Does a.");
 		expect(body).toMatch(/b\.ts<\/a><p><span class="undocumented">undocumented/);
+	});
+
+	it("shows a file with no prose as one run with the same header, and says so", async () => {
+		const { body } = await get(served.url, "/src/b.ts");
+		expect(body).toContain('<p class="no-prose">No prose in this file.</p><div class="code"');
+		expect(body).toContain('class="code-head"');
+		expect(body).not.toContain('data-mode="prose" aria-pressed="false" disabled');
 	});
 
 	it("shows prose/ as an ordinary folder on the project page", async () => {

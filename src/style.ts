@@ -152,6 +152,8 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 	border: 0; border-radius: 5px; padding: 0.15rem 0.7rem; cursor: pointer; white-space: nowrap;
 }
 .mode button:hover { color: var(--ink); }
+.mode button:disabled { cursor: default; color: var(--muted); background: none; opacity: 0.6; }
+.no-prose { color: var(--muted); font-style: italic; margin-block: 0 0.5rem; }
 :root:not(.prose-only) .mode [data-mode="code"], .prose-only .mode [data-mode="prose"] {
 	background: var(--rule); color: var(--ink);
 }
@@ -203,21 +205,26 @@ pre.shiki .line {
 	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E") center / contain no-repeat;
 	transition: transform 0.1s;
 }
-:root:not(.prose-only) .code.closed pre, .prose-only .code:not(.opened):not(.solo) pre { display: none; }
+:root:not(.prose-only) .code.closed pre, .prose-only .code:not(.opened) pre { display: none; }
 :root:not(.prose-only) .code.closed .code-head, .prose-only .code:not(.opened) .code-head { border-bottom-color: transparent; }
 :root:not(.prose-only) .code.closed .chevron, .prose-only .code:not(.opened) .chevron { transform: none; }
 code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 .block { position: relative; margin: 1.5rem auto 0.5rem; scroll-margin-top: 4rem; }
+/* No top or left: an absolute box keeps its place in the line, so the # sits on the heading's
+   baseline at the heading's size, and is moved into the margin from there. */
 .block .anchor {
-	position: absolute; left: -1.25rem; top: 0; width: 1rem; text-align: center;
+	position: absolute; translate: calc(-100% - 1.25rem); font-weight: 400;
 	color: var(--muted); text-decoration: none; opacity: 0;
 }
 .block:hover .anchor, .block .anchor:focus { opacity: 1; }
 .block > .prose > :first-child { margin-top: 0; }
 .block .pending-mark { margin: 0.25rem 0 0; font-size: 0.8rem; }
-.block.pending { border-left: 3px dashed var(--accent); padding-left: 0.9rem; }
+.block.pending::before {
+	content: ""; position: absolute; left: -0.75rem; top: 0; bottom: 0;
+	border-left: 3px dashed var(--accent);
+}
 .block .pending-mark { color: var(--accent); font-weight: 600; }
-.listing { list-style: none; padding: 0; margin: 1.5rem 0; border-top: 1px solid var(--rule); }
+.listing { list-style: none; padding: 0; margin: 1.5rem auto; border-top: 1px solid var(--rule); }
 .listing li { padding: 0.6rem 0; border-bottom: 1px solid var(--rule); }
 .listing li > a { font-weight: 600; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.92rem; }
 .listing li.folder > a { color: var(--ink); }

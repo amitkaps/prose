@@ -12,8 +12,8 @@ import { declaredIdentifiers } from "./names.js";
 export type CodeLang = "js" | "css" | "html" | "yaml" | "toml";
 
 export interface ProseChunk {
-	/** Content-derived address within the file (spec §3.2): `file`, the first declared name, the
-	 *  heading slug, or `chunk-N`; unique per file. */
+	/** Content-derived address within the file (spec §3.2): `file`, the heading slug, the
+	 *  first declared name, or `chunk-N`; unique per file. */
 	anchor: string;
 	heading: string | null;
 	prose: string;
@@ -416,8 +416,10 @@ export const FILE_ANCHOR = "file";
 /** @prose
  * # Content-derived anchors (spec §3.2)
  *
- * In order: the first name the chunk's code declares (JS and TS only), then the slug of its
- * heading, then `chunk-N` by position, the only kind that moves when a block is inserted above.
+ * In order: the slug of the chunk's heading, then the first name its code declares (JS and TS
+ * only), then `chunk-N` by position, the only kind that moves when a block is inserted above. The
+ * heading comes first because it's what the reader sees: a `## Table rows` block is `#table-rows`,
+ * not whichever helper its code happens to declare first.
  * A repeat within the file takes `-2`, `-3` in source order, and `file` is taken from the start.
  * Names keep their case, so `#addTodo` reads as the code does.
  */
@@ -428,8 +430,9 @@ function assignAnchors(sections: ProseSection[]): void {
 	for (const section of sections) {
 		for (const chunk of section.chunks) {
 			position++;
-			const declared = [...declaredIdentifiers(chunk.code, chunk.codeLang)][0];
-			const base = declared ?? (chunk.heading ? slugify(chunk.heading) : `chunk-${position}`);
+			const base = chunk.heading
+				? slugify(chunk.heading)
+				: ([...declaredIdentifiers(chunk.code, chunk.codeLang)][0] ?? `chunk-${position}`);
 			let n = seen.get(base) ?? 1;
 			let anchor = n === 1 && !used.has(base) ? base : `${base}-${++n}`;
 			while (used.has(anchor)) anchor = `${base}-${++n}`;

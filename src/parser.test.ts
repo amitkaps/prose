@@ -213,14 +213,15 @@ const anchorsOf = (source: string, ext = "ts") =>
 	parseFile(source, ext).sections.flatMap((s) => s.chunks.map((c) => c.anchor));
 
 describe("anchors (spec §3.2)", () => {
-	it("names a chunk by its first declared name, then its heading, then its position", () => {
+	it("names a chunk by its heading, then its first declared name, then its position", () => {
 		const source = [
 			"/** @prose File. */",
 			"/** @prose Adds. */\nexport function addTodo() {}",
 			"/** @prose\n * # Filtering\n */",
+			"/** @prose\n * ## Table rows\n */\nfunction cells() {}",
 			"/** @prose Loose. */\nconsole.log(1);",
 		].join("\n\n");
-		expect(anchorsOf(source)).toEqual(["addTodo", "filtering", "chunk-3"]);
+		expect(anchorsOf(source)).toEqual(["addTodo", "filtering", "table-rows", "chunk-4"]);
 	});
 
 	it("suffixes repeats in source order, and keeps `file` for the file prose", () => {

@@ -8,6 +8,7 @@
  */
 import { html as markz } from "@amitkaps/markz";
 import { escapeHtml, highlight, highlightFences } from "./highlight.js";
+import { FILE_ANCHOR } from "./parser.js";
 import type { TreeNode } from "./tree.js";
 import { STYLE } from "./style.js";
 
@@ -90,8 +91,11 @@ export async function markdownBody(node: TreeNode): Promise<string> {
 }
 
 export async function rawBody(node: TreeNode): Promise<string> {
-	return codeRun(node.code ?? "", extensionOf(node.path), 1, true);
+	return NO_PROSE + (await codeRun(node.code ?? "", extensionOf(node.path), 1));
 }
+
+/** Shown in place of prose on a file that has none, so **Prose only** doesn't leave a bare header. */
+const NO_PROSE = `<p class="no-prose">No prose in this file.</p>`;
 
 /** @prose
  * # Code runs
@@ -100,47 +104,54 @@ export async function rawBody(node: TreeNode): Promise<string> {
  * language. The header stays in both modes, so a prose-only page still shows where the code is
  * and how much of it; clicking it opens or closes that one run, against the page's mode, until the
  * mode changes. Line numbers are the file's own: the run knows the line it starts on, and a CSS
- * counter carries on from there, in a gutter as wide as the largest number. A file with no prose
- * is one run with no header, always open.
+ * counter carries on from there, in a gutter as wide as the largest number. A file with no prose,
+ * JSON included, is one run with the same header, and folds like any other.
  */
-async function codeRun(
-	text: string,
-	lang: string,
-	startLine: number,
-	solo = false,
-): Promise<string> {
+async function codeRun(text: string, lang: string, startLine: number): Promise<string> {
 	const count = text.split("\n").length;
 	const last = startLine + count - 1;
 	const lines = `${count} line${count === 1 ? "" : "s"} · ${startLine}–${last}`;
-	const head = solo
-		? ""
-		: `<button type="button" class="code-head" aria-expanded="true"><span class="chevron" aria-hidden="true"></span><span>${lines}</span><span class="lang">${escapeHtml(lang)}</span></button>`;
-	return `<div class="code${solo ? " solo" : ""}" style="counter-reset: line ${startLine - 1}; --gutter: ${String(last).length}ch">${head}${await highlight(text, lang)}</div>`;
+	const head = `<button type="button" class="code-head" aria-expanded="true"><span class="chevron" aria-hidden="true"></span><span>${lines}</span><span class="lang">${escapeHtml(lang)}</span></button>`;
+	return `<div class="code" style="counter-reset: line ${startLine - 1}; --gutter: ${String(last).length}ch">${head}${await highlight(text, lang)}</div>`;
 }
 
 /** @prose
  * # A source file as one document
  *
  * The file prose, then each chunk's prose in source order, with its code between them (spec
- * §4.1). A block's anchor is its `id`, so `src/store.ts#addTodo` lands on it; a `#` in the margin
- * links to it, and a pending chunk says so. Code shows by default; the page's **Prose only**
- * switch hides it (`page`). A file with no prose is only its code, which the switch leaves alone.
+ * §4.1). A block's anchor is its `id`, so `src/store.ts#addTodo` lands on it, and a pending chunk
+ * says so. The `#` that links to it goes inside the block's first heading or paragraph, so it
+ * sits on that line at that size; the heading gives up the `id` markz gave it, since the block
+ * carries the anchor. The file prose is the top of the page and gets no `#`. Code shows by default; the page's **Prose only**
+ * switch folds it (`page`). A file with no prose says so, above its code.
  */
 export async function sourceBody(node: TreeNode): Promise<string> {
 	const blocks = node.blocks ?? [];
 	const lang = extensionOf(node.path);
-	if (blocks.length === 0) return codeRun(node.source ?? "", lang, 1, true);
+	if (blocks.length === 0) return NO_PROSE + (await codeRun(node.source ?? "", lang, 1));
 	const parts = await Promise.all(
 		segments(node.source ?? "", blocks).map(async (segment) => {
 			if (segment.kind === "code") return codeRun(segment.text, lang, segment.line);
 			const { block } = segment;
 			const anchor = escapeHtml(block.path.slice(block.path.indexOf("#") + 1));
-			return `<section class="block${block.pending ? " pending" : ""}" id="${anchor}"><a class="anchor" href="#${anchor}" aria-label="Link to this block">#</a><div class="prose">${await renderMarkdown(block.prose ?? "")}</div>${
-				block.pending ? `<p class="pending-mark">pending</p>` : ""
-			}</section>`;
+			const prose = await renderMarkdown(block.prose ?? "");
+			return `<section class="block${block.pending ? " pending" : ""}" id="${anchor}"><div class="prose">${
+				block.path.endsWith(`#${FILE_ANCHOR}`) ? prose : withAnchor(prose, anchor)
+			}</div>${block.pending ? `<p class="pending-mark">pending</p>` : ""}</section>`;
 		}),
 	);
 	return parts.join("");
+}
+
+const FIRST_LINE_RE = /^<(h[1-6]|p)(?: id="[^"]*")?>/;
+
+/** Puts the block's `#` link at the start of its first heading or paragraph, or before the prose
+ *  when it opens with something else, such as a list. */
+function withAnchor(prose: string, anchor: string): string {
+	const link = `<a class="anchor" href="#${anchor}" aria-label="Link to this block">#</a>`;
+	return FIRST_LINE_RE.test(prose)
+		? prose.replace(FIRST_LINE_RE, (_, tag: string) => `<${tag}>${link}`)
+		: link + prose;
 }
 
 export interface PageOptions {
@@ -153,8 +164,9 @@ export interface PageOptions {
 	body: string;
 	/** A `vscode://file/…` link for the file, or null for a folder. */
 	editorLink: string | null;
-	/** Whether the page has prose and code both, for the **Prose only** switch. */
-	hasProseAndCode: boolean;
+	/** Whether the page shows a file's code, which the **Prose only** switch folds. The switch is
+	 *  on every page, in the same place, and disabled where there's no code to fold. */
+	hasCode: boolean;
 }
 
 function breadcrumb(project: string, path: string): string {
@@ -187,11 +199,10 @@ function breadcrumb(project: string, path: string): string {
  * what changed while hidden. Browser storage can be unavailable, so it's only ever tried.
  */
 export function page(options: PageOptions): string {
-	const { project, path, rail, body, editorLink, hasProseAndCode } = options;
+	const { project, path, rail, body, editorLink, hasCode } = options;
 	const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
-	const mode = hasProseAndCode
-		? `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true">Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false">Prose only</button></div>`
-		: "";
+	const off = hasCode ? "" : ` disabled title="No code on this page"`;
+	const mode = `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true"${off}>Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false"${off}>Prose only</button></div>`;
 	const editor = editorLink ? `<a href="${escapeHtml(editorLink)}">Open in editor</a>` : "";
 	return `<!doctype html>
 <html lang="en">
@@ -202,7 +213,7 @@ export function page(options: PageOptions): string {
 <style>${STYLE}</style>
 <script>try { if (localStorage.getItem("prose:mode") === "prose") document.documentElement.classList.add("prose-only"); } catch {}</script>
 </head>
-<body class="${hasProseAndCode ? "source" : ""}" data-path="${escapeHtml(path)}" data-rendered="${Date.now()}">
+<body data-path="${escapeHtml(path)}" data-rendered="${Date.now()}">
 <div class="layout">
 ${rail}
 <script>${RAIL_SCRIPT}</script>
@@ -257,7 +268,7 @@ const RAIL_SCRIPT = `
 
 const SCRIPT = `
 const root = document.documentElement;
-const runs = [...document.querySelectorAll(".code:not(.solo)")];
+const runs = [...document.querySelectorAll(".code")];
 const isOpen = (run) =>
 	root.classList.contains("prose-only") ? run.classList.contains("opened") : !run.classList.contains("closed");
 const sync = () => {
