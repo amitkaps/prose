@@ -21,6 +21,8 @@ Roadmap for building `docs/spec.md`; section numbers refer to it. This file hold
 ### 4. Use it
 
 - [ ] Look at it in a browser on sitez and markz: typography, folded code, mobile width.
+- [ ] Mobile: the button that shows the rail is an explorer icon, not the word **Files**.
+- [ ] Mobile: the bar stacks, the breadcrumb on one row and the **Prose & Code / Prose only** switch below it. Today they share a fixed row, and a long path is squeezed until it breaks one character per line.
 - [ ] base, sitez, markz: install 0.2.0, remove `prose()` from their Vite configs, replace the snippet in `AGENTS.md` with spec §5, and fold sitez's open `@note` (`src/site.ts`) into its prose.
 - [ ] `prose/` → `docs/` in sitez and markz (spec §3.4), with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website (markz.amitkaps.com), not docs: it moves to `site/` first (root scripts, workspace, package name, CI paths), then `prose/` takes `docs/` and the site reads its pages from there.
 - [ ] markz: make `@prose` blocks link to `grammar.md` instead of restating its rules (spec §3.5).

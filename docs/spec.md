@@ -257,4 +257,4 @@ Verify:
 - **Anchors beyond JS/TS.** CSS, HTML and YAML chunks fall back to a heading or position (§3.2). A CSS chunk's first selector, or an HTML chunk's first `id`, could serve.
 - **Block anchors on GitHub.** `src/store.ts#addTodo` works in the renderer, but GitHub scrolls only to `#L42`. Accept it, or have whatever publishes the docs map anchors to lines when it links code.
 - **A map command.** `prose outline` printing every first paragraph, if the grep in §5 proves too noisy for agents.
-- **Static export.** Writing the same pages as static HTML, to read without a server. Only if serving locally isn't enough.
+- **A folder's `README.md`.** It's the folder's page (`index.html` when built) and not a child, so it's missing from the rail and the listing, and there's no way to point at it as a file. Decide after some use.
