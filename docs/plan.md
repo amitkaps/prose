@@ -12,21 +12,15 @@ Roadmap for building `docs/spec.md`; section numbers refer to it. This file hold
 - **`prose build`** — the reader as static files (spec §4.4): `renderRoute` in `server.ts` is the seam the server and `src/build.ts` share; `HEAD` exported with `git archive`; a file's page at its path plus `.html`, which a GitHub Pages spike (`amitkaps/pages`) showed is served at the local URL with no redirect, and a source `index.html` at `index.html.html`; the tag and commit in the bar, no live parts, the same bytes per commit; output in `.prose/site`, a folder it made or none. Cloudflare's `.html` handling is untested.
 - **`prose publish`** — the build committed to an orphan `prose` branch through a temporary index, `commit-tree` and a conditional `update-ref`, never checking it out and never pushing (spec §4.5, `src/publish.ts`); `--domain` writes `CNAME`, carried forward; `.nojekyll`. This repo publishes to `prose.amitkaps.com` (DNS on Cloudflare, DNS-only, to `amitkaps.github.io`), so no site needs a base path yet.
 - **Every file in the walk** — every file git lists has a page (spec §4.1, §4.2): dotfiles, `LICENSE`, lockfiles, images. Text past 1,000 lines or 100 KB is cut with what's left said; a binary file gives its type and size, an image shown inline as a `data:` URL; lockfiles and files over 200 KB aren't parsed for prose. Ignored files stay out of the rail; locally a folder's page ends with `Ignored here:`, which the build leaves out. The walk never follows a symbolic link, so a build can't publish a file outside the commit.
+- **A 404 page** — `prose build` writes `404.html` with the file tree, which GitHub Pages and Cloudflare serve for any missing address, and GitHub Pages for all of `.github/`, which it never publishes (a spike on `amitkaps/pages`).
+- **0.2.0** — the README rewritten around the two things, with install, the commands and the §5 snippet; released as a GitHub release tarball, as 0.1.0 was.
 - **`docs/`** — the folder for writing that spans the code is `docs/`, not `prose/`, so "prose" names only the package and the `@prose` marker; `.gitignore` cut to what this repo produces.
 
 ## Open work, in order
 
-### 2d. Before the release
-
-- [ ] Look at it in a browser on sitez and markz before the release: typography, folded code, mobile width.
-
-### 3. Release 0.2.0
-
-- [ ] README rewritten around the two things (spec intro), with the §5 snippet to copy.
-- [ ] Release 0.2.0 as a GitHub release tarball, as 0.1.0 was.
-
 ### 4. Use it
 
+- [ ] Look at it in a browser on sitez and markz: typography, folded code, mobile width.
 - [ ] base, sitez, markz: install 0.2.0, remove `prose()` from their Vite configs, replace the snippet in `AGENTS.md` with spec §5, and fold sitez's open `@note` (`src/site.ts`) into its prose.
 - [ ] `prose/` → `docs/` in sitez and markz (spec §3.4), with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website (markz.amitkaps.com), not docs: it moves to `site/` first (root scripts, workspace, package name, CI paths), then `prose/` takes `docs/` and the site reads its pages from there.
 - [ ] markz: make `@prose` blocks link to `grammar.md` instead of restating its rules (spec §3.5).
@@ -34,6 +28,7 @@ Roadmap for building `docs/spec.md`; section numbers refer to it. This file hold
 
 ### Later
 
+- [ ] `@prose` in `.gitignore`: its `#` comments are what the YAML and TOML scanner reads, so it's a mapping by file name and a row in spec §3.1. Python, shell, `Dockerfile` and `Makefile` use the same comment, when a repo has them.
 - [ ] Publish to npm once the CLI has settled; check whether an unscoped name is available for `npx`.
 
 ## Open questions
