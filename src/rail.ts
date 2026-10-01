@@ -68,7 +68,7 @@ function renderDir(dir: Dir, prefix: string, current: string, depth: number): st
 /** The rail for a page at `current` (`""`, `src/`, or `src/store.ts`). A folder's `README.md` isn't
  *  listed: it's that folder's own page. */
 export function renderRail(files: string[], current: string, project: string, footer = ""): string {
-  return `<nav class="rail" aria-label="Files"><a class="rail-project" href="/"${
+  return `<nav class="rail" id="rail" popover aria-label="Files"><a class="rail-project" href="/"${
     current === "" ? ` aria-current="page"` : ""
   }>${escapeHtml(project)}</a><ul>${renderDir(index(files), "", current, 0)}</ul>${footer}</nav>`;
 }

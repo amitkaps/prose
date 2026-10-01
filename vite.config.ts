@@ -3,6 +3,7 @@
  * app to build, so `plugins` stays empty. `tests/fixtures/**` are fixtures with their own style, and
  * running `vp` from the repo root must not reach into them, so `ignored` excludes them.
  */
+import { readFileSync } from "node:fs";
 import { defineConfig } from "vite-plus";
 
 const ignored = ["dist/**", "tests/fixtures/**", "docs/**", "README.md", "pnpm-lock.yaml"];
@@ -34,6 +35,16 @@ export default defineConfig({
     fixedExtension: false,
     dts: true,
     sourcemap: true,
+    // `import css from "./style.css?raw"` works under Vite (`vp test`); the bundler needs it said.
+    plugins: [
+      {
+        name: "raw",
+        load(id: string) {
+          if (!id.endsWith("?raw")) return null;
+          return `export default ${JSON.stringify(readFileSync(id.slice(0, -4), "utf8"))};`;
+        },
+      },
+    ],
   },
 
   test: {
