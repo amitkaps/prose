@@ -2,7 +2,8 @@
 # # CI
 #
 # One job, `ci`, on every pull request and every push to `main`: format, lint and types, the tests, then the
-# build. Branch protection requires that exact check name.
+# build. Branch protection requires that exact check name. A second job, `node-24`, runs the tests on
+# the previous LTS.
 
 name: ci
 
@@ -36,3 +37,16 @@ jobs:
       - run: pnpm run test
       # The library.
       - run: pnpm run build
+
+  # The oldest Node `engines` allows; not a required check.
+  node-24:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test

@@ -27,7 +27,7 @@ let count = 0;
 
 ## Install and run
 
-Node 26 or later:
+The current Node and the previous LTS (today, 26 and 24):
 
 ```sh
 npm install -g https://github.com/amitkaps/prose/releases/download/v0.2.0/amitkaps-prose-0.2.0.tgz
