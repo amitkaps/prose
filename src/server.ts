@@ -11,7 +11,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { basename, resolve, sep } from "node:path";
 import { escapeHtml, warmHighlighter } from "./highlight.js";
 import { binaryBody, folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
-import { renderRail } from "./rail.js";
+import { renderRail, railFooter, type Snapshot } from "./rail.js";
+import { repoUrl } from "./repo.js";
 import {
   extensionOf,
   fileToNode,
@@ -58,9 +59,9 @@ export interface Site {
   /** The files the walk lists (`projectFiles`), repo-relative. */
   files: string[];
   /** A local page: live reload, its render time, and **Open in editor**. A built page has none of
-   *  them, and shows `version` instead. */
+   *  them, and says which commit it is in the rail's footer instead. */
   live: boolean;
-  version?: string;
+  snapshot?: Snapshot;
 }
 
 export type Route = { status: 200 | 404; html: string } | { status: 301; location: string };
@@ -72,31 +73,32 @@ export type Route = { status: 200 | 404; html: string } | { status: 301; locatio
  * can't name it; its links are absolute, so they work from any. GitHub Pages also serves it for
  * everything under `.github/`, which it never publishes.
  */
+const footerOf = (site: Site) =>
+  railFooter({ live: site.live, snapshot: site.snapshot, repo: repoUrl(site.root) });
+
 export function notFoundPage(site: Site): string {
   return page({
     project: site.project,
     path: "",
-    rail: renderRail(site.files, "", site.project),
+    rail: renderRail(site.files, "", site.project, footerOf(site)),
     body: `<p class="missing">Nothing at this address in this repository.</p>`,
     editorLink: null,
     hasCode: false,
     live: site.live,
-    version: site.version,
   });
 }
 
 export async function renderRoute(site: Site, path: string): Promise<Route> {
-  const { root, project, files, live, version } = site;
+  const { root, project, files, live } = site;
   const shell = (body: string, editorLink: string | null = null, hasCode = false) =>
     page({
       project,
       path,
-      rail: renderRail(files, path, project),
+      rail: renderRail(files, path, project, footerOf(site)),
       body,
       editorLink: live ? editorLink : null,
       hasCode,
       live,
-      version,
     });
   const notFound = (): Route => ({
     status: 404,

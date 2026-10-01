@@ -180,7 +180,6 @@ export interface PageOptions {
    *  page (`prose build`) does neither, so the same commit always gives the same bytes. */
   live: boolean;
   /** On a built page, which snapshot it is: `v0.1.0 · 1c77293`. */
-  version?: string;
 }
 
 function breadcrumb(project: string, path: string): string {
@@ -210,19 +209,14 @@ function breadcrumb(project: string, path: string): string {
  * first paint; the **Files** button that shows the rail on a narrow screen; and live reload. The server
  * tells a page when something it shows changed (`server.ts`), and it reloads, keeping its scroll
  * position. It listens only while visible, and says when it was rendered, so it catches up on
- * what changed while hidden. A built page leaves live reload out, and shows which commit it is
- * where the editor link was. Browser storage can be unavailable, so it's only ever tried.
+ * what changed while hidden. A built page leaves live reload out. Browser storage can be unavailable, so it's only ever tried.
  */
 export function page(options: PageOptions): string {
-  const { project, path, rail, body, editorLink, hasCode, live, version } = options;
+  const { project, path, rail, body, editorLink, hasCode, live } = options;
   const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
   const off = hasCode ? "" : ` disabled title="No code on this page"`;
   const mode = `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true"${off}>Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false"${off}>Prose only</button></div>`;
-  const end = editorLink
-    ? `<a href="${escapeHtml(editorLink)}">Open in editor</a>`
-    : version
-      ? `<span class="version">${escapeHtml(version)}</span>`
-      : "";
+  const end = editorLink ? `<a href="${escapeHtml(editorLink)}">Open in editor</a>` : "";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -331,6 +325,8 @@ let events = null;
 const connect = () => {
 	if (events || document.hidden || document.prerendering) return;
 	events = new EventSource("/.prose/events?path=" + encodeURIComponent(here) + "&since=" + since);
+	events.onopen = () => document.body.classList.remove("offline");
+	events.onerror = () => document.body.classList.add("offline");
 	events.onmessage = () => {
 		try { sessionStorage.setItem(key, String(scrollY)); } catch {}
 		location.reload();

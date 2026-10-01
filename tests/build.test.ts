@@ -93,7 +93,9 @@ describe("build: tests/fixtures/simple", () => {
       expect(html).not.toContain("new EventSource");
       expect(html).not.toContain("data-rendered=");
       expect(html).not.toContain('href="vscode://');
-      expect(html).toMatch(/<span class="version">(?:v[\d.]+ · )?[0-9a-f]{7,}<\/span>/);
+      // HEAD isn't tagged here, so the nearest earlier tag must not stand in for one.
+      expect(html).toMatch(/Snapshot · (?:<a [^>]*>)?[0-9a-f]{7,}/);
+      expect(html).not.toMatch(/Snapshot · (?:<a [^>]*>)?v\d/);
     }
   });
 
@@ -191,7 +193,10 @@ describe("build: a repository", () => {
     const site: Site = { root, project: "demo", files: projectFiles(root), live: true };
     const main = (html: string) => html.slice(html.indexOf("<main>"), html.indexOf("</main>"));
     const live = await renderRoute(site, "src/a.ts");
-    const built = await renderRoute({ ...site, live: false, version: "abc1234" }, "src/a.ts");
+    const built = await renderRoute(
+      { ...site, live: false, snapshot: { commit: "abc1234" } },
+      "src/a.ts",
+    );
     if (live.status !== 200 || built.status !== 200) throw new Error("expected pages");
     expect(main(built.html)).toBe(main(live.html));
     expect(live.html).toContain("new EventSource");

@@ -67,8 +67,49 @@ function renderDir(dir: Dir, prefix: string, current: string, depth: number): st
 
 /** The rail for a page at `current` (`""`, `src/`, or `src/store.ts`). A folder's `README.md` isn't
  *  listed: it's that folder's own page. */
-export function renderRail(files: string[], current: string, project: string): string {
+export function renderRail(files: string[], current: string, project: string, footer = ""): string {
   return `<nav class="rail" aria-label="Files"><a class="rail-project" href="/"${
     current === "" ? ` aria-current="page"` : ""
-  }>${escapeHtml(project)}</a><ul>${renderDir(index(files), "", current, 0)}</ul></nav>`;
+  }>${escapeHtml(project)}</a><ul>${renderDir(index(files), "", current, 0)}</ul>${footer}</nav>`;
+}
+
+/** What a built page was made from: the short commit, and the tag only when `HEAD` is that tag. */
+export interface Snapshot {
+  commit: string;
+  tag?: string;
+}
+
+const GITHUB_MARK = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.96 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.08-1.87 3.76-3.66 3.96.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"/></svg>`;
+
+/** @prose
+ * # The rail's footer
+ *
+ * What the page is, at the bottom of the rail. A page served locally says **Live**, with a dot
+ * that goes dim when the page has lost the server; a built page says **Snapshot**, with the
+ * commit it was built from and the tag only if that commit is the tag, since the nearest earlier
+ * tag would name a release the page isn't. A GitHub mark links to the repository, and the commit
+ * and tag to theirs, when `origin` is on GitHub.
+ */
+export function railFooter(options: { live: boolean; snapshot?: Snapshot; repo?: string }): string {
+  const { live, snapshot, repo } = options;
+  let stamp = "";
+  if (live) {
+    stamp = `<span class="live" title="Reloads when a file changes"><span class="dot"></span>Live</span>`;
+  } else if (snapshot) {
+    const link = (text: string, path: string) =>
+      repo
+        ? `<a href="${escapeHtml(`${repo}/${path}`)}">${escapeHtml(text)}</a>`
+        : escapeHtml(text);
+    const parts = [
+      ...(snapshot.tag
+        ? [link(snapshot.tag, `releases/tag/${encodeURIComponent(snapshot.tag)}`)]
+        : []),
+      link(snapshot.commit, `commit/${snapshot.commit}`),
+    ];
+    stamp = `<span class="snapshot" title="A snapshot of one commit">Snapshot · ${parts.join(" · ")}</span>`;
+  }
+  const mark = repo
+    ? `<a class="repo" href="${escapeHtml(repo)}" aria-label="Repository on GitHub" title="Repository on GitHub">${GITHUB_MARK}</a>`
+    : "";
+  return stamp || mark ? `<div class="rail-foot">${stamp}${mark}</div>` : "";
 }

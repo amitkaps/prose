@@ -83,7 +83,7 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 .layout { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); min-height: 100vh; }
 .rail {
 	position: sticky; top: 0; height: 100vh; overflow-y: auto;
-	padding: 0.75rem 0 2rem; border-right: 1px solid var(--rule); background: var(--panel);
+	padding: 0.75rem 0 0; display: flex; flex-direction: column; border-right: 1px solid var(--rule); background: var(--panel);
 	font-size: 0.82rem; line-height: 1.35;
 	--edge: 0.9rem;
 	--step: 1rem;
@@ -121,7 +121,7 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 		display: none; position: fixed; inset: 0 auto 0 0; z-index: 2;
 		width: min(20rem, 85vw); box-shadow: 0 0 2rem rgb(0 0 0 / 0.25);
 	}
-	.rail-open .rail { display: block; }
+	.rail-open .rail { display: flex; }
 	.rail-toggle { display: inline-block; }
 	.bar { grid-template-columns: minmax(0, 1fr) auto; }
 	.bar-end { display: none; }
@@ -136,7 +136,19 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 .page { min-width: 0; }
 .bar-start { display: flex; gap: 0.75rem; align-items: center; min-width: 0; }
 .bar-end { justify-self: end; white-space: nowrap; }
-.version { color: var(--muted); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.8rem; }
+.rail-foot {
+	position: sticky; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+	margin-top: auto; padding: 0.6rem var(--edge); background: var(--panel); border-top: 1px solid var(--rule);
+	color: var(--muted); font-size: 0.78rem;
+}
+.rail > ul { margin-bottom: 1rem; }
+.rail-foot a { color: inherit; }
+.rail-foot a:hover { color: var(--ink); }
+.rail-foot .snapshot { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.rail-foot .repo { display: inline-flex; }
+.live { display: inline-flex; align-items: center; gap: 0.4rem; }
+.live .dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #2da44e; }
+.offline .live .dot { background: var(--muted); opacity: 0.5; }
 .crumbs { min-width: 0; overflow-wrap: anywhere; }
 .crumbs .sep { color: var(--muted); margin: 0 0.35rem; }
 .crumbs [aria-current] { font-weight: 600; }

@@ -17,6 +17,14 @@ The order of the work and items that touch several files. Finished work is one l
 
 ## Open work, in order
 
+### The reader's layout
+
+Reading first: the text on the left, the explorer on the right. Agreed 2026-10-01; each step is its own PR.
+
+- [x] **Footer: Snapshot and Live.** The rail's footer says **Live** (dim when the server is lost) on `prose .`, and **Snapshot · tag · commit** on a built site, the tag only when `HEAD` is exactly that tag, with a GitHub mark linking to the repository. The tag used to be the nearest earlier one, so a site built after a release named it wrongly.
+- [ ] **Layout.** The reading column left-aligned, the rail pinned to the right edge. The bar is the project name at the top left (plain text, a link to `/`, not underlined), the **Prose & Code / Prose only** switch, and the explorer toggle at the right. The breadcrumb moves to the top of the reading column, where it wraps, with **Open in editor** at its end, local only. This replaces the two mobile items under *Use it*.
+- [ ] **Rail.** A sidebar-panel icon (right side) in place of the word **Files**; open by default on desktop, remembered, hidden on mobile where it slides over from the right. A folder's name opens its page, the chevron alone folds it, and a folder's `README.md` is listed first in it, highlighted on the folder page. Every tracked file is listed, dotfiles included; what `.gitignore` leaves out stays out.
+
 ### Fix what the first readers found
 
 An outside review of the published site (2026-10-01). The site it read predates the docs split and still has `examples/`, so republish first and re-read before judging. Checked against the code: `index.html.html` is intended (the folder page owns `index.html`; [spec](spec.md#prose-build)), and `main.js`/`style.css` resolve either way, but the rail links them root-absolute and the folder listing relative.
