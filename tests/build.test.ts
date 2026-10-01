@@ -97,14 +97,26 @@ describe("build: tests/fixtures/simple", () => {
   });
 
   it("leaves the live parts out and says which commit it is", () => {
+    let headTag = "";
+    try {
+      headTag = execFileSync("git", ["describe", "--tags", "--exact-match", "HEAD"], {
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+    } catch {}
     for (const page of shown()) {
       const html = readFileSync(join(out, page), "utf-8");
       expect(html).not.toContain("new EventSource");
       expect(html).not.toContain("data-rendered=");
       expect(html).not.toContain('href="vscode://');
-      // HEAD isn't tagged here, so the nearest earlier tag must not stand in for one.
-      expect(html).toMatch(/Snapshot · (?:<a [^>]*>)?[0-9a-f]{7,}/);
-      expect(html).not.toMatch(/Snapshot · (?:<a [^>]*>)?v\d/);
+      // The tag is named only when HEAD is exactly that tag (a release run builds a tagged HEAD),
+      // so the nearest earlier tag must not stand in for one.
+      expect(html).toMatch(
+        headTag
+          ? new RegExp(`Snapshot · (?:<a [^>]*>)?${headTag.replace(/\./g, "\\.")}(?:</a>)? · `)
+          : /Snapshot · (?:<a [^>]*>)?[0-9a-f]{7,}/,
+      );
+      if (!headTag) expect(html).not.toMatch(/Snapshot · (?:<a [^>]*>)?v\d/);
     }
   });
 
