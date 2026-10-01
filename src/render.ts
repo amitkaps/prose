@@ -133,7 +133,9 @@ async function codeRun(text: string, lang: string, startLine: number): Promise<s
  * The file prose, then each chunk's prose in source order, with its code between them. A block's anchor is its `id`, so `src/store.ts#addTodo` lands on it, and a pending chunk
  * says so. The `#` that links to it goes inside the block's first heading or paragraph, so it
  * sits on that line at that size; the heading gives up the `id` markz gave it, since the block
- * carries the anchor. The file prose is the top of the page and gets no `#`. Code shows by default; the page's **Prose only**
+ * carries the anchor. The file prose is the top of the page and gets no `#`, and its headings
+ * stay as written while every later block's go one level down (`demote`), so a block can open
+ * with `#` and the file's own title is still the page's only `h1`. Code shows by default; the page's **Prose only**
  * switch folds it (`page`). A file with no prose says so, above its code.
  */
 export async function sourceBody(node: TreeNode): Promise<string> {
@@ -145,13 +147,24 @@ export async function sourceBody(node: TreeNode): Promise<string> {
       if (segment.kind === "code") return codeRun(segment.text, lang, segment.line);
       const { block } = segment;
       const anchor = escapeHtml(block.path.slice(block.path.indexOf("#") + 1));
-      const prose = await renderMarkdown(block.prose ?? "");
+      const isFile = block.path.endsWith(`#${FILE_ANCHOR}`);
+      const prose = isFile
+        ? await renderMarkdown(block.prose ?? "")
+        : demote(await renderMarkdown(block.prose ?? ""));
       return `<section class="block${block.pending ? " pending" : ""}" id="${anchor}"><div class="prose">${
-        block.path.endsWith(`#${FILE_ANCHOR}`) ? prose : withAnchor(prose, anchor)
+        isFile ? prose : withAnchor(prose, anchor)
       }</div>${block.pending ? `<p class="pending-mark">pending</p>` : ""}</section>`;
     }),
   );
   return parts.join("");
+}
+
+/** A later block's headings one level down, so the file prose's title is the page's only `h1`. */
+function demote(html: string): string {
+  return html.replace(
+    /<(\/?)h([1-6])\b/g,
+    (_, slash: string, level: string) => `<${slash}h${Math.min(6, Number(level) + 1)}`,
+  );
 }
 
 const FIRST_LINE_RE = /^<(h[1-6]|p)(?: id="[^"]*")?>/;

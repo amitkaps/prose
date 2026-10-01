@@ -76,9 +76,10 @@ describe("serve: tests/fixtures/simple", () => {
     const { status, body } = await get(served.url, "/main.js");
     expect(status).toBe(200);
     expect(body).toContain('id="file"');
-    // A block that opens with a heading is named by it, and its `#` sits inside that heading.
+    // A block that opens with a heading is named by it, and its `#` sits inside that heading,
+    // one level down from the file prose's.
     expect(body).toContain(
-      'id="state"><div class="prose"><h1><a class="anchor" href="#state" aria-label="Link to this block">#</a>',
+      'id="state"><div class="prose"><h2><a class="anchor" href="#state" aria-label="Link to this block">#</a>',
     );
     expect(body).not.toContain('href="#file"');
     expect(body).toContain('id="input"');

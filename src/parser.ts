@@ -88,7 +88,7 @@ function slugify(text: string): string {
  * # Recognizing a prose block
  *
  * A comment counts only if its first line, trimmed, starts with `@prose`; any other comment
- * (unmarked JSDoc, `//`, a tool pragma) returns `null` and stays an ordinary code comment Each style strips its own gutter before this runs: JS's ` * `, YAML's `# `, and
+ * (unmarked JSDoc, `//`, a tool pragma) returns `null` and stays an ordinary code comment. Each style strips its own gutter before this runs: JS's ` * `, YAML's `# `, and
  * none for HTML. Blank lines at either edge of the body are dropped, and a CRLF file's `\r`
  * stays out of it.
  */
@@ -117,7 +117,9 @@ function extractMarkedBlock(inner: string, stripContinuation: boolean): string |
   const stripped = lines.map((line, i) =>
     i === 0 || !stripContinuation ? line : line.replace(/^[ \t]*\*[ \t]?/, ""),
   );
-  return extractMarkedFromLines(stripped);
+  const body = extractMarkedFromLines(stripped);
+  // `*/` would end the comment, so a block spells it `*\/`; the prose has it as written.
+  return body === null || !stripContinuation ? body : body.replaceAll("*\\/", "*/");
 }
 
 /** @prose

@@ -26,7 +26,7 @@ The count lives in an `<output>`, announced to screen readers when it changes.
 -->
 ```
 
-- The body is everything after `@prose`, with the leading ` * ` stripped in JS, TS and CSS. It is Markdown, in [markz](https://github.com/amitkaps/markz)'s dialect: the everyday GFM syntax, without setext headings, reference links or raw HTML.
+- The body is everything after `@prose`, with the leading ` * ` stripped in JS, TS and CSS. A `*/` inside it would end the comment, so write `*\/`: it reads as `*/`. It is Markdown, in [markz](https://github.com/amitkaps/markz)'s dialect: the everyday GFM syntax, without setext headings, reference links or raw HTML.
 - **`@prose` starts the block on its own line, and the closing delimiter (`*/` or `-->`) sits on its own line too** — never `/** @prose text */` on one line. In JS/TS/CSS this keeps every body line gutter-prefixed with ` * `, so formatters (oxfmt) re-indent the block as JSDoc, and a body line that itself starts with `*` (a Markdown bullet) can't be mistaken for the gutter.
 - **Every other comment is a code comment**, including unmarked `/** */` JSDoc, `//`, `/* */`, and unmarked `<!-- -->`. So API docs like `/** @param x */`, `// TODO`, and tool pragmas like `<!-- svelte-ignore … -->` are never read as prose.
 - The marker is opt-in because comments already have many owners: JSDoc, Vite, Svelte, formatters, and linters. Adding a marker is the explicit step of promoting a comment to prose.
@@ -45,7 +45,7 @@ Within a file:
 2. Each later prose block, together with the code that follows it up to the next prose block, is a **chunk**.
 3. A chunk whose code is empty (only whitespace before the next prose block or end of file) is **pending**: a plan item, written before its code.
 4. Code between the file prose and the first chunk (typically imports) is the **preamble**.
-5. A prose block whose first line is a Markdown heading (`# Filtering`) is just a heading in the flow. There is no separate section level.
+5. A prose block whose first line is a Markdown heading (`# Filtering`) is just a heading in the flow. There is no separate section level. Write `#` for every block's title, as for the file's; the renderer shows later blocks' headings one level down, so the file prose's title is the page's only top-level heading.
 
 **The file is the smallest unit.** A chunk read on its own, without the rest of its file, loses the imports, the neighbouring definitions, the order things happen in. So the renderer shows a whole file as one document, each chunk's prose directly above its code, top to bottom as it was written.
 

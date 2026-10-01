@@ -37,8 +37,8 @@ Make the repository follow its own convention:
 
 Reader fixes:
 
-- [ ] `/** @prose *\/` shows its backslash: the parser unescapes `*\/` to `*/` in a block's body.
-- [ ] Headings inside a source file's blocks render one level down, so a block's `# Filtering` is an `h2` under the file's own `h1`. Decide whether the file prose keeps its level.
+- [x] `/** @prose *\/` shows its backslash: the parser unescapes `*\/` to `*/` in a block's body.
+- [x] Headings inside a source file's blocks render one level down, so a block's `# Filtering` is an `h2` under the file's own `h1`; the file prose keeps its level.
 - [ ] A run's header reads `75 lines · 9–83 · ts`, with the separator in the markup, not only in CSS.
 - [ ] One link form: root-absolute everywhere (rail, listing, breadcrumb).
 - [ ] A folder's `README.md`: a "from `README.md`" line under the breadcrumb on the folder page, and `/folder/README.md` redirecting to `/folder/`. A static host can't redirect, so `build` writes `folder/README.md.html` as a meta refresh.
