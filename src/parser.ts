@@ -1,10 +1,12 @@
 /** @prose
  * # Parsing `@prose` comments
  *
- * Turns one source file's text into its file prose, preamble and chunks ([convention](../docs/convention.md#blocks-and-chunks)): find the
- * `@prose` comments (each language its own way, [convention](../docs/convention.md#prose-blocks)), then slice the code between consecutive
- * comments into chunks. Each chunk keeps its comment's byte span, so a renderer can lay the file
- * out in source order with the prose where the comment was.
+ * Turns one source file's text into its file prose, preamble and chunks: find the `@prose`
+ * comments, each language its own way, then slice the code between them. Each chunk keeps its
+ * comment's byte span, so a renderer can lay the file out in source order.
+ *
+ * What counts as a block, and how chunks and anchors are made, is [the convention](../docs/convention.md#prose-blocks);
+ * this file is how it's read.
  */
 import { parseSync } from "oxc-parser";
 import { declaredAfter, declaredIdentifiers, type DeclaredName } from "./names.js";
@@ -12,7 +14,7 @@ import { declaredAfter, declaredIdentifiers, type DeclaredName } from "./names.j
 export type CodeLang = "js" | "css" | "html" | "yaml" | "toml";
 
 export interface ProseChunk {
-  /** Content-derived address within the file ([convention](../docs/convention.md#blocks-and-chunks)): `file`, the heading slug, the
+  /** Content-derived address within the file: `file`, the heading slug, the
    *  first declared name, or `chunk-N`; unique per file. */
   anchor: string;
   heading: string | null;
@@ -51,7 +53,7 @@ interface RawBlock {
   endIndex: number;
   startLine: number;
   /** A `@prose` comment below the top level that doesn't start its own line: not a block, left
-   *  as an ordinary comment ([convention](../docs/convention.md#prose-blocks)). */
+   *  as an ordinary comment */
   nested?: boolean;
   /** For a block inside a class or function: the first name declared after it in the whole file,
    *  since its own code isn't a program `declaredIdentifiers` can read. */
@@ -86,8 +88,7 @@ function slugify(text: string): string {
  * # Recognizing a prose block
  *
  * A comment counts only if its first line, trimmed, starts with `@prose`; any other comment
- * (unmarked JSDoc, `//`, a tool pragma) returns `null` and stays an ordinary code comment
- * ([convention](../docs/convention.md#prose-blocks)). Each style strips its own gutter before this runs: JS's ` * `, YAML's `# `, and
+ * (unmarked JSDoc, `//`, a tool pragma) returns `null` and stays an ordinary code comment Each style strips its own gutter before this runs: JS's ` * `, YAML's `# `, and
  * none for HTML. Blank lines at either edge of the body are dropped, and a CRLF file's `\r`
  * stays out of it.
  */
@@ -126,7 +127,7 @@ function extractMarkedBlock(inner: string, stripContinuation: boolean): string |
  * comment-shaped string can't be misread as a comment. A `/**` comment that starts with the
  * marker counts at the top level, and at any depth when it starts its own line: markz's `class
  * Parser` reads method by method. One that shares its line with code, inside a call or an object
- * literal, is `nested`, and stays part of the code around it ([convention](../docs/convention.md#prose-blocks)). A file oxc can't parse
+ * literal, is `nested`, and stays part of the code around it. A file oxc can't parse
  * at all yields no blocks.
  */
 function scanJs(source: string, lang: "js" | "ts"): RawBlock[] {
@@ -165,7 +166,7 @@ function scanJs(source: string, lang: "js" | "ts"): RawBlock[] {
  *
  * CSS has no parser here, only a pass that skips strings and comments and counts `{}`, so a
  * `/** @prose *\/` counts at depth 0, and inside a rule when it starts its own line; otherwise
- * it's `nested` ([convention](../docs/convention.md#prose-blocks)).
+ * it's `nested`.
  */
 function scanCss(source: string): RawBlock[] {
   const blocks: RawBlock[] = [];
@@ -212,7 +213,7 @@ function scanCss(source: string): RawBlock[] {
  * block starts at a column-0 `# @prose` line and runs through the following `#` lines, up to the
  * next marker line or the first line that isn't a comment. Two blocks can then sit back to back
  * without the second's lines joining the first's body. An indented `#` comment, inside a nested
- * mapping or table, is an ordinary comment, as braces make one in CSS ([convention](../docs/convention.md#prose-blocks)).
+ * mapping or table, is an ordinary comment, as braces make one in CSS.
  */
 function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[] {
   const blocks: RawBlock[] = [];
@@ -304,7 +305,7 @@ function shiftBlock(
 /** @prose
  * # Scanning `.svelte` files
  *
- * Each part follows its own language's rule ([convention](../docs/convention.md#prose-blocks)): `<script>` and `<style>` bodies as
+ * Each part follows its own language's rule: `<script>` and `<style>` bodies as
  * TS and CSS, everything else as HTML, merged back in source order. Each block carries its part's
  * end, so a chunk's code is clipped there instead of running past `</script>` into the next part.
  */
@@ -350,8 +351,7 @@ function svelteParts(
  * The first block is the file prose; the code before the next block is the preamble. Every
  * later block starts a chunk that runs to the next block, or to the end of the file. A block
  * whose first line is a Markdown heading also opens a new section, and stays a chunk itself, so
- * a heading with no other prose isn't lost. A chunk with no code is `pending`: a plan item
- * ([convention](../docs/convention.md#blocks-and-chunks)).
+ * a heading with no other prose isn't lost. A chunk with no code is `pending`: a plan item.
  */
 export function parseFile(source: string, extension: string): FileParse {
   const found =
@@ -445,7 +445,7 @@ export function parseFile(source: string, extension: string): FileParse {
 export const FILE_ANCHOR = "file";
 
 /** @prose
- * # Content-derived anchors ([convention](../docs/convention.md#anchors))
+ * # Content-derived anchors
  *
  * In order: the slug of the chunk's heading, then the first name its code declares (JS and TS
  * only; for a block inside a class, the method or field below it), then `chunk-N` by position, the only kind that moves when a block is inserted above. The

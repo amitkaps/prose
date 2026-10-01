@@ -1,10 +1,12 @@
 /** @prose
  * # Pages as HTML
  *
- * Turns the tree's nodes into the renderer's pages ([spec](../docs/spec.md#pages)): a folder, a Markdown file, a
- * source file read as one document, or a plain text file. Every function returns a complete HTML
- * string; nothing runs in the browser but the few lines in `page`. Markdown goes through markz,
- * the same parser in files and in prose blocks, and code through `highlight.ts`.
+ * Turns the tree's nodes into the renderer's pages: a folder, a Markdown file, a source file
+ * read as one document, or a plain text file. Each is a complete HTML string, with nothing
+ * running in the browser but the few lines in `page`.
+ *
+ * What each page shows is [the spec](../docs/spec.md#pages). Markdown goes through markz, the
+ * same parser in files and in prose blocks, and code through `highlight.ts`.
  */
 import { html as markz } from "@amitkaps/markz";
 import { escapeHtml, highlight, highlightFences } from "./highlight.js";
@@ -128,7 +130,7 @@ async function codeRun(text: string, lang: string, startLine: number): Promise<s
 /** @prose
  * # A source file as one document
  *
- * The file prose, then each chunk's prose in source order, with its code between them ([spec](../docs/spec.md#pages)). A block's anchor is its `id`, so `src/store.ts#addTodo` lands on it, and a pending chunk
+ * The file prose, then each chunk's prose in source order, with its code between them. A block's anchor is its `id`, so `src/store.ts#addTodo` lands on it, and a pending chunk
  * says so. The `#` that links to it goes inside the block's first heading or paragraph, so it
  * sits on that line at that size; the heading gives up the `id` markz gave it, since the block
  * carries the anchor. The file prose is the top of the page and gets no `#`. Code shows by default; the page's **Prose only**

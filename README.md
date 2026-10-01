@@ -38,32 +38,4 @@ prose publish      # commit that site to the `prose` branch
 
 ## Docs
 
-- [Using prose](docs/usage.md): install, reading, building and publishing, and the snippet to
-  give your agents.
-- [The convention](docs/convention.md): `@prose` in every language, blocks and chunks, anchors,
-  `docs/` and links.
-- [Design](docs/design.md): why it's built this way, and what it leaves out.
-- [The renderer](docs/spec.md): what every page shows and what `build` and `publish` write.
-- [Plan](docs/plan.md) and [lessons](docs/lessons.md): the order of the work, and what building it
-  taught.
-
-## Develop
-
-```sh
-pnpm install
-pnpm run check && pnpm run test
-pnpm run build        # the library and the command (vp pack)
-node dist/cli.js .    # read this repository with prose
-```
-
-## Release
-
-Bump `version` in `package.json`, merge to `main`, then tag and push:
-
-```sh
-git tag v0.2.0 && git push origin v0.2.0
-```
-
-The `release` workflow verifies the tag matches `package.json`, runs checks and tests, builds, and
-attaches `amitkaps-prose-<version>.tgz` to a GitHub Release. Then publish the site:
-`node dist/cli.js publish && git push origin prose`.
+[docs/](docs/README.md) has the design, how to use it, the `@prose` convention, and how the renderer works; [development](docs/development.md) is how to build and release it.

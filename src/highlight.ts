@@ -1,11 +1,13 @@
 /** @prose
  * # Syntax highlighting
  *
- * Code is highlighted on the server with shiki, through `shiki/core` and only the languages a
- * repository here is likely to hold, not the full bundle of every grammar. The theme is shiki's
- * CSS-variables theme: each token's colour is a variable, set in `style.ts` for light and for
- * dark, so code and page share one palette and follow the reader's setting without a second
- * render. The highlighter is created on first use and kept for the life of the server.
+ * Code is highlighted on the server with shiki, with only the languages a repository here is
+ * likely to hold, and in the page's own palette, so one render serves light and dark.
+ *
+ * It comes in through `shiki/core`, not the full bundle of every grammar. The theme is shiki's
+ * CSS-variables theme: each token's colour is a variable, set in `style.css` for light and for
+ * dark, so code and page follow the reader's setting without a second render. The highlighter
+ * is created on first use and kept for the life of the server.
  *
  * It's the cost of a page: a 1,300-line TypeScript file takes about 0.4 s with the WASM regex
  * engine, 1.1 s with the JavaScript one. So the WASM engine, and a cache of highlighted runs keyed
