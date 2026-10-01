@@ -47,13 +47,12 @@ describe("publish", () => {
     const head = git("rev-parse", "HEAD");
     const status = git("status", "--porcelain");
     const done = await publish(root);
-    expect(done).toMatchObject({ branch: "prose", changed: true, domain: null });
+    expect(done).toMatchObject({ branch: "prose", changed: true });
     expect(git("rev-parse", "prose")).toBe(done.commit);
     expect(git("rev-list", "--count", "prose")).toBe("1");
     expect(onBranch().sort()).toEqual(
       [
         ".gitignore.html",
-        ".nojekyll",
         "404.html",
         "README.md.html",
         "index.html",
@@ -85,24 +84,10 @@ describe("publish", () => {
     expect(git("diff", "--name-only", "prose^", "prose").split("\n")).toContain("src/a.ts.html");
   });
 
-  it("writes a domain once and carries it forward, until it's replaced or dropped", async () => {
-    expect((await publish(root, { domain: "docs.example.com" })).domain).toBe("docs.example.com");
-    expect(show("CNAME")).toBe("docs.example.com");
-    writeFileSync(join(root, "README.md"), "# Demo, again\n");
-    git("commit", "-q", "-am", "third");
-    expect((await publish(root)).domain).toBe("docs.example.com");
-    expect(show("CNAME")).toBe("docs.example.com");
-    await publish(root, { domain: "read.example.com" });
-    expect(show("CNAME")).toBe("read.example.com");
-    await publish(root, { domain: null });
-    expect(onBranch()).not.toContain("CNAME");
-  });
-
-  it("publishes to another branch, and refuses a checked-out branch or a bad domain", async () => {
+  it("publishes to another branch, and refuses a checked-out branch or a bad name", async () => {
     await publish(root, { branch: "gh-pages" });
     expect(onBranch("gh-pages")).toContain("index.html");
     await expect(publish(root, { branch: "main" })).rejects.toThrow("is checked out");
     await expect(publish(root, { branch: "a..b" })).rejects.toThrow("valid branch name");
-    await expect(publish(root, { domain: "https://x.com/" })).rejects.toThrow("isn't a domain");
   });
 });

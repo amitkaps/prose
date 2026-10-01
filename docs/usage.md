@@ -59,15 +59,21 @@ prose build --out site  # somewhere else
 ## Publish
 
 ```sh
-prose publish --domain docs.example.com   # commit the site to the `prose` branch
-git push origin prose                     # publishing never pushes; this does
+prose publish         # commit the site to the `prose` branch
+git push origin prose # publishing never pushes; this does
 ```
 
-`prose publish` commits the build to an orphan `prose` branch without checking it out, so your working tree, index and `HEAD` stay as they were. A publish that changes no page makes no commit.
+`prose publish` commits the build to an orphan `prose` branch without checking it out, so your working tree, index and `HEAD` stay as they were. The branch holds only the pages, as plain files with nothing for any one host in them, and a publish that changes no page makes no commit. `--branch` changes the branch.
 
-For GitHub Pages, set the repository's Pages source to the `prose` branch. With `--domain`, add a DNS CNAME record for that domain pointing at `<user>.github.io`; later publishes keep the domain (`--no-domain` drops it). `--branch` changes the branch.
+Point a static host at that branch and deploy it as it is. This repository does it with a Cloudflare Worker, connected to the `prose` branch with this deploy command, which writes the config the branch doesn't hold:
 
-This repository is published that way: [prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose.
+```sh
+printf 'wrangler.jsonc\n.assetsignore\n' > .assetsignore && echo '{"name":"prose","compatibility_date":"2026-10-01","assets":{"directory":".","not_found_handling":"404-page","html_handling":"auto-trailing-slash"}}' > wrangler.jsonc && npx wrangler deploy
+```
+
+`not_found_handling` serves the site's `404.html`, and `html_handling` serves `/src/store.ts` from `src/store.ts.html`. The domain is set on the Worker, not in the branch. GitHub Pages isn't a target: it needs a `CNAME` and a `.nojekyll`, and never publishes `.github/` ([design](design.md#whats-out-and-why)).
+
+[prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, published that way.
 
 ## For agents
 

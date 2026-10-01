@@ -9,7 +9,7 @@ The `@prose` convention and the read-only renderer work, and this repository is 
 - **0.1.0**: a dev route with notes, symbol and staleness checks. Used on sitez and markz it went mostly unread, so it was dropped; the parser and the tree walk carried over ([design](design.md#whats-out-and-why), [lessons](lessons.md)).
 - **The rewrite**: the convention, and `prose .`, `prose build` and `prose publish` as a renderer that only reads ([reading](reading.md)).
 - **0.2.0**: the README around the two things, and the docs in `docs/`.
-- **0.3.0**: the reader's layout (text left, file tree right, a popover on narrow screens), a `README.md` in every folder, a README that opens with the problem and links to the docs, links and headings that match how GitHub shows them, `@prose` in shell, Python and `.gitignore`, current dependencies (Node 26 and 24, TypeScript 7), and an npm release: the workflow stages each version for approval on npmjs.com.
+- **0.3.0**: the reader's layout (text left, file tree right, a popover on narrow screens), a `README.md` in every folder, a README that opens with the problem and links to the docs, links and headings that match how GitHub shows them, `@prose` in shell, Python and `.gitignore`, current dependencies (Node 26 and 24, TypeScript 7), an npm release (the workflow stages each version for approval on npmjs.com), and the site on a Cloudflare Worker connected to the `prose` branch, which is now plain pages with no `CNAME` or `.nojekyll`.
 
 ## Next, in order
 
@@ -25,7 +25,7 @@ The `@prose` convention and the read-only renderer work, and this repository is 
 
 - [ ] Accessibility review: keyboard navigation and shortcuts (the file tree, the mode switch, code runs, jumping between pages), focus order, and screen-reader names.
 - [ ] A first crumb, **Home**, linking to `/`, so a page reads `Home / tests / repo.test.ts`. Always shown, or only below the root: to decide.
-- [ ] `.github/` on the published site. GitHub Pages' branch build answers `/.github/` with a 404, though the files are on the `prose` branch. Tested in the scratch repo `amitkaps/pages` (2026-10-01): the branch build serves other dot-folders (`.foo/`, `.vscode/`) and `.gitignore`, and refuses `.github` alone; an Actions deploy through `actions/upload-pages-artifact` drops every hidden path, `.github` included (it excludes `.[^/]*`); an Actions deploy of a tarball made by hand (`tar`, uploaded as the `github-pages` artifact, then `actions/deploy-pages`) serves all of them, `.github` too. So the choices are: leave `.github` out of a built site with a row marked not published on this host and a link to `<repo>/tree/<commit>/.github` (the repository stays as it is, no URL renamed; `prose .` renders it as any folder; state the rule in [reading](reading.md#prose-build)); or publish through a workflow with a hand-made tarball, which changes how `prose publish` works (a workflow in place of the `prose` branch). Set aside: renaming the folder in the URL (`/dot-github/`) and grouping hidden folders.
+- [ ] `.github/` on a host that refuses it: the published site is on Cloudflare, which serves it, so this only matters for a host like GitHub Pages, which isn't a target. If one is wanted, `prose build` could leave out the folder with a row linking to GitHub; set aside until then.
 - [ ] A screenshot of a rendered file in the README, once the layout is stable.
 
 Open questions are in [reading](reading.md#open-questions).
