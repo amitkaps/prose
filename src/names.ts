@@ -1,11 +1,12 @@
 /** @prose
  * # Declared names
  *
- * The names a chunk of JS or TS declares at its top level, which is what a chunk's anchor is
- * made from ([convention](../docs/convention.md#anchors)): `export function addTodo` anchors as `#addTodo`. The names come from
- * `oxc-parser`'s AST, not a regex: the regex versions this replaced each missed the next shape a
- * real file used (imports, then destructuring), which is the predictable failure of matching
- * text instead of parsing it (`docs/lessons.md`).
+ * The names a chunk of JS or TS declares at its top level, which a chunk's anchor is made from
+ * ([convention](../docs/convention.md#anchors)): `export function addTodo` anchors as `#addTodo`.
+ *
+ * They come from `oxc-parser`'s AST, not a regex: the regex versions this replaced each missed
+ * the next shape a real file used (imports, then destructuring), the predictable failure of
+ * matching text instead of parsing it ([lessons](../docs/lessons.md)).
  */
 import { parseSync } from "oxc-parser";
 

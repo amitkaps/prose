@@ -1,13 +1,15 @@
 /** @prose
  * # The stylesheet
  *
- * One readable column on the left and the file tree on the right, light and dark from the reader's setting.
- * Prose is the page and code is the aside: code sits folded in a quieter panel, so a file reads as
- * its prose first. Every page shares one left edge: prose keeps the reading measure, and code
- * runs widen to 100 columns, oxfmt's print width, so code wraps only on a narrow window and
- * prose never moves between a doc and a source file. The text's side margins come from the page's own width: equal while it's
- * narrow, then the left stops at 7rem and the rest goes to the right. Below
- * 62rem the tree is a popover sliding in from the right, under the bar.
+ * One readable column on the left and the file tree on the right, light and dark from the
+ * reader's setting. Prose is the page and code is the aside, in a quieter panel, so a file reads
+ * as its prose first.
+ *
+ * Every page shares one left edge: prose keeps the reading measure, and code runs widen to 100
+ * columns, oxfmt's print width, so code wraps only on a narrow window and prose never moves
+ * between a doc and a source file. The text's side margins come from the page's own width: equal
+ * while it's narrow, then the left stops at 7rem and the rest goes to the right. Below 62rem the
+ * tree is a popover sliding in from the right, under the bar.
  *
  * Code takes its colours from the same tokens: shiki's CSS-variables theme names each token's
  * colour (`--shiki-token-keyword`), and the palette below sets them, for light and for dark, in

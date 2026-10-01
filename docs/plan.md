@@ -31,9 +31,9 @@ An outside review of the published site (2026-10-01). The site it read predates 
 
 Make the repository follow its own convention:
 
-- [ ] A `README.md` in `.github/`, `docs/`, `src/` and `tests/`. `docs/README.md` is the reading order for the docs, so the root README can stop indexing them. This fixes the landing page's four *undocumented* folders.
-- [ ] Audit every first paragraph against the agent rules: three lines, what the file means and not what its code does. `src/parser.ts` is the known miss. Cite the convention once per file, not in every block; the links added in the docs split made the paragraphs longer.
-- [ ] Say the summary rule once, in [spec](spec.md#pages): a file that could carry prose and has none is *undocumented*; one that can't (`LICENSE`, `package.json`, lockfiles, images) shows its type and nothing else.
+- [x] A `README.md` in `.github/`, `docs/`, `src/` and `tests/`. `docs/README.md` is the reading order for the docs, so the root README can stop indexing them. This fixes the landing page's four *undocumented* folders.
+- [x] Audit every first paragraph against the agent rules: three lines, what the file means and not what its code does. `src/parser.ts` is the known miss. Cite the convention once per file, not in every block; the links added in the docs split made the paragraphs longer.
+- [x] Say the summary rule once, in [spec](spec.md#pages): a file that could carry prose and has none is *undocumented*; one that can't (`LICENSE`, `package.json`, lockfiles, images) shows its type and nothing else.
 
 Reader fixes:
 
@@ -46,7 +46,7 @@ Reader fixes:
 README and docs:
 
 - [ ] The README opens with the problem (code changes faster than it's read), a screenshot of a rendered file, and a link and a gloss for markz. "Read with it" becomes "see it live".
-- [ ] `Develop` and `Release` move out of the README to `docs/development.md`, where `node dist/cli.js` is the right command; the README says `prose` throughout.
+- [x] `Develop` and `Release` move out of the README to `docs/development.md`, where `node dist/cli.js` is the right command; the README says `prose` throughout.
 - [ ] `npx` or an npm install in place of the tarball (see Later).
 
 ### 4. Use it

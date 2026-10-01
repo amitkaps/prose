@@ -1,13 +1,14 @@
 /** @prose
  * # `prose build`
  *
- * The reader as static files, for any static host: the pages `prose .` serves, written out by
- * the same `renderRoute` (`server.ts`), not a second site. It publishes one commit, `HEAD`, as
- * the public repository shows it: `git archive` exports the committed, tracked files into a
- * temporary folder and the pages are rendered from there, so no untracked scratch file, no
- * `.env` and no ignored output can reach the site, and uncommitted edits don't either (it warns
- * about them). The live parts drop out, and the bar says which commit it is. The same commit
- * always gives the same bytes.
+ * The reader as static files, for any static host: the pages `prose .` serves, written by the
+ * same `renderRoute` (`server.ts`), not a second site. It builds one commit, `HEAD`, as the
+ * public repository shows it, and the same commit always gives the same bytes.
+ *
+ * `git archive` exports the committed, tracked files into a temporary folder and the pages are
+ * rendered from there, so no untracked scratch file, no `.env` and no ignored output can reach
+ * the site, and uncommitted edits don't either (it warns about them). The live parts drop out,
+ * and the page's footer says which commit it is.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";

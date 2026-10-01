@@ -1,9 +1,11 @@
 /** @prose
  * # Parser tests
  *
- * What counts as prose, per language ([convention](../docs/convention.md#prose-blocks)): a `@prose` block comment in JS, TS and CSS, an HTML comment in HTML,
- * `# @prose` runs in YAML and TOML, and a `.svelte` file's script, style and markup merged in order. Also
- * the first paragraph, anchors ([convention](../docs/convention.md#anchors)), nested blocks, and that `@note` is no longer read.
+ * What counts as prose, per language: a block comment in JS, TS and CSS, an HTML comment in
+ * HTML, `# @prose` runs in YAML and TOML, and a `.svelte` file's parts merged in order.
+ *
+ * Also the first paragraph, anchors, nested blocks, and that `@note` is no longer read; the rules
+ * are [the convention](../docs/convention.md#prose-blocks).
  */
 
 import * as fc from "fast-check";
@@ -58,7 +60,7 @@ describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
   });
 
   it("eats a body line's own leading * when that line skips the gutter (documented landmine)", () => {
-    // Every continuation line is expected to carry the ` * ` gutter ([convention](../docs/convention.md#prose-blocks)). A line
+    // Every continuation line is expected to carry the ` * ` gutter. A line
     // that skips it and starts with a literal `*` of its own (e.g. a markdown bullet) is
     // indistinguishable from a gutter line to the strip regex, and loses its marker.
     const source = `/** @prose\n * Intro.\n* a bullet\n */\n`;

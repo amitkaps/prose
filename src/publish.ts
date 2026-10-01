@@ -2,12 +2,13 @@
  * # `prose publish`
  *
  * `prose build`, committed to a branch a host deploys from: `prose` by default, an orphan branch
- * holding only the site. It never checks the branch out or touches the working tree, the index or
- * `HEAD`: the pages go through a temporary index into `git write-tree`, `git commit-tree` puts the
- * tree on the branch's last commit, and `git update-ref` moves the branch, only if it's still where
- * it was read. It doesn't push; `git push origin prose` is a separate step, so nothing leaves the
- * machine unasked. A build is byte-identical for the same commit, so a publish commit holds only
- * the pages that changed, and a publish that changes nothing makes no commit.
+ * holding only the site. It never touches the working tree, the index or `HEAD`, and it doesn't
+ * push, so nothing leaves the machine unasked.
+ *
+ * The pages go through a temporary index into `git write-tree`, `git commit-tree` puts the tree
+ * on the branch's last commit, and `git update-ref` moves the branch, only if it's still where it
+ * was read. A build is byte-identical for the same commit, so a publish commit holds only the
+ * pages that changed, and a publish that changes nothing makes no commit.
  */
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";

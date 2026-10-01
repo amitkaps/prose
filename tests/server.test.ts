@@ -34,7 +34,7 @@ function get(
   });
 }
 
-describe("segments ([spec](../docs/spec.md#pages))", () => {
+describe("segments", () => {
   it("lays a file out as code runs around its blocks, dropping the comment text", () => {
     const source = "/** @prose A. */\nimport x;\n\n/** @prose B. */\n\nconst b = 1;\n";
     const block = (start: number, end: number): TreeNode => ({
