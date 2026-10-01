@@ -1,0 +1,16 @@
+# @prose
+# # How the site is deployed
+#
+# Cloudflare builds this repository's own site from `main` and serves it as a Worker with static assets: no code, only the pages `prose build` writes.
+#
+# The Worker's build command is `pnpm install && pnpm run build && node dist/cli.js build`, and its deploy command is `pnpm dlx wrangler deploy`, which reads this file (`npx` refuses to run here, since `devEngines` names pnpm). The domain is set on the Worker in the dashboard, not here. The steps are in [usage](docs/usage.md#deploying-this-site).
+
+name = "prose"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = ".prose/site"
+# Serve the site's own 404.html for any missing address.
+not_found_handling = "404-page"
+# Serve /src/store.ts from src/store.ts.html, with no redirect.
+html_handling = "auto-trailing-slash"

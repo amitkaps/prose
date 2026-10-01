@@ -65,15 +65,21 @@ git push origin prose # publishing never pushes; this does
 
 `prose publish` commits the build to an orphan `prose` branch without checking it out, so your working tree, index and `HEAD` stay as they were. The branch holds only the pages, as plain files with nothing for any one host in them, and a publish that changes no page makes no commit. `--branch` changes the branch.
 
-Point a static host at that branch and deploy it as it is. This repository does it with a Cloudflare Worker, connected to the `prose` branch with this deploy command, which writes the config the branch doesn't hold:
+Point a static host at that branch and deploy it as it is.
 
-```sh
-printf 'wrangler.jsonc\n.assetsignore\n' > .assetsignore && echo '{"name":"prose","compatibility_date":"2026-10-01","assets":{"directory":".","not_found_handling":"404-page","html_handling":"auto-trailing-slash"}}' > wrangler.jsonc && npx wrangler deploy
-```
+## Deploying this site
 
-`not_found_handling` serves the site's `404.html`, and `html_handling` serves `/src/store.ts` from `src/store.ts.html`. The domain is set on the Worker, not in the branch. GitHub Pages isn't a target: it needs a `CNAME` and a `.nojekyll`, and never publishes `.github/` ([design](design.md#whats-out-and-why)).
+[prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, on a Cloudflare Worker with static assets. It builds from `main`, not from the `prose` branch, so the configuration is a file in the repository, [wrangler.toml](../wrangler.toml), and every merge deploys.
 
-[prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, published that way.
+In Cloudflare, create a Worker named `prose` from the repository, with:
+
+- **Production branch:** `main`
+- **Build command:** `pnpm install && pnpm run build && node dist/cli.js build`
+- **Deploy command:** `pnpm dlx wrangler deploy`
+
+Then set the domain on the Worker, in the dashboard. `wrangler.toml` points the Worker at `.prose/site`, serves the site's `404.html` for missing addresses, and serves `/src/store.ts` from `src/store.ts.html`. The deploy command is `pnpm dlx`, not `npx`, because `npx` refuses to run in a repository whose `devEngines` name pnpm.
+
+Another project does the same with the published package: build command `npx @amitkaps/prose build`, and its own `wrangler.toml` with `directory = ".prose/site"`.
 
 ## For agents
 
