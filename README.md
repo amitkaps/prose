@@ -5,7 +5,7 @@ Coding agents change code faster than a person can read it, so the model of the 
 ## Where to go
 
 - [Design](docs/design.md): why it is built this way, and what it leaves out.
-- [Usage](docs/usage.md): set it up on a project, publish it, and the snippet to give your agents.
+- [Usage](docs/usage.md): set it up on a project, deploy its site, and the snippet to give your agents.
 - [Writing](docs/writing.md): how to write `@prose`, in every language.
 - [Reading](docs/reading.md): what each page of the renderer shows.
 
@@ -33,7 +33,6 @@ The current Node and the previous LTS (today, 26 and 24):
 npm install -g @amitkaps/prose
 prose .            # read this repository in the browser
 prose build        # the same pages as static files, from the last commit
-prose publish      # commit that site to the `prose` branch
 ```
 
 Or without installing: `npx @amitkaps/prose .`.

@@ -20,7 +20,7 @@ import { notFoundPage, renderRoute, type Site } from "./server.js";
 import { walkFiles } from "./tree.js";
 
 export interface BuildOptions {
-  /** Where the site goes; `.prose/site` inside the repository by default. */
+  /** Where the site goes; `.prose` inside the repository by default. */
   out?: string;
 }
 
@@ -112,7 +112,8 @@ function prepareOut(root: string, out: string, warnings: string[]): void {
   if (existsSync(out) && readdirSync(out).length > 0 && !existsSync(join(out, MARKER))) {
     throw new Error(`${out} isn't empty and isn't a previous build; choose another --out`);
   }
-  if (inside && tryGit(root, ["check-ignore", "-q", "--no-index", out]) === null) {
+  // A path inside it: `.prose/` in `.gitignore` matches a folder, which may not exist yet.
+  if (inside && tryGit(root, ["check-ignore", "-q", "--no-index", join(out, MARKER)]) === null) {
     warnings.push(
       `${relative(root, out)} isn't in .gitignore; add ${relative(root, out).split(sep)[0]}/ to keep the site out of the repository`,
     );
@@ -136,7 +137,7 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
   if (git(root, ["status", "--porcelain", "--", "."])) {
     warnings.push(`uncommitted changes aren't in the build, which is ${commit}`);
   }
-  const out = resolve(root, options.out ?? join(".prose", "site"));
+  const out = resolve(root, options.out ?? ".prose");
   prepareOut(root, out, warnings);
 
   void warmHighlighter();
