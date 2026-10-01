@@ -42,6 +42,18 @@
     "typescript": "^6.0.3",
     "vite-plus": "1.0.0"
   },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^12.8.0",
+      "onFail": "error"
+    },
+    "runtime": {
+      "name": "node",
+      "version": ">=24",
+      "onFail": "error"
+    }
+  },
   "engines": {
     "node": ">=24"
   },
