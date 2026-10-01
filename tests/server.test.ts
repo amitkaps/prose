@@ -168,6 +168,10 @@ describe("serve: folders", () => {
     expect(rail).toContain(
       '<a class="file" style="--depth: 1" href="/src/a.ts" aria-current="page">a.ts</a>',
     );
+    // A folder's README.md is listed first in it, and goes to the folder's page.
+    expect(rail).toMatch(
+      /<ul><li><a class="file" style="--depth: 1" href="\/src\/">README.md<\/a>/,
+    );
     expect(rail).not.toContain('href="/src/README.md"');
   });
 

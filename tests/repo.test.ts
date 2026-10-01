@@ -2,10 +2,11 @@
  * # Repository and footer tests
  *
  * A GitHub address from every spelling of a remote, and none from any other host; and the rail's
- * footer: Live locally, a snapshot with its commit and, only when given one, its tag.
+ * footer: Live locally, a snapshot with its commit and, only when given one, its tag; and a folder's
+ * `README.md` row, first in its folder and standing for the folder's page.
  */
 import { describe, expect, it } from "vite-plus/test";
-import { railFooter } from "../src/rail.js";
+import { railFooter, renderRail } from "../src/rail.js";
 import { githubUrl } from "../src/repo.js";
 
 describe("githubUrl", () => {
@@ -53,5 +54,29 @@ describe("railFooter", () => {
     const html = railFooter({ live: false, snapshot: { commit: "abc1234" } });
     expect(html).toContain("Snapshot · abc1234");
     expect(html).not.toContain("<a ");
+  });
+});
+
+describe("renderRail: README.md", () => {
+  const files = ["README.md", "app.ts", "docs/README.md", "docs/a.md", "docs/z.md"];
+
+  it("lists a folder's README first, linking to the folder's page", () => {
+    const html = renderRail(files, "src/x.ts", "demo");
+    expect(html).toMatch(/<ul><li><a class="file" style="--depth: 1" href="\/docs\/">README.md</);
+    expect(html.indexOf('href="/docs/"')).toBeLessThan(html.indexOf('href="/docs/a.md"'));
+    expect(html.indexOf('href="/"')).toBeLessThan(html.indexOf('href="/app.ts"'));
+  });
+
+  it("highlights the README, not the folder, on the folder's page", () => {
+    const html = renderRail(files, "docs/", "demo");
+    expect(html).toContain('href="/docs/" aria-current="page">README.md');
+    expect(html.match(/aria-current/g)).toHaveLength(1);
+  });
+
+  it("highlights the project's own row on the root page only when there's no README", () => {
+    expect(renderRail(["a.ts"], "", "demo")).toContain(
+      'class="rail-project" href="/" aria-current',
+    );
+    expect(renderRail(files, "", "demo")).toContain('href="/" aria-current="page">README.md');
   });
 });

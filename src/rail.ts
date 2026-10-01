@@ -2,10 +2,13 @@
  * # The file tree
  *
  * The rail on the right of every page: the repository's folders and files, as an editor's
- * explorer shows them, folders first. It's built from the walk's file list alone, with no file
- * read, so it costs nothing per page beyond its HTML. Each folder is a `<details>`, open when the
- * current page is inside it, so the tree works without script; the page's script remembers which
- * folders a reader opened, and where the rail was scrolled, across pages (`render.ts`).
+ * explorer shows them. Folders come first, and in each folder its `README.md` comes ahead of the
+ * other files.
+ *
+ * It's built from the walk's file list alone, with no file read, so it costs nothing per page
+ * beyond its HTML. Each folder is a `<details>`, open when the current page is inside it, so the
+ * tree works without script; the page's script remembers which folders a reader opened, and where
+ * the rail was scrolled, across pages (`render.ts`).
  */
 import { escapeHtml } from "./highlight.js";
 
@@ -47,14 +50,27 @@ function renderDir(dir: Dir, prefix: string, current: string, depth: number): st
     const path = prefix ? `${prefix}/${name}` : name;
     const here = current === `${path}/`;
     const open = current.startsWith(`${path}/`);
+    const sub = dir.dirs.get(name)!;
     rows.push(
       `<li><details data-folder="${escapeHtml(path)}"${open ? " open" : ""}><summary style="--depth: ${depth}"${
-        here ? ` aria-current="page"` : ""
-      }><a href="${escapeHtml(href(path, true))}">${escapeHtml(name)}</a></summary><ul>${renderDir(dir.dirs.get(name)!, path, current, depth + 1)}</ul></details></li>`,
+        here && !sub.files.includes("README.md") ? ` aria-current="page"` : ""
+      }><a href="${escapeHtml(href(path, true))}">${escapeHtml(name)}</a></summary><ul>${renderDir(sub, path, current, depth + 1)}</ul></details></li>`,
     );
   }
-  for (const name of [...dir.files].sort()) {
-    if (name === "README.md") continue;
+  // A folder's `README.md` is its page, so its row goes to the folder and is first in it.
+  const files = [...dir.files].sort(
+    (a, b) => Number(b === "README.md") - Number(a === "README.md"),
+  );
+  for (const name of files) {
+    if (name === "README.md") {
+      const here = current === (prefix ? `${prefix}/` : "");
+      rows.push(
+        `<li><a class="file" style="--depth: ${depth}" href="${escapeHtml(href(prefix, !!prefix))}"${
+          here ? ` aria-current="page"` : ""
+        }>README.md</a></li>`,
+      );
+      continue;
+    }
     const path = prefix ? `${prefix}/${name}` : name;
     rows.push(
       `<li><a class="file" style="--depth: ${depth}" href="${escapeHtml(href(path, false))}"${
@@ -65,12 +81,14 @@ function renderDir(dir: Dir, prefix: string, current: string, depth: number): st
   return rows.join("");
 }
 
-/** The rail for a page at `current` (`""`, `src/`, or `src/store.ts`). A folder's `README.md` isn't
- *  listed: it's that folder's own page. */
+/** The rail for a page at `current` (`""`, `src/`, or `src/store.ts`). A folder's `README.md` is
+ *  listed first in it and links to the folder's page, where it is highlighted instead of the
+ *  folder's own row. */
 export function renderRail(files: string[], current: string, project: string, footer = ""): string {
+  const top = index(files);
   return `<nav class="rail" id="rail" popover aria-label="Files"><a class="rail-project" href="/"${
-    current === "" ? ` aria-current="page"` : ""
-  }>${escapeHtml(project)}</a><ul>${renderDir(index(files), "", current, 0)}</ul>${footer}</nav>`;
+    current === "" && !top.files.includes("README.md") ? ` aria-current="page"` : ""
+  }>${escapeHtml(project)}</a><ul>${renderDir(top, "", current, 0)}</ul>${footer}</nav>`;
 }
 
 /** What a built page was made from: the short commit, and the tag only when `HEAD` is that tag. */
