@@ -1,19 +1,23 @@
 # @prose
 # # Release
 #
-# Pushing a `vX.Y.Z` tag runs the same checks as CI, then packs the tarball and attaches it to a GitHub
-# Release. The tag must match `package.json`'s version.
+# Pushing a `vX.Y.Z` tag runs the same checks as CI, then packs the tarball, attaches it to a GitHub
+# Release and publishes it to npm. The tag must match `package.json`'s version.
+#
+# npm publishing uses trusted publishing (OIDC, with provenance): there is no token to store. The
+# trusted publisher is set on npmjs.com once the package exists, so the first version is published
+# by hand and this step skips a version that is already on the registry.
 
 name: release
 
 # Push a `vX.Y.Z` tag → build, verify, and attach the installable tarball to a GitHub Release.
-# Consumers install from the release asset URL until the package is published to a registry.
 on:
   push:
     tags: ["v*"]
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -34,6 +38,16 @@ jobs:
       - run: pnpm run test
       # `pnpm pack` runs `prepack` (the full build) first.
       - run: pnpm pack
+      # From a folder outside the repository: npm refuses to run in it, since `devEngines` names pnpm.
+      - name: Publish to npm
+        working-directory: ${{ runner.temp }}
+        run: |
+          v="$(node -p 'require(process.env.GITHUB_WORKSPACE + "/package.json").version')"
+          if npm view "@amitkaps/prose@$v" version >/dev/null 2>&1; then
+            echo "@amitkaps/prose@$v is already on npm"
+          else
+            npm publish "$GITHUB_WORKSPACE"/amitkaps-prose-*.tgz --provenance --access public
+          fi
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}

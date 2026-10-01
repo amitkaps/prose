@@ -23,7 +23,7 @@ The build and server tests run against the committed [`tests/fixtures/simple`](.
 Two, in [`.github/workflows/`](../.github/workflows/); each file says what it does in its own prose.
 
 - `ci.yml`: format, lint and types, the tests and the build, on every pull request and push to `main`. Branch protection requires the `ci` check by that name.
-- `release.yml`: on a `v*` tag, checks the tag matches `package.json`, runs the checks and tests, builds, and attaches the `.tgz` to a Release.
+- `release.yml`: on a `v*` tag, checks the tag matches `package.json`, runs the checks and tests, builds, publishes to npm and attaches the `.tgz` to a Release.
 
 ## Release
 
@@ -33,8 +33,18 @@ Bump `version` in `package.json`, merge to `main`, then tag and push:
 git tag v0.2.0 && git push origin v0.2.0
 ```
 
-The `release` workflow verifies the tag matches `package.json`, runs the checks and tests, builds, and attaches `amitkaps-prose-<version>.tgz` to a GitHub Release. Then publish the site:
+The `release` workflow verifies the tag matches `package.json`, runs the checks and tests, builds, publishes `@amitkaps/prose` to npm and attaches `amitkaps-prose-<version>.tgz` to a GitHub Release. Then publish the site:
 
 ```sh
 node dist/cli.js publish && git push origin prose
 ```
+
+### Publishing to npm
+
+The workflow publishes with npm's trusted publishing (OIDC, with provenance), so there is no token. npm only lets you set a trusted publisher on a package that exists, so the first version is published by hand, from a folder outside the repository (`npm` refuses to run inside it, since `devEngines` names pnpm):
+
+```sh
+pnpm pack && cd /tmp && npm login && npm publish ~/code/prose/amitkaps-prose-<version>.tgz --access public
+```
+
+Then, on npmjs.com, set the package's trusted publisher to the repository `amitkaps/prose` and the workflow `release.yml`. After that a tag is all a release needs; the workflow skips a version that is already on the registry.
