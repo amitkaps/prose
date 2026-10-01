@@ -17,6 +17,30 @@ The order of the work and items that touch several files. Finished work is one l
 
 ## Open work, in order
 
+### Fix what the first readers found
+
+An outside review of the published site (2026-10-01). The site it read predates the docs split and still has `examples/`, so republish first and re-read before judging. Checked against the code: `index.html.html` is intended (the folder page owns `index.html`; [spec](spec.md#prose-build)), and `main.js`/`style.css` resolve either way, but the rail links them root-absolute and the folder listing relative.
+
+Make the repository follow its own convention:
+
+- [ ] A `README.md` in `.github/`, `docs/`, `src/` and `tests/`. `docs/README.md` is the reading order for the docs, so the root README can stop indexing them. This fixes the landing page's four *undocumented* folders.
+- [ ] Audit every first paragraph against the agent rules: three lines, what the file means and not what its code does. `src/parser.ts` is the known miss. Cite the convention once per file, not in every block; the links added in the docs split made the paragraphs longer.
+- [ ] Say the summary rule once, in [spec](spec.md#pages): a file that could carry prose and has none is *undocumented*; one that can't (`LICENSE`, `package.json`, lockfiles, images) shows its type and nothing else.
+
+Reader fixes:
+
+- [ ] `/** @prose *\/` shows its backslash: the parser unescapes `*\/` to `*/` in a block's body.
+- [ ] Headings inside a source file's blocks render one level down, so a block's `# Filtering` is an `h2` under the file's own `h1`. Decide whether the file prose keeps its level.
+- [ ] A run's header reads `75 lines · 9–83 · ts`, with the separator in the markup, not only in CSS.
+- [ ] One link form: root-absolute everywhere (rail, listing, breadcrumb).
+- [ ] A folder's `README.md`: listed first in the rail and highlighted on the folder page, left out of the child list, a "from `README.md`" line under the breadcrumb, and `/folder/README.md` redirecting to `/folder/`. A static host can't redirect, so `build` writes `folder/README.md.html` as a meta refresh. Settles the open question in [spec](spec.md#open-questions).
+
+README and docs:
+
+- [ ] The README opens with the problem (code changes faster than it's read), a screenshot of a rendered file, and a link and a gloss for markz. "Read with it" becomes "see it live".
+- [ ] `Develop` and `Release` move out of the README to `docs/development.md`, where `node dist/cli.js` is the right command; the README says `prose` throughout.
+- [ ] `npx` or an npm install in place of the tarball (see Later).
+
 ### 4. Use it
 
 - [ ] Look at it in a browser on sitez and markz: typography, folded code, mobile width.
