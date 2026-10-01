@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { warmHighlighter } from "./highlight.js";
+import { repoUrl } from "./repo.js";
 import { notFoundPage, renderRoute, type Site } from "./server.js";
 import { walkFiles } from "./tree.js";
 
@@ -145,6 +146,7 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
       files,
       live: false,
       snapshot: { commit, tag },
+      repo: repoUrl(root),
     };
     const paths = ["", ...folders(files), ...files];
     // Written first, so a source file named `404` keeps its page.
