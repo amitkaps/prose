@@ -1,3 +1,10 @@
+/** @prose
+ * # Publish tests
+ *
+ * `prose publish` against a temporary git repository: the site lands on an orphan branch, and the checkout, the
+ * index and `HEAD` stay as they were.
+ */
+
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

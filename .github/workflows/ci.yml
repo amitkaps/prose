@@ -1,3 +1,9 @@
+# @prose
+# # CI
+#
+# One job, `ci`, on every pull request and every push to `main`: format, lint and types, the tests, then the
+# build. Branch protection requires that exact check name.
+
 name: ci
 
 on:

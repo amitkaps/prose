@@ -1,3 +1,9 @@
+# @prose
+# # Release
+#
+# Pushing a `vX.Y.Z` tag runs the same checks as CI, then packs the tarball and attaches it to a GitHub
+# Release. The tag must match `package.json`'s version.
+
 name: release
 
 # Push a `vX.Y.Z` tag → build, verify, and attach the installable tarball to a GitHub Release.

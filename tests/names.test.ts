@@ -1,3 +1,9 @@
+/** @prose
+ * # Declared names tests
+ *
+ * `declaredIdentifiers` finds what a file declares, which anchors and the symbol check rely on.
+ */
+
 import { describe, expect, it } from "vite-plus/test";
 import { declaredIdentifiers } from "../src/names.js";
 

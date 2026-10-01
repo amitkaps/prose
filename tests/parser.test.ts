@@ -1,3 +1,11 @@
+/** @prose
+ * # Parser tests
+ *
+ * What counts as prose, per language (spec §3.1): a `@prose` block comment in JS, TS and CSS, an HTML comment in HTML,
+ * `# @prose` runs in YAML and TOML, and a `.svelte` file's script, style and markup merged in order. Also
+ * the first paragraph, anchors (§3.2), nested blocks, and that `@note` is no longer read.
+ */
+
 import * as fc from "fast-check";
 import { describe, expect, it } from "vite-plus/test";
 import { firstParagraph, parseFile } from "../src/parser.js";

@@ -1,3 +1,10 @@
+/** @prose
+ * # Build tests
+ *
+ * `prose build`: the static site for `examples/single` and for a git repository, every page rendered the same
+ * way the server renders it, and the output folder it will and won't clear.
+ */
+
 import { execFileSync } from "node:child_process";
 import {
   existsSync,

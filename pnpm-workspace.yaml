@@ -1,3 +1,9 @@
+# @prose
+# # pnpm workspace settings
+#
+# Not a multi-package workspace: this file only holds pnpm's install policy. `minimumReleaseAgeExclude` lets
+# one freshly released dependency in past the age gate, and `overrides` pins every `vite` to Vite+'s core build.
+
 minimumReleaseAgeExclude:
   - "@amitkaps/markz@0.1.1"
 # Collapse every `vite` in the tree onto Vite+'s core build, which `vp pack` requires (same
