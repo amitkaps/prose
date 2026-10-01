@@ -61,7 +61,6 @@ README and docs:
 
 - [ ] Accessibility review: keyboard navigation and shortcuts (the file tree, the mode switch, code runs, jumping between pages), focus order, and screen-reader names.
 - [x] `@prose` in `.gitignore`, shell and Python: the `#` scanner YAML and TOML use, by extension (`.gitignore` by name). `Dockerfile` and `Makefile` are left out until a repo needs them.
-- [ ] TypeScript 7 (the native compiler): `vp check` runs the type check, so try it once vite-plus supports it. `@types/node` stays at the older supported Node's (24) on purpose.
 - [ ] Publish to npm once the CLI has settled; check whether an unscoped name is available for `npx`.
 
 ## Open questions
