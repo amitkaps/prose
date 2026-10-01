@@ -168,7 +168,7 @@ export interface PageOptions {
   project: string;
   /** The page's repo path: `""` for the root, `src/` for a folder, `src/store.ts` for a file. */
   path: string;
-  /** The file tree for the left rail (`rail.ts`). */
+  /** The file tree for the right rail (`rail.ts`). */
   rail: string;
   body: string;
   /** A `vscode://file/…` link for the file, or null for a folder and on a built page. */
@@ -182,9 +182,13 @@ export interface PageOptions {
   /** On a built page, which snapshot it is: `v0.1.0 · 1c77293`. */
 }
 
-function breadcrumb(project: string, path: string): string {
+/** The right-hand sidebar icon: a window with its right panel marked. */
+const PANEL_ICON = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1.75" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 3v10" stroke="currentColor" stroke-width="1.5"/></svg>`;
+
+/** The path to the page, each ancestor a link; the project itself is the bar's name. */
+function breadcrumb(path: string): string {
   const segments = path.split("/").filter(Boolean);
-  const crumbs = [`<a href="/">${escapeHtml(project)}</a>`];
+  const crumbs: string[] = [];
   segments.forEach((segment, i) => {
     const last = i === segments.length - 1;
     const href = `/${segments
@@ -203,8 +207,9 @@ function breadcrumb(project: string, path: string): string {
 /** @prose
  * # The page shell
  *
- * One stylesheet inline, the file tree on the left (`rail.ts`), a breadcrumb, and a few lines of
- * script: the **Prose & Code / Prose only** switch, remembered across pages and applied in
+ * One stylesheet inline; the reading column on the left, with the breadcrumb above its text and
+ * **Open in editor** at the breadcrumb's end; the file tree on the right (`rail.ts`); a bar with
+ * the project's name, the mode switch and the tree's toggle; and a few lines of script: the **Prose & Code / Prose only** switch, remembered across pages and applied in
  * `<head>` so the page never flashes its code first, and each code run's header; the rail's open folders and scroll position, restored before the
  * first paint; the **Files** button that shows the rail on a narrow screen; and live reload. The server
  * tells a page when something it shows changed (`server.ts`), and it reloads, keeping its scroll
@@ -216,7 +221,9 @@ export function page(options: PageOptions): string {
   const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
   const off = hasCode ? "" : ` disabled title="No code on this page"`;
   const mode = `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true"${off}>Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false"${off}>Prose only</button></div>`;
-  const end = editorLink ? `<a href="${escapeHtml(editorLink)}">Open in editor</a>` : "";
+  const end = editorLink
+    ? `<a class="editor" href="${escapeHtml(editorLink)}">Open in editor</a>`
+    : "";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -228,12 +235,12 @@ export function page(options: PageOptions): string {
 </head>
 <body data-path="${escapeHtml(path)}"${live ? ` data-rendered="${Date.now()}"` : ""}>
 <div class="layout">
+<div class="page">
+<header class="bar"><a class="project" href="/">${escapeHtml(project)}</a><div class="bar-mode">${mode}</div><button type="button" class="rail-toggle" data-toggle-rail aria-label="Show files">${PANEL_ICON}</button></header>
+<main><div class="where"><nav class="crumbs">${breadcrumb(path)}</nav>${end}</div>${body}</main>
+</div>
 ${rail}
 <script>${RAIL_SCRIPT}</script>
-<div class="page">
-<header class="bar"><div class="bar-start"><button type="button" class="rail-toggle" data-toggle-rail aria-label="Show files">Files</button><nav class="crumbs">${breadcrumb(project, path)}</nav></div><div class="bar-mode">${mode}</div><div class="bar-end">${end}</div></header>
-<main>${body}</main>
-</div>
 </div>
 <script>${SCRIPT}${live ? LIVE_SCRIPT : ""}</script>
 <script type="speculationrules">${SPECULATION}</script>

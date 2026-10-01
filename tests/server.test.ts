@@ -159,7 +159,8 @@ describe("serve: folders", () => {
 
   it("shows the file tree on every page: folders first, the current page's folders open", async () => {
     const { body } = await get(served.url, "/src/a.ts");
-    const rail = body.slice(body.indexOf('<nav class="rail"'), body.indexOf("</nav>") + 6);
+    const start = body.indexOf('<nav class="rail"');
+    const rail = body.slice(start, body.indexOf("</nav>", start) + 6);
     // `app.ts` sorts before both folders, and still comes after them.
     expect(rail.indexOf('data-folder="src"')).toBeLessThan(rail.indexOf('href="/app.ts"'));
     expect(rail).toContain('<details data-folder="src" open>');
