@@ -209,9 +209,10 @@ function breadcrumb(path: string): string {
  *
  * One stylesheet inline; the reading column on the left, with the breadcrumb above its text and
  * **Open in editor** at the breadcrumb's end; the file tree on the right (`rail.ts`); a bar with
- * the project's name, the mode switch and the tree's toggle; and a few lines of script: the **Prose & Code / Prose only** switch, remembered across pages and applied in
+ * the project's name, the mode switch and the tree's toggle, which is a checkbox and its label when the tree is docked and a popover button when it
+ * isn't, so showing and hiding it is CSS and HTML alone; and a few lines of script: the **Prose & Code / Prose only** switch, remembered across pages and applied in
  * `<head>` so the page never flashes its code first, and each code run's header; the rail's open folders and scroll position, restored before the
- * first paint; the **Files** button that shows the rail on a narrow screen; and live reload. The server
+ * first paint; and live reload. The server
  * tells a page when something it shows changed (`server.ts`), and it reloads, keeping its scroll
  * position. It listens only while visible, and says when it was rendered, so it catches up on
  * what changed while hidden. A built page leaves live reload out. Browser storage can be unavailable, so it's only ever tried.
@@ -231,16 +232,19 @@ export function page(options: PageOptions): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <style>${STYLE}</style>
-<script>try { if (localStorage.getItem("prose:mode") === "prose") document.documentElement.classList.add("prose-only"); } catch {}</script>
+<script>try { const r = document.documentElement.classList, s = localStorage; if (s.getItem("prose:mode") === "prose") r.add("prose-only"); } catch {}</script>
 </head>
 <body data-path="${escapeHtml(path)}"${live ? ` data-rendered="${Date.now()}"` : ""}>
+<input type="checkbox" id="dock" class="ctl" aria-label="Hide the file tree">
+<div class="shell">
+<header class="bar"><a class="project" href="/">${escapeHtml(project)}</a><div class="bar-mode">${mode}</div><label class="rail-toggle dock" for="dock" title="Files" aria-label="Files">${PANEL_ICON}</label><button type="button" class="rail-toggle pop" popovertarget="rail" title="Files" aria-label="Files">${PANEL_ICON}</button></header>
 <div class="layout">
 <div class="page">
-<header class="bar"><a class="project" href="/">${escapeHtml(project)}</a><div class="bar-mode">${mode}</div><button type="button" class="rail-toggle" data-toggle-rail aria-label="Show files">${PANEL_ICON}</button></header>
 <main><div class="where"><nav class="crumbs">${breadcrumb(path)}</nav>${end}</div>${body}</main>
 </div>
 ${rail}
 <script>${RAIL_SCRIPT}</script>
+</div>
 </div>
 <script>${SCRIPT}${live ? LIVE_SCRIPT : ""}</script>
 <script type="speculationrules">${SPECULATION}</script>
@@ -314,9 +318,6 @@ for (const run of runs) {
 	});
 }
 sync();
-document.querySelector("[data-toggle-rail]").addEventListener("click", () => {
-	document.body.classList.toggle("rail-open");
-});
 const key = "prose:scroll:" + location.pathname;
 try {
 	const y = sessionStorage.getItem(key);
