@@ -118,7 +118,8 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
   }
   const commit = tryGit(root, ["rev-parse", "--short", "HEAD"]);
   if (!commit) throw new Error("there's no commit to build yet");
-  const tag = tryGit(root, ["describe", "--tags", "--abbrev=0", "HEAD"]);
+  // Only a tag on `HEAD` itself: the nearest earlier tag would name a release this isn't.
+  const tag = tryGit(root, ["describe", "--tags", "--exact-match", "HEAD"]) ?? undefined;
   const version = tag ? `${tag} · ${commit}` : commit;
 
   const warnings: string[] = [];
@@ -138,7 +139,13 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
     });
     execFileSync("tar", ["-x", "-C", snapshot], { input: tar });
     const files = walkFiles(snapshot, "").sort();
-    const site: Site = { root: snapshot, project: basename(root), files, live: false, version };
+    const site: Site = {
+      root: snapshot,
+      project: basename(root),
+      files,
+      live: false,
+      snapshot: { commit, tag },
+    };
     const paths = ["", ...folders(files), ...files];
     // Written first, so a source file named `404` keeps its page.
     writeFileSync(join(out, "404.html"), notFoundPage(site));
