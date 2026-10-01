@@ -41,10 +41,12 @@ node dist/cli.js publish && git push origin prose
 
 ### Publishing to npm
 
-The workflow publishes with npm's trusted publishing (OIDC, with provenance), so there is no token. npm only lets you set a trusted publisher on a package that exists, so the first version is published by hand, from a folder outside the repository (`npm` refuses to run inside it, since `devEngines` names pnpm):
+The workflow stages the version on npm with trusted publishing (OIDC, with provenance), so there is no token and no way for CI to release by itself: a maintainer approves each version, with 2FA, in the **Staged Packages** tab on npmjs.com or with `npm stage approve <id>`.
+
+Set it up once, in the package's settings on npmjs.com: a trusted publisher for the repository `amitkaps/prose` and the workflow `release.yml`, with direct publishing (`npm publish`) and dist-tags left unchecked, so staging is all it can do. If npm won't take the setting before the package exists, publish the first version by hand, from a folder outside the repository (`npm` refuses to run inside it, since `devEngines` names pnpm), then set the publisher:
 
 ```sh
 pnpm pack && cd /tmp && npm login && npm publish ~/code/prose/amitkaps-prose-<version>.tgz --access public
 ```
 
-Then, on npmjs.com, set the package's trusted publisher to the repository `amitkaps/prose` and the workflow `release.yml`. After that a tag is all a release needs; the workflow skips a version that is already on the registry.
+The workflow skips a version that is already on the registry.
