@@ -4,7 +4,7 @@
  * Walks a repository into a tree of folders and files (spec §4), each with its summary: a
  * folder's from its `README.md`, a Markdown file's from its first paragraph, a source file's
  * from its file prose. A source file also carries its text and its blocks, so a renderer can lay
- * it out as one document. `docs/` is an ordinary folder here (spec §3.4).
+ * it out as one document. `docs/` is an ordinary folder here ([convention](../docs/convention.md#writing-that-spans-the-code)).
  */
 import { execFileSync } from "node:child_process";
 import {
@@ -31,7 +31,7 @@ export interface TreeNode {
   /** File-only (not `.md`): the whole file's text, so its code shows whether or not it has prose. */
   source?: string;
   /** File-only: every prose block in the file, the file prose first, in source order. A file is
-   *  the smallest unit (spec §3.2), so `children` is always empty for a file. */
+   *  the smallest unit ([convention](../docs/convention.md#blocks-and-chunks)), so `children` is always empty for a file. */
   blocks?: TreeNode[];
   /** Chunk-only: the byte range `[start, end)` of this block's comment in the file's `source`,
    *  so a renderer can put the prose where the comment was and show the code around it. */
@@ -50,7 +50,7 @@ export interface TreeNode {
 
 /** Only used outside a git repository; inside one, `.gitignore` decides (`projectFiles`). */
 const SKIP_DIRS = new Set(["node_modules", "dist"]);
-/** The languages whose comments can hold `@prose` (spec §3.1); `.md` is prose as it is. */
+/** The languages whose comments can hold `@prose` ([convention](../docs/convention.md#prose-blocks)); `.md` is prose as it is. */
 const SOURCE_EXTENSIONS = new Set([
   "js",
   "ts",
@@ -83,7 +83,7 @@ export function extensionOf(path: string): string {
 /** @prose
  * # Which files are read for prose
  *
- * Markdown, and source in a language `@prose` lives in (spec §3.1), unless it's generated: a
+ * Markdown, and source in a language `@prose` lives in ([convention](../docs/convention.md#prose-blocks)), unless it's generated: a
  * lockfile by name, or anything past 200 KB. Every other file git lists still has a page, as text
  * or as a binary file (`rawToNode`).
  */
@@ -467,7 +467,7 @@ export function buildTree(root: string): TreeNode {
 }
 
 /** Finds a node by its path, a block included (`src/store.ts#addTodo`). A plain recursive search:
- *  the tree is small enough (spec §2) that an index would be premature. */
+ *  the tree is small enough ([design](../docs/design.md#scope)) that an index would be premature. */
 export function findNode(tree: TreeNode, path: string): TreeNode | null {
   if (tree.path === path) return tree;
   for (const block of tree.blocks ?? []) if (block.path === path) return block;
