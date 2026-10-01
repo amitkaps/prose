@@ -23,7 +23,7 @@ Reading first: the text on the left, the explorer on the right. Agreed 2026-10-0
 
 - [x] **Footer: Snapshot and Live.** The rail's footer says **Live** (dim when the server is lost) on `prose .`, and **Snapshot · tag · commit** on a built site, the tag only when `HEAD` is exactly that tag, with a GitHub mark linking to the repository. The tag used to be the nearest earlier one, so a site built after a release named it wrongly.
 - [x] **Layout.** The reading column left-aligned, the rail pinned to the right edge. The bar is the project name at the top left (plain text, a link to `/`, not underlined), the **Prose & Code / Prose only** switch, and the explorer toggle at the right. The breadcrumb moves to the top of the reading column, where it wraps, with **Open in editor** at its end, local only. This replaces the two mobile items under *Use it*.
-- [ ] **Rail.** A sidebar-panel icon (right side) in place of the word **Files**; open by default on desktop, remembered, hidden on mobile where it slides over from the right. A folder's name opens its page, the chevron alone folds it, and a folder's `README.md` is listed first in it, highlighted on the folder page. Every tracked file is listed, dotfiles included; what `.gitignore` leaves out stays out.
+- [x] **Rail.** A sidebar-panel icon (right side) in place of the word **Files**; open by default on desktop, remembered, hidden on mobile where it slides over from the right. A folder's name opens its page, the chevron alone folds it, and a folder's `README.md` is listed first in it, highlighted on the folder page. Every tracked file is listed, dotfiles included; what `.gitignore` leaves out stays out.
 
 ### Fix what the first readers found
 
@@ -41,7 +41,7 @@ Reader fixes:
 - [ ] Headings inside a source file's blocks render one level down, so a block's `# Filtering` is an `h2` under the file's own `h1`. Decide whether the file prose keeps its level.
 - [ ] A run's header reads `75 lines · 9–83 · ts`, with the separator in the markup, not only in CSS.
 - [ ] One link form: root-absolute everywhere (rail, listing, breadcrumb).
-- [ ] A folder's `README.md`: listed first in the rail and highlighted on the folder page, left out of the child list, a "from `README.md`" line under the breadcrumb, and `/folder/README.md` redirecting to `/folder/`. A static host can't redirect, so `build` writes `folder/README.md.html` as a meta refresh. Settles the open question in [spec](spec.md#open-questions).
+- [ ] A folder's `README.md`: a "from `README.md`" line under the breadcrumb on the folder page, and `/folder/README.md` redirecting to `/folder/`. A static host can't redirect, so `build` writes `folder/README.md.html` as a meta refresh.
 
 README and docs:
 
