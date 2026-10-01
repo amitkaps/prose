@@ -2,7 +2,7 @@
 /** @prose
  * # `prose [dir]`
  *
- * The command: serve a repository and open it in the browser (spec §4); as `prose build`, write
+ * The command: serve a repository and open it in the browser ([spec](../docs/spec.md)); as `prose build`, write
  * the same pages for a static host (`build.ts`); as `prose publish`, commit them to a branch a
  * host deploys from (`publish.ts`). No config, and only the few flags a person would reach for:
  * a port, not opening the browser, where a build goes, and a published site's branch and domain.

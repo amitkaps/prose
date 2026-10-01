@@ -1,7 +1,7 @@
 /** @prose
  * # Server tests
  *
- * `prose serve` (spec §4.1): route segments, the `tests/fixtures/simple` pages, folder pages, path traversal
+ * `prose serve` ([spec](../docs/spec.md#pages)): route segments, the `tests/fixtures/simple` pages, folder pages, path traversal
  * refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
  */
 
@@ -34,7 +34,7 @@ function get(
   });
 }
 
-describe("segments (spec §4.1)", () => {
+describe("segments ([spec](../docs/spec.md#pages))", () => {
   it("lays a file out as code runs around its blocks, dropping the comment text", () => {
     const source = "/** @prose A. */\nimport x;\n\n/** @prose B. */\n\nconst b = 1;\n";
     const block = (start: number, end: number): TreeNode => ({

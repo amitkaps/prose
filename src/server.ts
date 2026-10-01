@@ -1,7 +1,7 @@
 /** @prose
  * # The server
  *
- * A small read-only HTTP server on a repository (spec §4). It renders each page when it's
+ * A small read-only HTTP server on a repository ([spec](../docs/spec.md)). It renders each page when it's
  * requested, from the files on disk, and caches nothing but the highlighter, so what it shows is
  * always the working tree. It binds to loopback, serves only files the walk lists, and writes
  * nothing.
@@ -43,7 +43,7 @@ const PORT_ATTEMPTS = 20;
 /** @prose
  * # Routing
  *
- * URLs mirror repo paths (spec §4.1). `/` and any path ending in `/` is a folder; a folder asked
+ * URLs mirror repo paths ([spec](../docs/spec.md#pages)). `/` and any path ending in `/` is a folder; a folder asked
  * for without its slash is redirected to it, so relative links in its README resolve from inside
  * it. A path is served only if the walk lists it: anything else, a path outside the root
  * included, is a 404.
@@ -108,7 +108,7 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
   if (path === "" || path.endsWith("/")) {
     const node = folderListing(root, files, path.replace(/\/$/, ""));
     if (!node) return notFound();
-    // What's ignored exists only on this machine, so a built page doesn't list it (spec §4.4).
+    // What's ignored exists only on this machine, so a built page doesn't list it ([spec](../docs/spec.md#prose-build)).
     const ignored = live ? ignoredIn(root, path.replace(/\/$/, "")) : [];
     return { status: 200, html: shell(await folderBody(node, ignored)) };
   }
