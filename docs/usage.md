@@ -4,7 +4,7 @@ Install it, read a repository with it, write `@prose` as you build, and publish 
 
 ## Install
 
-Node 26 or later. Install the release tarball, into a project or globally:
+The current Node and the previous LTS (today, 26 and 24). Install the release tarball, into a project or globally:
 
 ```sh
 pnpm add -D https://github.com/amitkaps/prose/releases/download/v0.2.0/amitkaps-prose-0.2.0.tgz
