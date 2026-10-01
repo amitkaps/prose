@@ -1,6 +1,6 @@
 # Using prose
 
-Install it, read a repository with it, write `@prose` as you build, and publish the result. For why it works this way, see [design.md](design.md); for the exact rules of the comment, [convention.md](convention.md).
+Install it, read a repository with it, write `@prose` as you build, and publish the result. For why it works this way, see [design.md](design.md); for the exact rules of the comment, [writing.md](writing.md).
 
 ## Install
 
@@ -26,7 +26,7 @@ It works on any repository, with no config and no `@prose` required: a repositor
 - **A source file** reads as one document: its prose blocks in order, with the code between them. The **Prose & Code / Prose only** switch sets whether the code starts open.
 - **Every other file** is shown as text, or as its type and size.
 
-The file tree is on the right, and the page reloads when its file changes. Relative links between prose and code work as they do on GitHub. Every page's behaviour is in [spec.md](spec.md).
+The file tree is on the right, and the page reloads when its file changes. Relative links between prose and code work as they do on GitHub. Every page's behaviour is in [reading.md](reading.md).
 
 ## Write prose
 
@@ -43,7 +43,7 @@ export function addTodo(text: string) {
 }
 ```
 
-Start each block with a short summary paragraph; the renderer uses a file's first one as its summary in the folder listing. Writing that spans files (what the project promises, the plan, lessons) goes in Markdown under `docs/`. The languages, the block rules, anchors and links are in [convention.md](convention.md).
+Start each block with a short summary paragraph; the renderer uses a file's first one as its summary in the folder listing. Writing that spans files (what the project promises, the plan, lessons) goes in Markdown under `docs/`. The languages, the block rules, anchors and links are in [writing.md](writing.md).
 
 ## Build
 
@@ -52,7 +52,7 @@ prose build             # the same pages as static files, in .prose/site
 prose build --out site  # somewhere else
 ```
 
-`prose build` renders `HEAD`, not the working tree, so nothing untracked, ignored or uncommitted reaches the site; it warns when there are uncommitted changes. Add `.prose/` to `.gitignore`. The pages and URLs are described in [spec.md](spec.md#prose-build).
+`prose build` renders `HEAD`, not the working tree, so nothing untracked, ignored or uncommitted reaches the site; it warns when there are uncommitted changes. Add `.prose/` to `.gitignore`. The pages and URLs are described in [reading.md](reading.md#prose-build).
 
 ## Publish
 

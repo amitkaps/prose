@@ -4,8 +4,8 @@ Prose lets coding agents explain the code they write, and lets humans read the r
 
 It is two things:
 
-- **`@prose`**, a convention for writing human-oriented meaning directly into source code ([convention.md](convention.md)).
-- **`prose`**, a read-only renderer that opens any repository in the browser as a Markdown-first document ([usage.md](usage.md), [spec.md](spec.md)).
+- **`@prose`**, a convention for writing human-oriented meaning directly into source code ([writing.md](writing.md)).
+- **`prose`**, a read-only renderer that opens any repository in the browser as a Markdown-first document ([usage.md](usage.md), [reading.md](reading.md)).
 
 Nothing else is required.
 
@@ -46,5 +46,5 @@ Target: one person's repositories, up to about 500 files.
 - **Checks** (unresolved symbols, git-blame staleness, reference and duplication checks) **and a `prose check` CLI.** They never ran in the field repos. The one real drift found was about meaning, which no mechanical check catches; the agent updates prose and code together, so staleness rarely fires; a site generator can check links when it publishes.
 - **A *since* view for reviewing changes.** The human didn't review block by block; they read the prose that says what the code means now.
 - **Agent-written dev tools and an import-graph diagram.** Never built; nothing asked for them.
-- **The Vite plugin that stripped `@prose` from built HTML.** Only hand-written `.html` needs it ([convention.md](convention.md#prose-blocks)).
-- **A docs site, hosting and deploys.** `prose build` writes the reader as it is and `prose publish` commits it to a branch; pushing it is a separate step ([usage.md](usage.md#publish)). A site with its own navigation, chosen pages and design is a static site generator's job ([convention.md](convention.md#writing-that-spans-the-code)), and where the files are hosted is the host's.
+- **The Vite plugin that stripped `@prose` from built HTML.** Only hand-written `.html` needs it ([writing.md](writing.md#prose-blocks)).
+- **A docs site, hosting and deploys.** `prose build` writes the reader as it is and `prose publish` commits it to a branch; pushing it is a separate step ([usage.md](usage.md#publish)). A site with its own navigation, chosen pages and design is a static site generator's job ([writing.md](writing.md#writing-that-spans-the-code)), and where the files are hosted is the host's.

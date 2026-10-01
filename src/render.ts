@@ -5,7 +5,7 @@
  * read as one document, or a plain text file. Each is a complete HTML string, with nothing
  * running in the browser but the few lines in `page`.
  *
- * What each page shows is [the spec](../docs/spec.md#pages). Markdown goes through markz, the
+ * What each page shows is [reading](../docs/reading.md#pages). Markdown goes through markz, the
  * same parser in files and in prose blocks, and code through `highlight.ts`.
  */
 import { html as markz } from "@amitkaps/markz";

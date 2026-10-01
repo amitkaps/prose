@@ -6,7 +6,7 @@
  * pages for a static host; as `prose publish`, commit them to a branch a host deploys from. No
  * config, and only the few flags a person would reach for.
  *
- * What each does is in [the spec](../docs/spec.md); the flags are a port, not opening the
+ * What each does is in [reading](../docs/reading.md); the flags are a port, not opening the
  * browser, where a build goes, and a published site's branch and domain (`build.ts`, `publish.ts`).
  */
 import { spawn } from "node:child_process";

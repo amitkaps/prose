@@ -18,7 +18,7 @@ The same rules as [docs/usage.md](docs/usage.md#for-agents), the snippet we tell
 
 For this repository that means:
 
-- `docs/` is where writing that spans files lives: [design](docs/design.md) (why, and what's out), [convention](docs/convention.md) (the `@prose` rules), [usage](docs/usage.md), [spec](docs/spec.md) (what each page shows), [plan](docs/plan.md) (the order of the work), [lessons](docs/lessons.md), [development](docs/development.md) (build and release). Reference a section by file and heading (`docs/spec.md#pages`), never by a number.
+- `docs/` is where writing that spans files lives: [design](docs/design.md) (why, and what's out), [writing](docs/writing.md) (the `@prose` rules), [usage](docs/usage.md), [reading](docs/reading.md) (what each page shows), [plan](docs/plan.md) (the order of the work), [lessons](docs/lessons.md), [development](docs/development.md) (build and release). Reference a section by file and heading (`docs/spec.md#pages`), never by a number.
 - Every folder has a `README.md`, except `.github/` (the workflows carry their own prose, and [development](docs/development.md) covers them). `src/` and `tests/` say what lives there and how it's organised.
 - Tests carry file prose too: what the file covers, in a line or two.
 - A first paragraph is for the human reading a folder listing. If it's more than three lines, or says what the code does instead of what the file means, rewrite it.

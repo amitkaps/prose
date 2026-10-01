@@ -1,7 +1,7 @@
 /** @prose
  * # Server tests
  *
- * `prose serve` ([spec](../docs/spec.md#pages)): route segments, the `tests/fixtures/simple` pages, folder pages, path traversal
+ * `prose serve` ([reading](../docs/reading.md#pages)): route segments, the `tests/fixtures/simple` pages, folder pages, path traversal
  * refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
  */
 

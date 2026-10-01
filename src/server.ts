@@ -1,7 +1,7 @@
 /** @prose
  * # The server
  *
- * A small read-only HTTP server on a repository ([spec](../docs/spec.md)). It renders each page when it's
+ * A small read-only HTTP server on a repository ([reading](../docs/reading.md)). It renders each page when it's
  * requested, from the files on disk, and caches nothing but the highlighter, so what it shows is
  * always the working tree. It binds to loopback, serves only files the walk lists, and writes
  * nothing.
