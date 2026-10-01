@@ -62,6 +62,8 @@ export interface Site {
    *  them, and says which commit it is in the rail's footer instead. */
   live: boolean;
   snapshot?: Snapshot;
+  /** The repository's GitHub address, read from the real repository: a build's `root` is an export with no `.git`. */
+  repo?: string;
 }
 
 export type Route = { status: 200 | 404; html: string } | { status: 301; location: string };
@@ -74,7 +76,7 @@ export type Route = { status: 200 | 404; html: string } | { status: 301; locatio
  * everything under `.github/`, which it never publishes.
  */
 const footerOf = (site: Site) =>
-  railFooter({ live: site.live, snapshot: site.snapshot, repo: repoUrl(site.root) });
+  railFooter({ live: site.live, snapshot: site.snapshot, repo: site.repo });
 
 export function notFoundPage(site: Site): string {
   return page({
@@ -149,6 +151,7 @@ async function respond(root: string, req: IncomingMessage, res: ServerResponse):
     project: basename(resolve(root)),
     files: projectFiles(root),
     live: true,
+    repo: repoUrl(root),
   };
   const route = await renderRoute(site, path);
   if (route.status === 301) {
