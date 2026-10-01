@@ -5,7 +5,8 @@
  * Prose is the page and code is the aside: code sits folded in a quieter panel, so a file reads as
  * its prose first. Every page shares one left edge: prose keeps the reading measure, and code
  * runs widen to 100 columns, oxfmt's print width, so code wraps only on a narrow window and
- * prose never moves between a doc and a source file. Below
+ * prose never moves between a doc and a source file. The text's left margin grows with the window,
+ * from 2.5rem to 8rem, so a wide screen has room beside it and a narrow one keeps its width. Below
  * 52rem the tree slides over the page from the right, behind the bar's icon.
  *
  * Code takes its colours from the same tokens: shiki's CSS-variables theme names each token's
@@ -27,6 +28,8 @@ export const STYLE = `
 	--accent: #9a6700;
 	--measure: 44rem;
 	--rail: 16rem;
+	/* The space left of the text: 2.5rem on a narrow window, growing with it to 8rem. */
+	--lead: clamp(2.5rem, 9vw, 8rem);
 	/* 100 columns of code (oxfmt's print width), plus a gutter and padding, in the code font. */
 	--code-width: 60rem;
 	--gutter-ink: color-mix(in srgb, var(--muted) 70%, var(--panel));
@@ -123,7 +126,7 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 	}
 	.rail-open .rail { display: flex; }
 	.rail-toggle { display: inline-block; }
-	main { padding: 1rem 1rem 4rem 1.75rem; }
+	main { padding: 1rem 1rem 4rem 1.75rem; max-width: none; }
 }
 .bar {
 	position: sticky; top: 0; z-index: 1;
@@ -170,7 +173,7 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 	background: var(--rule); color: var(--ink);
 }
 /* One centre line on every page: prose at the reading measure, code wider on both sides of it. */
-main { max-width: calc(var(--code-width) + 3.5rem); margin: 0; padding: 1.5rem 1rem 4rem 2.5rem; }
+main { max-width: calc(var(--code-width) + var(--lead) + 1rem); margin: 0; padding: 1.5rem 1rem 4rem var(--lead); }
 main > * { max-width: var(--measure); margin-inline: 0; }
 .prose { overflow-wrap: anywhere; }
 .prose h1, .prose h2, .prose h3 { line-height: 1.25; text-wrap: balance; }
