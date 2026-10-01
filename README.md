@@ -30,8 +30,10 @@ let count = 0;
 The current Node and the previous LTS (today, 26 and 24):
 
 ```sh
-npm install -g https://github.com/amitkaps/prose/releases/download/v0.2.0/amitkaps-prose-0.2.0.tgz
+npm install -g @amitkaps/prose
 prose .            # read this repository in the browser
 prose build        # the same pages as static files, from the last commit
 prose publish      # commit that site to the `prose` branch
 ```
+
+Or without installing: `npx @amitkaps/prose .`.
