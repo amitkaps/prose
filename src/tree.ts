@@ -6,7 +6,7 @@
  * prose. A source file also carries its text and its blocks, so a renderer can lay it out as
  * one document.
  *
- * What a page shows is [the spec](../docs/spec.md#pages); `docs/` is an ordinary folder here.
+ * What a page shows is [reading](../docs/reading.md#pages); `docs/` is an ordinary folder here.
  */
 import { execFileSync } from "node:child_process";
 import {

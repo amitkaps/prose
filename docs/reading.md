@@ -1,6 +1,6 @@
-# The renderer, in detail
+# Reading a repository
 
-How `prose` behaves: what each page shows, what it reads, how it renders, and what `prose build` and `prose publish` write. The convention it reads is in [convention.md](convention.md), the reasons in [design.md](design.md), and how to use it in [usage.md](usage.md).
+How `prose` behaves: what each page shows, what it reads, how it renders, and what `prose build` and `prose publish` write. The convention it reads is in [writing.md](writing.md), the reasons in [design.md](design.md), and how to use it in [usage.md](usage.md).
 
 ## `prose .`
 
@@ -10,11 +10,11 @@ It needs no config, no Vite and no dev server, and it works on any repository: o
 
 ### Pages
 
-URLs mirror repo paths, so a relative link in the prose works the same in the renderer as on GitHub ([references](convention.md#references)). The renderer's own links (the file tree, the listings, the breadcrumb) are all root-absolute, one form everywhere.
+URLs mirror repo paths, so a relative link in the prose works the same in the renderer as on GitHub ([references](writing.md#references)). The renderer's own links (the file tree, the listings, the breadcrumb) are all root-absolute, one form everywhere.
 
 - **A folder** (`/`, `/src/`): its `README.md`, marked *From README.md* under the breadcrumb, then its subfolders and files, each with its first paragraph: a folder's from its `README.md`, a Markdown file's from its first paragraph, a source file's from its file prose. A file that could carry prose and has none says *undocumented*, so coverage is visible where you read, without a report; one that can't (`LICENSE`, `package.json`, a lockfile, an image) shows just its name. Locally, the page ends with one dim line naming what `.gitignore` leaves out of that folder, at the level it's named (`Ignored here: node_modules/ dist/ .env`): no links and no counts, since there's nothing there to read.
 - **A Markdown file** (`/docs/plan.md`): rendered as it is.
-- **A source file** (`/src/store.ts`): one document. The file prose first, then each chunk's prose in source order, with its code between them. Each run of code is a panel with a header that stays in every mode (a chevron, how many lines and which, the language), numbered with the file's own line numbers, highlighted, and wrapped only past 100 columns: prose keeps the reading measure, code widens to the formatter's print width. A pending chunk shows as its prose with a *pending* mark. Headings in the file prose show as written and in later blocks one level down. Each block's [anchor](convention.md#anchors) is its fragment, with a `#` in the margin beside its first line, heading or text, to link to it; the file prose, being the top of the page, has none. A **Prose & Code / Prose only** switch sets whether runs start open, remembered across pages; a run's header opens or closes that run on its own. The switch is on every page, in the same place, disabled where there's no code. A file with no prose says so, and is one run with the same header.
+- **A source file** (`/src/store.ts`): one document. The file prose first, then each chunk's prose in source order, with its code between them. Each run of code is a panel with a header that stays in every mode (a chevron, how many lines and which, the language), numbered with the file's own line numbers, highlighted, and wrapped only past 100 columns: prose keeps the reading measure, code widens to the formatter's print width. A pending chunk shows as its prose with a *pending* mark. Headings in the file prose show as written and in later blocks one level down. Each block's [anchor](writing.md#anchors) is its fragment, with a `#` in the margin beside its first line, heading or text, to link to it; the file prose, being the top of the page, has none. A **Prose & Code / Prose only** switch sets whether runs start open, remembered across pages; a run's header opens or closes that run on its own. The switch is on every page, in the same place, disabled where there's no code. A file with no prose says so, and is one run with the same header.
 - **Any other file** (`package.json`, `LICENSE`, `.gitignore`, a lockfile): a text file is one highlighted run, cut at 1,000 lines or 100 KB with how much is left said at the end; a binary file says what it is and how big, and an image up to 1 MB is shown.
 
 The text is on the left and the repository's file tree on the right, as an editor's explorer shows it: folders first, a folder's `README.md` ahead of its other files (a row for the folder's page, highlighted there), the folders around the current page open, and the reader's own opened folders kept from page to page. On a narrow screen the tree slides over the page from the right, behind an icon in the bar. The bar holds the project's name (a link to the root), the mode switch and that icon. The text's side margins, and the project's name above them, come from the width left beside the tree: equal on a narrow page, then the left stops at 7rem and the rest goes to the right, so the name always lines up with the text. Above the text is a breadcrumb to the page's ancestors, wrapping when long, with a link to open the file in the editor at its end, on a local page only. The page reloads when a file it shows changes, keeping the scroll position.
@@ -22,7 +22,7 @@ The text is on the left and the repository's file tree on the right, as an edito
 ### What it reads
 
 - Every file git would track, whatever its type: tracked files, plus untracked ones not ignored by `.gitignore`, so a brand-new file shows up before it's committed. Dotfiles and `.github/` included. Ignored files stay out of the file tree, which is the same locally and published; a folder's page names them ([pages](#pages)). Outside a git repository, a fixed skip list (`node_modules`, `dist`, dot-folders).
-- Prose is read from Markdown and from the languages in [convention.md](convention.md#prose-blocks), except generated files: lockfiles (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, …) and anything over 200 KB are shown as text.
+- Prose is read from Markdown and from the languages in [writing.md](writing.md#prose-blocks), except generated files: lockfiles (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, …) and anything over 200 KB are shown as text.
 - A request for a path outside the root, or for a file the walk doesn't hold, is a 404.
 
 ### How it renders
@@ -67,6 +67,6 @@ Verify:
 ## Open questions
 
 - **Nested chunks.** Should prose blocks for class members and nested functions become sub-chunks?
-- **Anchors beyond JS/TS.** CSS, HTML, YAML and Python chunks fall back to a heading or position ([anchors](convention.md#anchors)). A CSS chunk's first selector, or an HTML chunk's first `id`, could serve.
+- **Anchors beyond JS/TS.** CSS, HTML, YAML and Python chunks fall back to a heading or position ([anchors](writing.md#anchors)). A CSS chunk's first selector, or an HTML chunk's first `id`, could serve.
 - **Block anchors on GitHub.** `src/store.ts#addTodo` works in the renderer, but GitHub scrolls only to `#L42`. Accept it, or have whatever publishes the docs map anchors to lines when it links code.
 - **A map command.** `prose outline` printing every first paragraph, if the grep in [the agent rules](usage.md#for-agents) proves too noisy for agents.

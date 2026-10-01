@@ -1,6 +1,6 @@
 /** @prose
  * The package's library surface. The commands are `prose [dir]`, `prose build` and
- * `prose publish` (`cli.ts`, [spec](../docs/spec.md)); the same server, build, publish, parser and tree walk are
+ * `prose publish` (`cli.ts`, [reading](../docs/reading.md)); the same server, build, publish, parser and tree walk are
  * exported for anyone who wants that view of a repository in code.
  */
 export { firstParagraph, parseFile } from "./parser.js";

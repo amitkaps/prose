@@ -6,14 +6,14 @@ The order of the work and items that touch several files. Finished work is one l
 
 - **0.1.0** — a dev route on Devframe with a Svelte client, notes, symbol and staleness checks. Used on sitez and markz it went mostly unread, so it was dropped; the parser and the tree walk carried over ([design](design.md#whats-out-and-why), [lessons](lessons.md)).
 - **The rewrite** — the convention plus a read-only renderer, the dropped code cut.
-- **`prose .`** — `cli.ts`, `server.ts`, `render.ts`: folder, Markdown, source and plain-text pages as server-rendered HTML, with live reload and the file tree ([spec](spec.md)).
+- **`prose .`** — `cli.ts`, `server.ts`, `render.ts`: folder, Markdown, source and plain-text pages as server-rendered HTML, with live reload and the file tree ([reading](reading.md)).
 - **`@prose` at any depth** — a block counts inside a class, function or rule when it starts its own line, named from the declaration below it.
-- **`prose build`** — the same pages as static files from `HEAD`, with its own 404 page ([spec](spec.md#prose-build)).
-- **`prose publish`** — the build committed to an orphan `prose` branch, never checked out and never pushed; this repo is [prose.amitkaps.com](https://prose.amitkaps.com) ([spec](spec.md#prose-publish)).
+- **`prose build`** — the same pages as static files from `HEAD`, with its own 404 page ([reading](reading.md#prose-build)).
+- **`prose publish`** — the build committed to an orphan `prose` branch, never checked out and never pushed; this repo is [prose.amitkaps.com](https://prose.amitkaps.com) ([reading](reading.md#prose-publish)).
 - **Every file in the walk** — dotfiles, `LICENSE`, lockfiles and images get a page; ignored files are one line on their folder's page.
 - **0.2.0** — the README around the two things, released as a GitHub release tarball.
 - **`docs/`** — writing that spans the code lives in `docs/`, not `prose/`.
-- **Tests and docs layout** — tests in `tests/`, the fixture in `tests/fixtures/simple`, and the docs split into [design](design.md), [convention](convention.md), [usage](usage.md) and [spec](spec.md).
+- **Tests and docs layout** — tests in `tests/`, the fixture in `tests/fixtures/simple`, and the docs split into [design](design.md), [writing](writing.md), [usage](usage.md) and [reading](reading.md).
 
 ## Open work, in order
 
@@ -27,13 +27,13 @@ Reading first: the text on the left, the explorer on the right. Agreed 2026-10-0
 
 ### Fix what the first readers found
 
-An outside review of the published site (2026-10-01). The site it read predates the docs split and still has `examples/`, so republish first and re-read before judging. Checked against the code: `index.html.html` is intended (the folder page owns `index.html`; [spec](spec.md#prose-build)), and `main.js`/`style.css` resolve either way, but the rail links them root-absolute and the folder listing relative.
+An outside review of the published site (2026-10-01). The site it read predates the docs split and still has `examples/`, so republish first and re-read before judging. Checked against the code: `index.html.html` is intended (the folder page owns `index.html`; [reading](reading.md#prose-build)), and `main.js`/`style.css` resolve either way, but the rail links them root-absolute and the folder listing relative.
 
 Make the repository follow its own convention:
 
 - [x] A `README.md` in `docs/`, `src/` and `tests/` (not `.github/`: GitHub would show it instead of the root's). `docs/README.md` is the reading order for the docs, so the root README can stop indexing them. This fixes the landing page's four *undocumented* folders.
 - [x] Audit every first paragraph against the agent rules: three lines, what the file means and not what its code does. `src/parser.ts` is the known miss. Cite the convention once per file, not in every block; the links added in the docs split made the paragraphs longer.
-- [x] Say the summary rule once, in [spec](spec.md#pages): a file that could carry prose and has none is *undocumented*; one that can't (`LICENSE`, `package.json`, lockfiles, images) shows its type and nothing else.
+- [x] Say the summary rule once, in [reading](reading.md#pages): a file that could carry prose and has none is *undocumented*; one that can't (`LICENSE`, `package.json`, lockfiles, images) shows its type and nothing else.
 
 Reader fixes:
 
@@ -53,9 +53,9 @@ README and docs:
 
 - [ ] Look at it in a browser on sitez and markz: typography, folded code, mobile width.
 - [ ] base, sitez, markz: install 0.2.0, remove `prose()` from their Vite configs, replace the snippet in `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.
-- [ ] `prose/` → `docs/` in sitez and markz ([convention](convention.md#writing-that-spans-the-code)), with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website (markz.amitkaps.com), not docs: it moves to `site/` first (root scripts, workspace, package name, CI paths), then `prose/` takes `docs/` and the site reads its pages from there.
-- [ ] markz: make `@prose` blocks link to `grammar.md` instead of restating its rules ([convention](convention.md#references)).
-- [ ] Two weeks of work on sitez and markz, then decide whether the renderer stays ([spec](spec.md#test-cases)).
+- [ ] `prose/` → `docs/` in sitez and markz ([writing](writing.md#writing-that-spans-the-code)), with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website (markz.amitkaps.com), not docs: it moves to `site/` first (root scripts, workspace, package name, CI paths), then `prose/` takes `docs/` and the site reads its pages from there.
+- [ ] markz: make `@prose` blocks link to `grammar.md` instead of restating its rules ([writing](writing.md#references)).
+- [ ] Two weeks of work on sitez and markz, then decide whether the renderer stays ([reading](reading.md#test-cases)).
 
 ### Later
 
@@ -65,4 +65,4 @@ README and docs:
 
 ## Open questions
 
-See [the open questions](spec.md#open-questions).
+See [the open questions](reading.md#open-questions).
