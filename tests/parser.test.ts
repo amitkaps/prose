@@ -25,6 +25,11 @@ describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
     expect(parsed.sections[0]!.chunks[0]!.pending).toBe(false);
   });
 
+  it("reads `*\\/` in a block as `*/`, which would have ended the comment", () => {
+    const parsed = parseFile("/** @prose\n * Ends with *\\/ in text.\n */\nconst a = 1;\n", "ts");
+    expect(parsed.fileProse).toBe("Ends with */ in text.");
+  });
+
   it("marks a chunk pending when no code follows before EOF", () => {
     const source = `/** @prose\n * File.\n */\n\n/** @prose\n * Plan item.\n */\n`;
     const parsed = parseFile(source, "js");
