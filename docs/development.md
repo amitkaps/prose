@@ -4,7 +4,7 @@ How to work on Prose itself: build it, test it, and cut a release. The rules for
 
 ## Toolchain
 
-[`mise.toml`](../mise.toml) names the Node and pnpm to work with; `packageManager` in `package.json` names the same pnpm for CI and for Corepack. They move together, so a pnpm bump changes both. Prose supports the current Node and the previous LTS (today 26 and 24): `engines` says `>=24`, `@types/node` follows the older one, and CI runs the tests on both.
+`package.json` says what the repository needs: `devEngines` the Node and pnpm to develop with, `engines` the Node range the published command runs on. mise reads the Node version from `devEngines`, with its `idiomatic_version_file_enable_tools` setting on for `node`; there's no `mise.toml`. `packageManager` repeats the exact pnpm version for CI's `pnpm/action-setup`. Prose supports the current Node and the previous LTS (today 26 and 24): `engines` and `devEngines` say `>=24`, `@types/node` follows the older one, and CI runs the tests on both.
 
 ## Build and test
 
