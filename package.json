@@ -34,7 +34,7 @@
   "dependencies": {
     "@amitkaps/markz": "^0.1.1",
     "oxc-parser": "^0.152.0",
-    "shiki": "^3.23.0"
+    "shiki": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
