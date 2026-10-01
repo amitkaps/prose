@@ -39,6 +39,6 @@ export default defineConfig({
   test: {
     expect: { requireAssertions: true },
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["tests/**/*.test.ts"],
   },
 });

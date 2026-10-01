@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { declaredIdentifiers } from "./names.js";
+import { declaredIdentifiers } from "../src/names.js";
 
 describe("declaredIdentifiers", () => {
   it("finds function, class, const/let/var, interface, and type declarations, exported or not", () => {

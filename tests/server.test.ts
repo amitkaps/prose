@@ -4,9 +4,9 @@ import { request } from "node:http";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import { segments } from "./render.js";
-import { serve, type Served, touches } from "./server.js";
-import type { TreeNode } from "./tree.js";
+import { segments } from "../src/render.js";
+import { serve, type Served, touches } from "../src/server.js";
+import type { TreeNode } from "../src/tree.js";
 
 /** A raw GET, so a path like `/../x` reaches the server as written instead of being normalized. */
 function get(
