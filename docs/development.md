@@ -30,7 +30,7 @@ Two, in [`.github/workflows/`](../.github/workflows/); each file says what it do
 Bump `version` in `package.json`, merge to `main`, then tag and push:
 
 ```sh
-git tag v0.2.0 && git push origin v0.2.0
+git tag v0.3.0 && git push origin v0.3.0
 ```
 
 The `release` workflow verifies the tag matches `package.json`, runs the checks and tests, builds, publishes `@amitkaps/prose` to npm and attaches `amitkaps-prose-<version>.tgz` to a GitHub Release. Then publish the site:
