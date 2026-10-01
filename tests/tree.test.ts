@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { buildTree, findNode, ignoredIn, projectFiles, rawToNode, walkFiles } from "./tree.js";
+import { buildTree, findNode, ignoredIn, projectFiles, rawToNode, walkFiles } from "../src/tree.js";
 
 let root: string;
 

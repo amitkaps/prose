@@ -11,9 +11,9 @@ import {
 import { tmpdir } from "node:os";
 import { join, posix, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import { build } from "./build.js";
-import { renderRoute, type Site } from "./server.js";
-import { projectFiles } from "./tree.js";
+import { build } from "../src/build.js";
+import { renderRoute, type Site } from "../src/server.js";
+import { projectFiles } from "../src/tree.js";
 
 const temps: string[] = [];
 function temp(prefix: string): string {

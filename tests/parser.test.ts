@@ -1,6 +1,6 @@
 import * as fc from "fast-check";
 import { describe, expect, it } from "vite-plus/test";
-import { firstParagraph, parseFile } from "./parser.js";
+import { firstParagraph, parseFile } from "../src/parser.js";
 
 describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
   it("reads the first block as file prose and later blocks as chunks", () => {
