@@ -63,8 +63,9 @@ function renderListing(children: TreeNode[]): string {
   if (children.length === 0) return "";
   const items = children.map((child) => {
     const name = child.path.split("/").at(-1)!;
-    const href =
-      child.kind === "folder" ? `${encodeURIComponent(name)}/` : encodeURIComponent(name);
+    const href = `/${child.path.split("/").map(encodeURIComponent).join("/")}${
+      child.kind === "folder" ? "/" : ""
+    }`;
     const label = child.kind === "folder" ? `${name}/` : name;
     const summary =
       child.kind === "raw"
@@ -82,7 +83,9 @@ function renderListing(children: TreeNode[]): string {
 /** A folder's README, its listing, and, on a local page, one line naming what `.gitignore`
  *  leaves out of it (`ignoredIn`): no links and no counts, since there's nothing there to read. */
 export async function folderBody(node: TreeNode, ignored: string[] = []): Promise<string> {
-  const readme = node.prose ? `<div class="prose">${await renderMarkdown(node.prose)}</div>` : "";
+  const readme = node.prose
+    ? `<p class="from">From <code>README.md</code></p><div class="prose">${await renderMarkdown(node.prose)}</div>`
+    : "";
   const names = ignored.map((name) => `<code>${escapeHtml(name)}</code>`).join(" ");
   const line = ignored.length ? `<p class="ignored">Ignored here: ${names}</p>` : "";
   return `${readme}${renderListing(node.children)}${line}`;
@@ -123,7 +126,7 @@ async function codeRun(text: string, lang: string, startLine: number): Promise<s
   const count = text.split("\n").length;
   const last = startLine + count - 1;
   const lines = `${count} line${count === 1 ? "" : "s"} · ${startLine}–${last}`;
-  const head = `<button type="button" class="code-head" aria-expanded="true"><span class="chevron" aria-hidden="true"></span><span>${lines}</span><span class="lang">${escapeHtml(lang)}</span></button>`;
+  const head = `<button type="button" class="code-head" aria-expanded="true"><span class="chevron" aria-hidden="true"></span><span>${lines}</span><span class="lang"><span class="sep"> · </span>${escapeHtml(lang)}</span></button>`;
   return `<div class="code" style="counter-reset: line ${startLine - 1}; --gutter: ${String(last).length}ch">${head}${await highlight(text, lang)}</div>`;
 }
 

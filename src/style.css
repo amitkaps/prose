@@ -577,6 +577,18 @@ pre.shiki .line {
 .code-head:hover {
   color: var(--ink);
 }
+.code-head .sep {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.from {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
 .code-head .lang {
   margin-left: auto;
 }

@@ -72,8 +72,17 @@ describe("build: tests/fixtures/simple", () => {
     );
   });
 
+  // A folder's README.md is a redirect to its folder's page, not a page of its own.
+  const shown = () => pages.filter((page) => page !== "README.md.html");
+
+  it("writes a folder's README.md as a redirect to the folder's page", () => {
+    const html = readFileSync(join(out, "README.md.html"), "utf-8");
+    expect(html).toContain('<meta http-equiv="refresh" content="0; url=/">');
+    expect(html).toContain('<link rel="canonical" href="/">');
+  });
+
   it("puts the rail on every page, and a source page's blocks", () => {
-    for (const page of pages)
+    for (const page of shown())
       expect(readFileSync(join(out, page), "utf-8")).toContain('<nav class="rail"');
     const main = readFileSync(join(out, "main.js.html"), "utf-8");
     expect(main).toContain('id="state"');
@@ -88,7 +97,7 @@ describe("build: tests/fixtures/simple", () => {
   });
 
   it("leaves the live parts out and says which commit it is", () => {
-    for (const page of pages) {
+    for (const page of shown()) {
       const html = readFileSync(join(out, page), "utf-8");
       expect(html).not.toContain("new EventSource");
       expect(html).not.toContain("data-rendered=");
