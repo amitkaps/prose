@@ -38,4 +38,4 @@ node dist/cli.js .     # read this repository with prose
 
 ## Workflow
 
-`main` is protected: a pull request is required and the `ci` check must pass. Never commit or push to `main`. Branch, commit, push, `gh pr create`, then `gh pr merge --auto --squash`. Run `pnpm run check` and `pnpm run test` first. Land stacked PRs one at a time, bottom-up, waiting for each to merge before branching the next.
+`main` is protected: a pull request is required and the `ci` check must pass. Never commit or push to `main`. Branch, commit, push, `gh pr create`, then `gh pr merge --auto --squash`, or `--rebase` when a PR's commits should stay separate on `main`. Run `pnpm run check` and `pnpm run test` first. Land stacked PRs one at a time, bottom-up, waiting for each to merge before branching the next.
