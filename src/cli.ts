@@ -7,7 +7,7 @@
  * config, and only the few flags a person would reach for.
  *
  * What each does is in [reading](../docs/reading.md); the flags are a port, not opening the
- * browser, where a build goes, and a published site's branch and domain (`build.ts`, `publish.ts`).
+ * browser, where a build goes, and a published site's branch (`build.ts`, `publish.ts`).
  */
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -18,7 +18,7 @@ import { serve } from "./server.js";
 
 const HELP = `Usage: prose [dir] [options]
        prose build [dir] [--out <dir>]
-       prose publish [dir] [--branch <name>] [--domain <host> | --no-domain]
+       prose publish [dir] [--branch <name>]
 
 Open a repository in the browser as a Markdown-first document. Read-only.
 \`prose build\` writes the same pages as a static site, from the last commit.
@@ -29,8 +29,6 @@ Options:
   --no-open    Don't open the browser
   --out <dir>  Where \`prose build\` writes (default .prose/site)
   --branch <name>  The branch \`prose publish\` commits to (default prose)
-  --domain <host>  The site's domain, kept on the branch as CNAME for later publishes
-  --no-domain      Drop the branch's CNAME
   -h, --help   Show this help
   -v, --version
 `;
@@ -61,7 +59,6 @@ async function main(argv: string[]): Promise<void> {
   let open = true;
   let out: string | undefined;
   let branch: string | undefined;
-  let domain: string | null | undefined;
   const command = argv[0] === "build" || argv[0] === "publish" ? argv[0] : null;
   const building = command === "build";
   const publishing = command === "publish";
@@ -78,11 +75,7 @@ async function main(argv: string[]): Promise<void> {
     } else if (publishing && (arg === "--branch" || arg.startsWith("--branch="))) {
       branch = value();
       if (!branch) throw new Error("--branch needs a name");
-    } else if (publishing && (arg === "--domain" || arg.startsWith("--domain="))) {
-      domain = value();
-      if (!domain) throw new Error("--domain needs a host, like docs.example.com");
-    } else if (publishing && arg === "--no-domain") domain = null;
-    else if (arg === "--port" || arg.startsWith("--port=")) {
+    } else if (arg === "--port" || arg.startsWith("--port=")) {
       const given = value();
       port = Number(given);
       if (!Number.isInteger(port) || port < 0 || port > 65535) {
@@ -98,13 +91,12 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
   if (publishing) {
-    const done = await publish(dir, { branch, domain });
+    const done = await publish(dir, { branch });
     for (const warning of done.built.warnings) process.stderr.write(`prose: warning: ${warning}\n`);
-    const where = done.domain ? `, at ${done.domain}` : "";
     process.stdout.write(
       done.changed
-        ? `prose: published ${done.built.version} to ${done.branch} (${done.commit.slice(0, 7)})${where}\n  git push origin ${done.branch}\n`
-        : `prose: ${done.branch} already has these pages (${done.commit.slice(0, 7)})${where}\n`,
+        ? `prose: published ${done.built.version} to ${done.branch} (${done.commit.slice(0, 7)})\n  git push origin ${done.branch}\n`
+        : `prose: ${done.branch} already has these pages (${done.commit.slice(0, 7)})\n`,
     );
     return;
   }
