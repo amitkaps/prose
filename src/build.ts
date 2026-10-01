@@ -14,7 +14,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { warmHighlighter } from "./highlight.js";
+import { escapeHtml, warmHighlighter } from "./highlight.js";
 import { repoUrl } from "./repo.js";
 import { notFoundPage, renderRoute, type Site } from "./server.js";
 import { walkFiles } from "./tree.js";
@@ -59,7 +59,8 @@ function tryGit(root: string, args: string[]): string | null {
  * its path plus `.html`: GitHub Pages answers `/src/expression.ts` with `src/expression.ts.html`,
  * with no redirect (the spike, `docs/plan.md` 2b). The one clash is a source file named
  * `index.html`, whose URL is its folder's page there; its page is `index.html.html`, and links to
- * it say so (`linkIndexPages`).
+ * it say so (`linkIndexPages`). A folder's `README.md` is a redirect to the folder's page
+ * (`redirectPage`), as the server's 301 is.
  */
 function pageFile(path: string): string {
   return path === "" || path.endsWith("/") ? `${path}index.html` : `${path}.html`;
@@ -72,6 +73,13 @@ function linkIndexPages(html: string): string {
     /href="((?:[^"#:]*\/)?index\.html)(#[^"]*)?"/g,
     (_, target: string, hash = "") => `href="${target}.html${hash}"`,
   );
+}
+
+/** What a static host serves where the server would redirect: a folder's `README.md` goes to the
+ *  folder's page, since a host can't answer with a 301 of its own. */
+function redirectPage(location: string): string {
+  const to = escapeHtml(location);
+  return `<!doctype html>\n<meta charset="utf-8">\n<title>Redirecting</title>\n<link rel="canonical" href="${to}">\n<meta http-equiv="refresh" content="0; url=${to}">\n<p><a href="${to}">${to}</a></p>\n`;
 }
 
 /** Every folder that holds a listed file, with its slash: `src/`, `src/lib/`. */
@@ -154,10 +162,13 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
     writeFileSync(join(out, "404.html"), notFoundPage(site));
     for (const path of paths) {
       const route = await renderRoute(site, path);
-      if (route.status !== 200) continue;
+      if (route.status === 404) continue;
       const target = join(out, pageFile(path));
       mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, linkIndexPages(route.html));
+      writeFileSync(
+        target,
+        route.status === 301 ? redirectPage(route.location) : linkIndexPages(route.html),
+      );
     }
     writeFileSync(
       join(out, MARKER),

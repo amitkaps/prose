@@ -68,7 +68,7 @@ describe("serve: tests/fixtures/simple", () => {
     const { status, body } = await get(served.url, "/");
     expect(status).toBe(200);
     expect(body).toContain("<h1");
-    expect(body).toContain('href="main.js"');
+    expect(body).toContain('href="/main.js"');
     expect(body).toContain("holds the count, applies a step");
   });
 
@@ -97,11 +97,13 @@ describe("serve: tests/fixtures/simple", () => {
     expect((await get(served.url, "/index.html")).body).toContain('class="block');
   });
 
-  it("renders a Markdown file with markz, the switch there but disabled", async () => {
-    const { status, body } = await get(served.url, "/README.md");
-    expect(status).toBe(200);
-    expect(body).toContain('<div class="prose"><h1');
-    expect(body).toContain('data-mode="prose" aria-pressed="false" disabled');
+  it("sends a folder's README.md to the folder's page, and says where its text is from", async () => {
+    const res = await get(served.url, "/README.md");
+    expect(res.status).toBe(301);
+    expect(res.location).toBe("/");
+    expect((await get(served.url, "/")).body).toContain(
+      '<p class="from">From <code>README.md</code></p>',
+    );
   });
 
   it("refuses anything the walk doesn't list, a path outside the root included", async () => {
@@ -154,8 +156,8 @@ describe("serve: folders", () => {
 
   it("shows docs/ as an ordinary folder on the project page", async () => {
     const { body } = await get(served.url, "/");
-    expect(body).toContain('href="docs/"');
-    expect(body).toContain('href="src/"');
+    expect(body).toContain('href="/docs/"');
+    expect(body).toContain('href="/src/"');
   });
 
   it("shows the file tree on every page: folders first, the current page's folders open", async () => {
@@ -174,6 +176,13 @@ describe("serve: folders", () => {
       /<ul><li><a class="file" style="--depth: 1" href="\/src\/">README.md<\/a>/,
     );
     expect(rail).not.toContain('href="/src/README.md"');
+  });
+
+  it("renders a Markdown file with markz, the switch there but disabled", async () => {
+    const { status, body } = await get(served.url, "/docs/plan.md");
+    expect(status).toBe(200);
+    expect(body).toContain('<div class="prose"><h1');
+    expect(body).toContain('data-mode="prose" aria-pressed="false" disabled');
   });
 
   it("redirects a folder asked for without its slash", async () => {

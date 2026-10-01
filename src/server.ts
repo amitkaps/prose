@@ -46,7 +46,7 @@ const PORT_ATTEMPTS = 20;
  *
  * URLs mirror repo paths. `/` and any path ending in `/` is a folder; a folder asked
  * for without its slash is redirected to it, so relative links in its README resolve from inside
- * it. A path is served only if the walk lists it: anything else, a path outside the root
+ * it, and so is a folder's `README.md`, which is that page. A path is served only if the walk lists it: anything else, a path outside the root
  * included, is a 404.
  *
  * `renderRoute` is the whole of it, with no HTTP: the server answers a request with it, and
@@ -115,6 +115,12 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
     // What's ignored exists only on this machine, so a built page doesn't list it.
     const ignored = live ? ignoredIn(root, path.replace(/\/$/, "")) : [];
     return { status: 200, html: shell(await folderBody(node, ignored)) };
+  }
+
+  // A folder's README.md is that folder's page, so its own address goes there.
+  if (files.includes(path) && path.split("/").at(-1) === "README.md") {
+    const folder = path.slice(0, -"README.md".length).split("/").map(encodeURIComponent).join("/");
+    return { status: 301, location: `/${folder}` };
   }
 
   if (files.includes(path)) {
