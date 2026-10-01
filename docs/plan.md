@@ -31,7 +31,7 @@ An outside review of the published site (2026-10-01). The site it read predates 
 
 Make the repository follow its own convention:
 
-- [x] A `README.md` in `.github/`, `docs/`, `src/` and `tests/`. `docs/README.md` is the reading order for the docs, so the root README can stop indexing them. This fixes the landing page's four *undocumented* folders.
+- [x] A `README.md` in `docs/`, `src/` and `tests/` (not `.github/`: GitHub would show it instead of the root's). `docs/README.md` is the reading order for the docs, so the root README can stop indexing them. This fixes the landing page's four *undocumented* folders.
 - [x] Audit every first paragraph against the agent rules: three lines, what the file means and not what its code does. `src/parser.ts` is the known miss. Cite the convention once per file, not in every block; the links added in the docs split made the paragraphs longer.
 - [x] Say the summary rule once, in [spec](spec.md#pages): a file that could carry prose and has none is *undocumented*; one that can't (`LICENSE`, `package.json`, lockfiles, images) shows its type and nothing else.
 

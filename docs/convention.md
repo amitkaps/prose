@@ -103,7 +103,7 @@ It isn't a retelling of the code. A paragraph that says what a function does, li
 
 ## Folders and project
 
-A folder's `README.md` is its prose, and the root `README.md` is the project's. These are ordinary READMEs; GitHub already renders them.
+A folder's `README.md` is its prose, and the root `README.md` is the project's. These are ordinary READMEs; GitHub already renders them. The one folder to leave without is `.github/`: GitHub shows a README there instead of the root's, so what it holds is said in the workflows' own prose and in the docs.
 
 ## Writing that spans the code
 
