@@ -4,16 +4,15 @@ Where the project is and what comes next, in order. Finished work is a line or t
 
 ## Where it is
 
-The `@prose` convention and the read-only renderer work, and this repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.2.0, a GitHub release tarball.
+The `@prose` convention and the read-only renderer work, and this repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.3.0, on npm as `@amitkaps/prose` and as a GitHub release tarball.
 
 - **0.1.0**: a dev route with notes, symbol and staleness checks. Used on sitez and markz it went mostly unread, so it was dropped; the parser and the tree walk carried over ([design](design.md#whats-out-and-why), [lessons](lessons.md)).
 - **The rewrite**: the convention, and `prose .`, `prose build` and `prose publish` as a renderer that only reads ([reading](reading.md)).
 - **0.2.0**: the README around the two things, and the docs in `docs/`.
-- **0.3.0**: the reader's layout (text left, file tree right, a popover on narrow screens), a `README.md` in every folder, a README that opens with the problem and links to the docs, links and headings that match how GitHub shows them, `@prose` in shell, Python and `.gitignore`, and current dependencies (Node 26 and 24, TypeScript 7).
+- **0.3.0**: the reader's layout (text left, file tree right, a popover on narrow screens), a `README.md` in every folder, a README that opens with the problem and links to the docs, links and headings that match how GitHub shows them, `@prose` in shell, Python and `.gitignore`, current dependencies (Node 26 and 24, TypeScript 7), and an npm release: the workflow stages each version for approval on npmjs.com.
 
 ## Next, in order
 
-- [ ] **Install from npm.** The release workflow publishes `@amitkaps/prose` ([development](development.md#publishing-to-npm)); the trusted publisher may only stage, and each version is approved on npmjs.com. Then the README and usage say `npm install -g @amitkaps/prose` and `npx @amitkaps/prose .`, and the tarball URL goes. The unscoped `prose` is taken.
 - [ ] **Republish the site**, so the old `examples/` content goes (`prose publish`, then `git push origin prose`).
 - [ ] **Use it.**
   - Look at it in a browser on sitez and markz: typography, folded code, mobile width.
