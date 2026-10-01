@@ -199,7 +199,7 @@ describe("buildTree: raw files", () => {
   });
 });
 
-describe("buildTree: docs/ (spec §3.4)", () => {
+describe("buildTree: docs/", () => {
   it("is an ordinary folder, in its sorted place", () => {
     const dir = makeProject({
       "docs/lessons.md": "Lessons body.",

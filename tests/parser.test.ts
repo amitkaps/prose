@@ -1,9 +1,9 @@
 /** @prose
  * # Parser tests
  *
- * What counts as prose, per language (spec §3.1): a `@prose` block comment in JS, TS and CSS, an HTML comment in HTML,
+ * What counts as prose, per language ([convention](../docs/convention.md#prose-blocks)): a `@prose` block comment in JS, TS and CSS, an HTML comment in HTML,
  * `# @prose` runs in YAML and TOML, and a `.svelte` file's script, style and markup merged in order. Also
- * the first paragraph, anchors (§3.2), nested blocks, and that `@note` is no longer read.
+ * the first paragraph, anchors ([convention](../docs/convention.md#anchors)), nested blocks, and that `@note` is no longer read.
  */
 
 import * as fc from "fast-check";
@@ -58,7 +58,7 @@ describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
   });
 
   it("eats a body line's own leading * when that line skips the gutter (documented landmine)", () => {
-    // Every continuation line is expected to carry the ` * ` gutter (spec.md §3.1). A line
+    // Every continuation line is expected to carry the ` * ` gutter ([convention](../docs/convention.md#prose-blocks)). A line
     // that skips it and starts with a literal `*` of its own (e.g. a markdown bullet) is
     // indistinguishable from a gutter line to the strip regex, and loses its marker.
     const source = `/** @prose\n * Intro.\n* a bullet\n */\n`;
@@ -220,7 +220,7 @@ describe("firstParagraph", () => {
 const anchorsOf = (source: string, ext = "ts") =>
   parseFile(source, ext).sections.flatMap((s) => s.chunks.map((c) => c.anchor));
 
-describe("anchors (spec §3.2)", () => {
+describe("anchors", () => {
   it("names a chunk by its heading, then its first declared name, then its position", () => {
     const source = [
       "/** @prose File. */",
@@ -281,7 +281,7 @@ describe("anchors (spec §3.2)", () => {
   });
 });
 
-describe("nested blocks (spec §3.1)", () => {
+describe("nested blocks", () => {
   it("reads a class method by method, each block named by the member below it", () => {
     const ts = [
       "/** @prose File. */",
