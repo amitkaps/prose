@@ -35,6 +35,9 @@ const LANGS: Record<string, string> = {
   jsonc: "jsonc",
   sh: "shellscript",
   bash: "shellscript",
+  zsh: "shellscript",
+  py: "python",
+  gitignore: "text",
   text: "text",
 };
 
@@ -63,6 +66,7 @@ function getHighlighter(): Promise<HighlighterCore> {
       import("shiki/langs/json.mjs"),
       import("shiki/langs/jsonc.mjs"),
       import("shiki/langs/shellscript.mjs"),
+      import("shiki/langs/python.mjs"),
     ],
     engine: createOnigurumaEngine(import("shiki/wasm")),
   });

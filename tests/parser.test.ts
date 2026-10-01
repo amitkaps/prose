@@ -132,6 +132,19 @@ describe("parseFile: YAML/TOML (# @prose)", () => {
     expect(parsed.preamble).toBe("name: demo");
   });
 
+  it("reads # comment blocks in shell, Python and .gitignore", () => {
+    const source = "#!/bin/sh\n# @prose\n# # Run\n#\n# Starts it.\n\nset -e\n";
+    for (const [ext, lang] of [
+      ["sh", "shell"],
+      ["py", "python"],
+      ["gitignore", "gitignore"],
+    ] as const) {
+      const parsed = parseFile(source, ext);
+      expect(parsed.fileProse).toContain("Starts it.");
+      expect(parsed.fileBlock?.codeLang).toBe(lang);
+    }
+  });
+
   it("chunks code between # comment blocks, in a .toml file", () => {
     const source = "# @prose\n# File.\n\n# @prose\n# A chunk.\nport = 8080\n";
     const parsed = parseFile(source, "toml");

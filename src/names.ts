@@ -50,10 +50,7 @@ function bindingNames(pattern: AstNode | null | undefined, names: Set<string>): 
  * other language, or code oxc can't parse, declares nothing; oxc doesn't throw on CSS, it
  * returns an empty body, but the language is checked first anyway.
  */
-export function declaredIdentifiers(
-  code: string,
-  codeLang: "js" | "css" | "html" | "yaml" | "toml" = "js",
-): Set<string> {
+export function declaredIdentifiers(code: string, codeLang: string = "js"): Set<string> {
   const names = new Set<string>();
   if (codeLang !== "js") return names;
   let body: AstNode[];

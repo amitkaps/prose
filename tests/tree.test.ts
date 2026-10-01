@@ -154,14 +154,14 @@ describe("buildTree: raw files", () => {
 
   it("shows every other file: dotfiles, LICENSE, a source file too large to be written by hand", () => {
     const dir = makeProject({
-      ".gitignore": "dist/\n",
+      ".npmrc": "x=1\n",
       LICENSE: "MIT\n",
       "big.ts": `export const a = "${"x".repeat(200_001)}";\n`,
     });
     execFileSync("git", ["init", "-q"], { cwd: dir });
     const kinds = buildTree(dir).children.map((n) => [n.path, n.kind]);
     expect(kinds).toEqual([
-      [".gitignore", "raw"],
+      [".npmrc", "raw"],
       ["LICENSE", "raw"],
       ["big.ts", "raw"],
     ]);

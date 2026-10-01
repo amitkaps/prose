@@ -11,7 +11,7 @@
 import { parseSync } from "oxc-parser";
 import { declaredAfter, declaredIdentifiers, type DeclaredName } from "./names.js";
 
-export type CodeLang = "js" | "css" | "html" | "yaml" | "toml";
+export type CodeLang = "js" | "css" | "html" | "yaml" | "toml" | "shell" | "python" | "gitignore";
 
 export interface ProseChunk {
   /** Content-derived address within the file: `file`, the heading slug, the
@@ -208,16 +208,28 @@ function scanCss(source: string): RawBlock[] {
   return blocks;
 }
 
+/** The languages whose comments are `#` lines, by extension (`.gitignore` is read as `gitignore`). */
+const HASH_LANGS: Record<string, CodeLang> = {
+  yaml: "yaml",
+  yml: "yaml",
+  toml: "toml",
+  sh: "shell",
+  bash: "shell",
+  zsh: "shell",
+  py: "python",
+  gitignore: "gitignore",
+};
+
 /** @prose
- * # Scanning YAML and TOML
+ * # Scanning `#` comments
  *
- * Both use `#` line comments with no closing delimiter, so the marker defines the boundary: a
+ * YAML, TOML, shell, Python and `.gitignore` use `#` line comments with no closing delimiter, so the marker defines the boundary: a
  * block starts at a column-0 `# @prose` line and runs through the following `#` lines, up to the
  * next marker line or the first line that isn't a comment. Two blocks can then sit back to back
  * without the second's lines joining the first's body. An indented `#` comment, inside a nested
  * mapping or table, is an ordinary comment, as braces make one in CSS.
  */
-function scanHashComments(source: string, codeLang: "yaml" | "toml"): RawBlock[] {
+function scanHashComments(source: string, codeLang: CodeLang): RawBlock[] {
   const blocks: RawBlock[] = [];
   const lines = source.split("\n");
   const lineOffsets: number[] = [];
@@ -361,13 +373,11 @@ export function parseFile(source: string, extension: string): FileParse {
       ? scanHtml(source)
       : extension === "svelte"
         ? scanSvelte(source)
-        : extension === "yaml" || extension === "yml"
-          ? scanHashComments(source, "yaml")
-          : extension === "toml"
-            ? scanHashComments(source, "toml")
-            : extension === "css"
-              ? scanCss(source)
-              : scanJs(source, extension === "ts" ? "ts" : "js");
+        : extension in HASH_LANGS
+          ? scanHashComments(source, HASH_LANGS[extension]!)
+          : extension === "css"
+            ? scanCss(source)
+            : scanJs(source, extension === "ts" ? "ts" : "js");
   const blocks = found.filter((b) => !b.nested);
 
   if (blocks.length === 0) {

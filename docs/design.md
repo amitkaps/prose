@@ -29,7 +29,7 @@ Nothing else is required.
 
 | In                                                                                  | Out                                                      |
 | ----------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `@prose` in `.ts`, `.js`, `.css`, `.html`, `.svelte`, `.yaml`/`.yml`, `.toml`        | New file types, tangling, `.ts.md`                       |
+| `@prose` in `.ts`, `.js`, `.css`, `.html`, `.svelte`, `.yaml`/`.yml`, `.toml`, `.sh`, `.py`, `.gitignore`      | New file types, tangling, `.ts.md`                       |
 | Rendering any repository read-only: Markdown, source with its prose, other text     | Editing anything, notes, review state                    |
 | Local reading, and the same pages as a static site (`prose build`, `prose publish`) | Hosting and deploys; a docs site with its own navigation |
 | First paragraphs as summaries                                                       | Checks, coverage reports, LLM summaries                  |
