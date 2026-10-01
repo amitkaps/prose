@@ -1,4 +1,4 @@
-# single (Prose example)
+# simple (Prose test fixture)
 
 A counter on one static page: plain HTML, CSS and JS, served and built by Vite, with no runtime
 dependencies and no framework.

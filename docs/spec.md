@@ -241,7 +241,7 @@ A snippet for the project's `CLAUDE.md` / `AGENTS.md`:
 
 ## 7. Test cases
 
-- **[`examples/single/`](../examples/single/)**: a counter on one static page (`index.html`, `style.css`, `main.js`, `README.md`) with file prose in all three files, headed blocks, and one pending chunk. It exercises the parser and every page kind.
+- **[`tests/fixtures/simple/`](../tests/fixtures/simple/)**: the test fixture, a counter on one static page (`index.html`, `style.css`, `main.js`, `README.md`) with file prose in all three files, headed blocks, and one pending chunk. It exercises the parser and every page kind.
 - **Three real repos**, installing the released package as any outside project would: [amitkaps/base](https://github.com/amitkaps/base) (SvelteKit, `.svelte` with all three parts), [amitkaps/sitez](https://github.com/amitkaps/sitez) (89 `@prose` blocks and a short `prose/idea.md`), and [amitkaps/markz](https://github.com/amitkaps/markz) (about 4,600 lines, and a tested grammar in `prose/` that `@prose` should link to rather than restate).
 
 Verify:

@@ -1,7 +1,7 @@
 /** @prose
  * # Server tests
  *
- * `prose serve` (spec §4.1): route segments, the `examples/single` pages, folder pages, path traversal
+ * `prose serve` (spec §4.1): route segments, the `tests/fixtures/simple` pages, folder pages, path traversal
  * refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
  */
 
@@ -57,10 +57,10 @@ describe("segments (spec §4.1)", () => {
   });
 });
 
-describe("serve: examples/single", () => {
+describe("serve: tests/fixtures/simple", () => {
   let served: Served;
   beforeAll(async () => {
-    served = await serve(resolve("examples/single"), { port: 0, watch: false });
+    served = await serve(resolve("tests/fixtures/simple"), { port: 0, watch: false });
   });
   afterAll(() => served.close());
 

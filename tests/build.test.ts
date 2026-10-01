@@ -1,7 +1,7 @@
 /** @prose
  * # Build tests
  *
- * `prose build`: the static site for `examples/single` and for a git repository, every page rendered the same
+ * `prose build`: the static site for `tests/fixtures/simple` and for a git repository, every page rendered the same
  * way the server renders it, and the output folder it will and won't clear.
  */
 
@@ -47,12 +47,12 @@ function git(cwd: string, ...args: string[]): void {
   });
 }
 
-describe("build: examples/single", () => {
+describe("build: tests/fixtures/simple", () => {
   let out: string;
   let pages: string[];
   beforeAll(async () => {
     out = join(temp("prose-build-out-"), "site");
-    await build(resolve("examples/single"), { out });
+    await build(resolve("tests/fixtures/simple"), { out });
     pages = listAll(out).filter((p) => p.endsWith(".html"));
   });
 

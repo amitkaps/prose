@@ -1,11 +1,11 @@
 /** @prose
  * Drives `vp fmt`, `vp lint`, `vp test` and `vp pack` for the package's own source. There is no
- * app to build, so `plugins` stays empty. `examples/**` are fixtures with their own style, and
+ * app to build, so `plugins` stays empty. `tests/fixtures/**` are fixtures with their own style, and
  * running `vp` from the repo root must not reach into them, so `ignored` excludes them.
  */
 import { defineConfig } from "vite-plus";
 
-const ignored = ["dist/**", "examples/**", "docs/**", "README.md", "pnpm-lock.yaml"];
+const ignored = ["dist/**", "tests/fixtures/**", "docs/**", "README.md", "pnpm-lock.yaml"];
 
 export default defineConfig({
   plugins: [],
