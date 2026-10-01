@@ -1,8 +1,0 @@
-# @prose
-# # pnpm workspace settings
-#
-# Not a multi-package workspace: this file only holds pnpm's install policy. `minimumReleaseAgeExclude` lets
-# one freshly released dependency in past the age gate.
-
-minimumReleaseAgeExclude:
-  - "@amitkaps/markz@0.1.1"
