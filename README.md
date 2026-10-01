@@ -1,18 +1,20 @@
 # prose
 
-Prose lets coding agents explain the code they write, and lets humans read the resulting
-repository as a document. It is two things:
+Coding agents change code faster than a person can read it, so the model of the design drifts. Prose keeps it readable: the agent writes the explanation next to the code it explains, and a read-only renderer shows the repository as a document. This repository is read that way at [prose.amitkaps.com](https://prose.amitkaps.com).
 
-- **`@prose`**, a convention for writing human-oriented meaning directly into source code.
-- **`prose`**, a read-only renderer that opens any repository in the browser as a
-  Markdown-first document, locally or as a static site.
+## Where to go
 
-This repository, read with it: [prose.amitkaps.com](https://prose.amitkaps.com).
+- [Design](docs/design.md): why it is built this way, and what it leaves out.
+- [Usage](docs/usage.md): set it up on a project, publish it, and the snippet to give your agents.
+- [Writing](docs/writing.md): how to write `@prose`, in every language.
+- [Reading](docs/reading.md): what each page of the renderer shows.
 
-## What it looks like
+Where it is and what is next: the [plan](docs/plan.md). What building it taught: [lessons](docs/lessons.md). The rest is in [docs/](docs/README.md); building and releasing it is in [development](docs/development.md).
 
-A comment whose first token is `@prose` is the maintained explanation of the code below it.
-Everything else stays an ordinary code comment.
+## Two things
+
+- **`@prose`**, a convention for writing human-oriented meaning directly into source code. A comment whose first token is `@prose` is the maintained explanation of the code below it, and is written in [markz](https://markz.amitkaps.com)'s Markdown. Everything else stays an ordinary code comment.
+- **`prose`**, a read-only renderer that opens any repository in the browser as a Markdown-first document, locally or as a static site. It shows each file as one document: the prose in order, with the code between it.
 
 ```ts
 /** @prose
@@ -22,8 +24,6 @@ Everything else stays an ordinary code comment.
  */
 let count = 0;
 ```
-
-`prose .` shows each file as one document: the prose in order, with the code between it.
 
 ## Install and run
 
@@ -35,7 +35,3 @@ prose .            # read this repository in the browser
 prose build        # the same pages as static files, from the last commit
 prose publish      # commit that site to the `prose` branch
 ```
-
-## Docs
-
-[docs/](docs/README.md) has the design, how to use it, the `@prose` convention, and how the renderer works; [development](docs/development.md) is how to build and release it.
