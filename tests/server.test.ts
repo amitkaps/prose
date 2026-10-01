@@ -1,3 +1,10 @@
+/** @prose
+ * # Server tests
+ *
+ * `prose serve` (spec §4.1): route segments, the `examples/single` pages, folder pages, path traversal
+ * refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
+ */
+
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { request } from "node:http";

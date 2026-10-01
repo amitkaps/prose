@@ -1,3 +1,10 @@
+/** @prose
+ * # Tree tests
+ *
+ * The walk into folders and files (spec §4): summaries, raw files such as lockfiles shown as text, `docs/` as an
+ * ordinary folder, and the git-aware file list, all against throwaway projects built in a temp directory.
+ */
+
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
