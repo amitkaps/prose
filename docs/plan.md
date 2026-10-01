@@ -60,7 +60,7 @@ README and docs:
 ### Later
 
 - [ ] Accessibility review: keyboard navigation and shortcuts (the file tree, the mode switch, code runs, jumping between pages), focus order, and screen-reader names.
-- [ ] `@prose` in `.gitignore`: its `#` comments are what the YAML and TOML scanner reads, so it's a mapping by file name and a row in [the convention](convention.md#prose-blocks). Python, shell, `Dockerfile` and `Makefile` use the same comment, when a repo has them.
+- [x] `@prose` in `.gitignore`, shell and Python: the `#` scanner YAML and TOML use, by extension (`.gitignore` by name). `Dockerfile` and `Makefile` are left out until a repo needs them.
 - [ ] Publish to npm once the CLI has settled; check whether an unscoped name is available for `npx`.
 
 ## Open questions

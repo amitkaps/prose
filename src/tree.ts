@@ -63,6 +63,11 @@ const SOURCE_EXTENSIONS = new Set([
   "yaml",
   "yml",
   "toml",
+  "sh",
+  "bash",
+  "zsh",
+  "py",
+  "gitignore",
 ]);
 /** Past this size a file is read as text, not parsed: nobody writes prose into a generated file. */
 const SOURCE_MAX_BYTES = 200_000;
@@ -75,9 +80,10 @@ const GENERATED_FILENAMES = new Set([
   "bun.lockb",
 ]);
 
-/** `ts` for `a.ts`; none for `LICENSE` or `.gitignore`. */
+/** `ts` for `a.ts`; `gitignore` for `.gitignore`; none for `LICENSE` or other dotfiles. */
 export function extensionOf(path: string): string {
   const name = path.slice(path.lastIndexOf("/") + 1);
+  if (name === ".gitignore") return "gitignore";
   const dot = name.lastIndexOf(".");
   return dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
 }

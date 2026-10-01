@@ -10,7 +10,7 @@ A **prose block** is a comment whose first token is the **`@prose`** marker. The
 | ------------- | ----------------------------------- |
 | JS, TS, CSS   | `/** @prose … */` on its own line   |
 | HTML, markup  | `<!-- @prose … -->`                 |
-| YAML, TOML    | `# @prose …`, one `#` per line, at column 0 |
+| YAML, TOML, shell, Python, `.gitignore` | `# @prose …`, one `#` per line, at column 0 |
 
 ```js
 /** @prose
@@ -32,7 +32,7 @@ The count lives in an `<output>`, announced to screen readers when it changes.
 - The marker is opt-in because comments already have many owners: JSDoc, Vite, Svelte, formatters, and linters. Adding a marker is the explicit step of promoting a comment to prose.
 - In JS, TS and CSS, a prose block counts at any depth when it starts its own line, with only indentation before it: at top level, or inside a class, function or rule, so a class reads method by method. Its chunk runs to the next block, as at top level, so a block inside a function splits that function's code in two. One that shares its line with code (`call(/** @prose … */ x)`) is an ordinary comment in the code.
 - TypeScript treats `@prose` as a JSDoc tag, so an editor hover shows the prose as that tag's text. It's readable, if slightly noisy.
-- YAML and TOML have no block-comment delimiter, so a prose block there is a maximal run of `#`-prefixed lines starting with a `# @prose` line, each line's own `# ` gutter stripped. Only column 0 counts; an indented `#` comment is an ordinary comment.
+- YAML, TOML, shell (`.sh`, `.bash`, `.zsh`), Python and `.gitignore` have no block-comment delimiter, so a prose block there is a maximal run of `#`-prefixed lines starting with a `# @prose` line, each line's own `# ` gutter stripped. Only column 0 counts; an indented `#` comment is an ordinary comment. A shebang line is one too, as it isn't a marker.
 - In `.svelte` files, each part follows its own language's rule: `<script>` the JS/TS rule, the markup the HTML rule, `<style>` the CSS rule. The chunks from all three parts are merged in source order.
 
 **What ships.** Minifiers drop `/** @prose */` from JS and CSS (they keep only `@license`, `@preserve` and `/*!` comments), and the Svelte compiler drops markup comments. A hand-written `.html` file served as it is keeps its comments, so a `<!-- @prose -->` there is visible in the page source. Keep prose out of shipped `.html`, or strip it in the build. Sourcemaps with `sourcesContent` carry every comment too.

@@ -27,7 +27,7 @@ The text is on the left and the repository's file tree on the right, as an edito
 
 ### How it renders
 
-- JS and TS comments, including a `.svelte` file's `<script>`, come from `oxc-parser` (its comment list and the AST for depth). CSS, HTML, YAML and TOML use a small scanner.
+- JS and TS comments, including a `.svelte` file's `<script>`, come from `oxc-parser` (its comment list and the AST for depth). CSS, HTML and the `#`-comment languages (YAML, TOML, shell, Python, `.gitignore`) use a small scanner.
 - Markdown, in files and in prose blocks, is rendered with [markz](https://github.com/amitkaps/markz). What markz doesn't support stays literal text.
 - Code is highlighted on the server with shiki, in the page's own palette: each token's colour is a CSS variable the stylesheet sets for light and dark.
 - One stylesheet: a readable column, light and dark, tabs two columns wide. Moving between pages is a cross-document view transition with the file tree held still.
@@ -67,6 +67,6 @@ Verify:
 ## Open questions
 
 - **Nested chunks.** Should prose blocks for class members and nested functions become sub-chunks?
-- **Anchors beyond JS/TS.** CSS, HTML and YAML chunks fall back to a heading or position ([anchors](convention.md#anchors)). A CSS chunk's first selector, or an HTML chunk's first `id`, could serve.
+- **Anchors beyond JS/TS.** CSS, HTML, YAML and Python chunks fall back to a heading or position ([anchors](convention.md#anchors)). A CSS chunk's first selector, or an HTML chunk's first `id`, could serve.
 - **Block anchors on GitHub.** `src/store.ts#addTodo` works in the renderer, but GitHub scrolls only to `#L42`. Accept it, or have whatever publishes the docs map anchors to lines when it links code.
 - **A map command.** `prose outline` printing every first paragraph, if the grep in [the agent rules](usage.md#for-agents) proves too noisy for agents.
