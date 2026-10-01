@@ -1,14 +1,14 @@
 # The renderer, in detail
 
-How `prose` behaves: what each page shows, what it reads, how it renders, and what `prose build` and `prose publish` write. The convention it reads is in [convention.md](convention.md), the reasons in [design.md](design.md), and how to use it in [usage.md](usage.md). Section numbers below are provisional.
+How `prose` behaves: what each page shows, what it reads, how it renders, and what `prose build` and `prose publish` write. The convention it reads is in [convention.md](convention.md), the reasons in [design.md](design.md), and how to use it in [usage.md](usage.md).
 
-## 4. The renderer: `prose .`
+## `prose .`
 
 `prose [dir]` (default `.`) starts a small, read-only HTTP server on the repository and opens it in the browser. Every page is rendered to HTML on request: a folder, a Markdown file, or a source file shown as its prose. There's no client app and no state; the browser gets plain HTML, one stylesheet and a few lines of script for live reload.
 
 It needs no config, no Vite and no dev server, and it works on any repository: one with no `@prose` at all still reads as its Markdown and its code.
 
-### 4.1 Pages
+### Pages
 
 URLs mirror repo paths, so a relative link in the prose works the same in the renderer as on GitHub ([references](convention.md#references)).
 
@@ -19,13 +19,13 @@ URLs mirror repo paths, so a relative link in the prose works the same in the re
 
 Every page has the repository's file tree on the left, as an editor's explorer shows it: folders first, the folders around the current page open, and the reader's own opened folders kept from page to page. On a narrow screen it sits behind a **Files** button. Every page also has a breadcrumb to its ancestors and a link to open the file in the editor. The page reloads when a file it shows changes, keeping the scroll position.
 
-### 4.2 What it reads
+### What it reads
 
-- Every file git would track, whatever its type: tracked files, plus untracked ones not ignored by `.gitignore`, so a brand-new file shows up before it's committed. Dotfiles and `.github/` included. Ignored files stay out of the file tree, which is the same locally and published; a folder's page names them (§4.1). Outside a git repository, a fixed skip list (`node_modules`, `dist`, dot-folders).
+- Every file git would track, whatever its type: tracked files, plus untracked ones not ignored by `.gitignore`, so a brand-new file shows up before it's committed. Dotfiles and `.github/` included. Ignored files stay out of the file tree, which is the same locally and published; a folder's page names them ([pages](#pages)). Outside a git repository, a fixed skip list (`node_modules`, `dist`, dot-folders).
 - Prose is read from Markdown and from the languages in [convention.md](convention.md#prose-blocks), except generated files: lockfiles (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, …) and anything over 200 KB are shown as text.
 - A request for a path outside the root, or for a file the walk doesn't hold, is a 404.
 
-### 4.3 How it renders
+### How it renders
 
 - JS and TS comments, including a `.svelte` file's `<script>`, come from `oxc-parser` (its comment list and the AST for depth). CSS, HTML, YAML and TOML use a small scanner.
 - Markdown, in files and in prose blocks, is rendered with [markz](https://github.com/amitkaps/markz). What markz doesn't support stays literal text.
@@ -34,7 +34,7 @@ Every page has the repository's file tree on the left, as an editor's explorer s
 - A file is parsed when its page is requested, and kept by its modification time and size, so a changed file is always read afresh; highlighted code is kept by its text. A folder page reads only its children's first paragraphs. The highlighter starts with the server, and Chrome prerenders a link when the pointer rests on it, so most pages are already built when clicked.
 - It binds to `127.0.0.1`; `--port` picks the port (default `1234`, or the next free one).
 
-### 4.4 `prose build`
+## `prose build`
 
 `prose build [dir]` writes the same pages as static files, for any static host, into `.prose/site` (`--out` to change it). The pages come from the same code as the server's, so the site is the reader, not a second design.
 
@@ -44,29 +44,15 @@ Every page has the repository's file tree on the left, as an editor's explorer s
 - **No live parts.** No live reload, no render time, no **Open in editor**; in its place, the snapshot: the nearest tag and the short commit (`v0.1.0 · 1c77293`). The same commit gives the same bytes, so a rebuild changes only the pages that changed.
 - **Its own folder only.** The build clears its output first, so it refuses a folder it didn't make: one holding the repository or tracked files, or a non-empty one without its marker. It never edits `.gitignore`; it warns when the output isn't ignored.
 
-### 4.5 `prose publish`
+## `prose publish`
 
 `prose publish [dir]` commits the build to a branch a host deploys from: `prose` by default (`--branch` to change it), an orphan branch holding only the site. GitHub Pages serves it with the branch as its source.
 
 - **Nothing else changes.** The branch is never checked out: the working tree, the index and `HEAD` stay as they were. The commit says which source commit it was built from; a publish that changes no page makes no commit.
 - **It doesn't push.** `git push origin prose` is a separate step, so nothing leaves the machine unasked.
-- **A domain in one file.** `--domain docs.example.com` writes a `CNAME` file at the branch's root, the file Pages reads the domain from, and later publishes keep it (`--domain` again replaces it, `--no-domain` drops it). The site sits at the domain's root (§4.4); the DNS record, a CNAME to `<user>.github.io`, is the owner's to add. The branch also gets a `.nojekyll`, so Pages serves every path as it is.
+- **A domain in one file.** `--domain docs.example.com` writes a `CNAME` file at the branch's root, the file Pages reads the domain from, and later publishes keep it (`--domain` again replaces it, `--no-domain` drops it). The site sits at the domain's root ([`prose build`](#prose-build)); the DNS record, a CNAME to `<user>.github.io`, is the owner's to add. The branch also gets a `.nojekyll`, so Pages serves every path as it is.
 
-## 5. Agent contract
-
-A snippet for the project's `CLAUDE.md` / `AGENTS.md`:
-
-- Every file has file prose, and every meaningful unit of it is in a chunk with prose. Trivial declarations, types, constants and mechanical helpers don't need a chunk of their own unless they carry architectural intent; a paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`.
-- Every prose block, file, folder and doc begins with a short first paragraph that is its summary for the human: about three lines, one idea per sentence. It says what the node means, not what its code does; detail goes in the chunks below. When a change alters a node's role, rewrite that paragraph in the same change.
-- Prose goes in `@prose` comments, in markz's Markdown. Ordinary comments stay for code-level notes.
-- Keep prose current in the same change as the code. Rewrite it where it has drifted; don't append. A change that only tunes code (same behaviour, same stated costs) needn't touch prose.
-- State a rule once. If a doc or a tested file owns it, link to it by repo path and keep only how and why this code does it.
-- Decisions made in the chat go into the prose in the same change: into the doc they change when they span files, into the `@prose` block when they concern one spot. Write docs for a reader who wasn't in the chat, since they may be published as they are. Keep the promises doc short, and update its non-goals when something is ruled out.
-- Keep the plan current: what's done in one line each, what's next in order. Work that belongs to one file can be a pending chunk there instead.
-- To find your way: `grep -rn -A4 "@prose" src` is the map; `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet.
-
-
-## 7. Test cases
+## Test cases
 
 - **[`tests/fixtures/simple/`](../tests/fixtures/simple/)**: the test fixture, a counter on one static page (`index.html`, `style.css`, `main.js`, `README.md`) with file prose in all three files, headed blocks, and one pending chunk. It exercises the parser and every page kind.
 - **Three real repos**, installing the released package as any outside project would: [amitkaps/base](https://github.com/amitkaps/base) (SvelteKit, `.svelte` with all three parts), [amitkaps/sitez](https://github.com/amitkaps/sitez) (89 `@prose` blocks and a short `prose/idea.md`), and [amitkaps/markz](https://github.com/amitkaps/markz) (about 4,600 lines, and a tested grammar in `prose/` that `@prose` should link to rather than restate).
@@ -78,10 +64,10 @@ Verify:
 - [ ] A path outside the root is a 404.
 - [ ] **The real test:** over two weeks of work on sitez and markz, the human opens `prose .` without being prompted. If not, Prose is the convention alone, and the renderer is dropped too.
 
-## 8. Open questions
+## Open questions
 
 - **Nested chunks.** Should prose blocks for class members and nested functions become sub-chunks?
 - **Anchors beyond JS/TS.** CSS, HTML and YAML chunks fall back to a heading or position ([anchors](convention.md#anchors)). A CSS chunk's first selector, or an HTML chunk's first `id`, could serve.
 - **Block anchors on GitHub.** `src/store.ts#addTodo` works in the renderer, but GitHub scrolls only to `#L42`. Accept it, or have whatever publishes the docs map anchors to lines when it links code.
-- **A map command.** `prose outline` printing every first paragraph, if the grep in §5 proves too noisy for agents.
+- **A map command.** `prose outline` printing every first paragraph, if the grep in [the agent rules](usage.md#for-agents) proves too noisy for agents.
 - **A folder's `README.md`.** It's the folder's page (`index.html` when built) and not a child, so it's missing from the rail and the listing, and there's no way to point at it as a file. Decide after some use.

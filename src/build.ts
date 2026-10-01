@@ -53,7 +53,7 @@ function tryGit(root: string, args: string[]): string | null {
 /** @prose
  * # Where a page is written
  *
- * A page keeps its local URL (spec §4). A folder's page is `folder/index.html`, and a file's is
+ * A page keeps its local URL ([spec](../docs/spec.md)). A folder's page is `folder/index.html`, and a file's is
  * its path plus `.html`: GitHub Pages answers `/src/expression.ts` with `src/expression.ts.html`,
  * with no redirect (the spike, `docs/plan.md` 2b). The one clash is a source file named
  * `index.html`, whose URL is its folder's page there; its page is `index.html.html`, and links to

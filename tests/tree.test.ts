@@ -1,7 +1,7 @@
 /** @prose
  * # Tree tests
  *
- * The walk into folders and files (spec §4): summaries, raw files such as lockfiles shown as text, `docs/` as an
+ * The walk into folders and files ([spec](../docs/spec.md)): summaries, raw files such as lockfiles shown as text, `docs/` as an
  * ordinary folder, and the git-aware file list, all against throwaway projects built in a temp directory.
  */
 
@@ -211,7 +211,7 @@ describe("buildTree: docs/", () => {
   });
 });
 
-describe("projectFiles: a git-aware walk (spec §4.2)", () => {
+describe("projectFiles: a git-aware walk ([spec](../docs/spec.md#what-it-reads))", () => {
   it("lists tracked and untracked files, leaving out what .gitignore excludes", () => {
     const dir = makeProject({
       ".gitignore": "coverage/\nbuild/\n",

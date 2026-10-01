@@ -1,7 +1,7 @@
 /** @prose
  * # Building the hierarchy
  *
- * Walks a repository into a tree of folders and files (spec §4), each with its summary: a
+ * Walks a repository into a tree of folders and files ([spec](../docs/spec.md)), each with its summary: a
  * folder's from its `README.md`, a Markdown file's from its first paragraph, a source file's
  * from its file prose. A source file also carries its text and its blocks, so a renderer can lay
  * it out as one document. `docs/` is an ordinary folder here ([convention](../docs/convention.md#writing-that-spans-the-code)).
@@ -174,7 +174,7 @@ function readFileNode(absPath: string, relPath: string): TreeNode {
 /** @prose
  * # Every other file
  *
- * A file that isn't read for prose is shown as it is (spec §4.1). Text, JSON and `LICENSE` and a
+ * A file that isn't read for prose is shown as it is ([spec](../docs/spec.md#pages)). Text, JSON and `LICENSE` and a
  * lockfile alike, is one highlighted run, cut at 1,000 lines or 100 KB, whichever comes first,
  * with how much is left said at the end. A file is binary when its first 8 KB hold a NUL byte, as
  * git decides; its page says what it is and how big, and an image up to 1 MB is shown, inline as
@@ -254,7 +254,7 @@ export function formatSize(bytes: number): string {
 }
 
 /** @prose
- * # Which files the tree holds (spec §4.2)
+ * # Which files the tree holds ([spec](../docs/spec.md#what-it-reads))
  *
  * Every file git would track: `git ls-files` with `--others --exclude-standard`, so an untracked
  * new file shows up before it's committed while ignored output stays out. Dotfiles, `LICENSE`,
@@ -268,7 +268,7 @@ export function projectFiles(root: string): string[] {
 }
 
 /** @prose
- * What `.gitignore` leaves out of one folder, for the line at the end of its page (spec §4.1),
+ * What `.gitignore` leaves out of one folder, for the line at the end of its page ([spec](../docs/spec.md#pages)),
  * at the level it's named: `node_modules/`, never its contents, so nothing ignored is walked.
  * Empty outside a git repository.
  */
@@ -407,7 +407,7 @@ function folderToNode(root: string, relDir: string, name: string, index: DirInde
 /** @prose
  * # One folder, one level deep
  *
- * What a folder page needs, and no more (spec §4.1): its `README.md` as prose, then its
+ * What a folder page needs, and no more ([spec](../docs/spec.md#pages)): its `README.md` as prose, then its
  * subfolders, each summarized by its own `README.md`, and its files, each summarized by its
  * first paragraph. Subfolders aren't walked and other files aren't read, so a page costs the files
  * directly in the folder, whatever the size of the repository. Returns `null` for a folder that
