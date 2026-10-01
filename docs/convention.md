@@ -95,6 +95,12 @@ Each block has an anchor, used as the fragment of its URL in the renderer (`src/
 
 A repeated anchor within a file gets a `-2`, `-3` suffix in source order.
 
+## What to write
+
+Prose is for what the code can't say: why this exists, what it promises, what was decided and what was ruled out, what a reader would likely get wrong. The first three lines are the summary, what the file or block means. Anything longer goes below, for the reader who wants it.
+
+It isn't a retelling of the code. A paragraph that says what a function does, line by line, is already in the code, will drift from it, and costs the reader attention for nothing. And it isn't a substitute for ordinary comments: `//` and JSDoc stay for the reader of one line (why this check, what this edge case is), where prose is for the reader of the file.
+
 ## Folders and project
 
 A folder's `README.md` is its prose, and the root `README.md` is the project's. These are ordinary READMEs; GitHub already renders them.
