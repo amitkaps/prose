@@ -169,7 +169,7 @@ describe("build: a repository", () => {
     writeFileSync(join(root, "src/a.ts"), "/** @prose\n * Edited.\n */\nexport const a = 2;\n");
     try {
       const built = await build(root);
-      expect(built.out).toBe(join(root, ".prose", "site"));
+      expect(built.out).toBe(join(root, ".prose"));
       expect(existsSync(join(built.out, "scratch.ts.html"))).toBe(false);
       expect(readFileSync(join(built.out, "src/a.ts.html"), "utf-8")).toContain("Does a.");
       expect(built.warnings.join()).toContain("uncommitted changes");

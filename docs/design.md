@@ -31,7 +31,7 @@ Nothing else is required.
 | ----------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | `@prose` in `.ts`, `.js`, `.css`, `.html`, `.svelte`, `.yaml`/`.yml`, `.toml`, `.sh`, `.py`, `.gitignore`      | New file types, tangling, `.ts.md`                       |
 | Rendering any repository read-only: Markdown, source with its prose, other text     | Editing anything, notes, review state                    |
-| Local reading, and the same pages as a static site (`prose build`, `prose publish`) | Hosting and deploys; a docs site with its own navigation |
+| Local reading, and the same pages as a static site (`prose build`) | Hosting and deploys; a docs site with its own navigation |
 | First paragraphs as summaries                                                       | Checks, coverage reports, LLM summaries                  |
 
 Target: one person's repositories, up to about 500 files.
@@ -47,5 +47,5 @@ Target: one person's repositories, up to about 500 files.
 - **A *since* view for reviewing changes.** The human didn't review block by block; they read the prose that says what the code means now.
 - **Agent-written dev tools and an import-graph diagram.** Never built; nothing asked for them.
 - **The Vite plugin that stripped `@prose` from built HTML.** Only hand-written `.html` needs it ([writing.md](writing.md#prose-blocks)).
-- **A docs site, hosting and deploys.** `prose build` writes the reader as it is and `prose publish` commits it to a branch; pushing it is a separate step ([usage.md](usage.md#publish)). A site with its own navigation, chosen pages and design is a static site generator's job ([writing.md](writing.md#writing-that-spans-the-code)), and where the files are hosted is the host's.
-- **A host's own files, and a deploy command per host.** The `prose` branch is plain pages: no `CNAME`, no `.nojekyll`, no host config. Each host's files, credentials and rules change on its own schedule, so prose writes none of them; a project keeps its host's config in its own repository, as this one does ([usage.md](usage.md#deploying-this-site)).
+- **A docs site, hosting and deploys.** `prose build` writes the reader as it is, into `.prose`; deploying it is not prose's job ([usage.md](usage.md#deploying-this-site)), and there is no `prose publish`: the one site that could have used a command to commit it to a branch deploys without one. A site with its own navigation, chosen pages and design is a static site generator's job ([writing.md](writing.md#writing-that-spans-the-code)), and where the files are hosted is the host's.
+- **A host's own files, and a deploy command per host.** The build is plain pages, with no `CNAME`, no `.nojekyll`, no host config. Each host's files, credentials and rules change on its own schedule, so prose writes none of them; a project keeps its host's config in its own repository, as this one does ([usage.md](usage.md#deploying-this-site)).

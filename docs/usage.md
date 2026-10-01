@@ -1,6 +1,6 @@
 # Using prose
 
-Install it, read a repository with it, write `@prose` as you build, and publish the result. For why it works this way, see [design.md](design.md); for the exact rules of the comment, [writing.md](writing.md).
+Install it, read a repository with it, write `@prose` as you build, and build it as a site. For why it works this way, see [design.md](design.md); for the exact rules of the comment, [writing.md](writing.md).
 
 ## Install
 
@@ -50,26 +50,15 @@ Start each block with a short summary paragraph; the renderer uses a file's firs
 ## Build
 
 ```sh
-prose build             # the same pages as static files, in .prose/site
+prose build             # the same pages as static files, in .prose
 prose build --out site  # somewhere else
 ```
 
-`prose build` renders `HEAD`, not the working tree, so nothing untracked, ignored or uncommitted reaches the site; it warns when there are uncommitted changes. Add `.prose/` to `.gitignore`. The pages and URLs are described in [reading.md](reading.md#prose-build).
-
-## Publish
-
-```sh
-prose publish         # commit the site to the `prose` branch
-git push origin prose # publishing never pushes; this does
-```
-
-`prose publish` commits the build to an orphan `prose` branch without checking it out, so your working tree, index and `HEAD` stay as they were. The branch holds only the pages, as plain files with nothing for any one host in them, and a publish that changes no page makes no commit. `--branch` changes the branch.
-
-Point a static host at that branch and deploy it as it is.
+`prose build` renders `HEAD`, not the working tree, so nothing untracked, ignored or uncommitted reaches the site; it warns when there are uncommitted changes. Add `.prose/` to `.gitignore`: the folder is prose's own, and each build clears it. The pages and URLs are described in [reading.md](reading.md#prose-build). Serving them is the host's job, and prose has no command for it.
 
 ## Deploying this site
 
-[prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, on a Cloudflare Worker with static assets. It builds from `main`, not from the `prose` branch, so the configuration is a file in the repository, [wrangler.toml](../wrangler.toml), and every merge deploys.
+[prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, on a Cloudflare Worker with static assets. It builds from `main`, so the configuration is a file in the repository, [wrangler.toml](../wrangler.toml), and every merge deploys.
 
 In Cloudflare, create a Worker named `prose` from the repository, with:
 
@@ -77,9 +66,9 @@ In Cloudflare, create a Worker named `prose` from the repository, with:
 - **Build command:** `pnpm install && pnpm run build && node dist/cli.js build`
 - **Deploy command:** `pnpm dlx wrangler deploy`
 
-Then set the domain on the Worker, in the dashboard. `wrangler.toml` points the Worker at `.prose/site`, serves the site's `404.html` for missing addresses, and serves `/src/store.ts` from `src/store.ts.html`. The deploy command is `pnpm dlx`, not `npx`, because `npx` refuses to run in a repository whose `devEngines` name pnpm.
+Then set the domain on the Worker, in the dashboard. `wrangler.toml` points the Worker at `.prose`, serves the site's `404.html` for missing addresses, and serves `/src/store.ts` from `src/store.ts.html`. The deploy command is `pnpm dlx`, not `npx`, because `npx` refuses to run in a repository whose `devEngines` name pnpm.
 
-Another project does the same with the published package: build command `npx @amitkaps/prose build`, and its own `wrangler.toml` with `directory = ".prose/site"`.
+Another project does the same with the published package: build command `npx @amitkaps/prose build`, and its own `wrangler.toml` with `directory = ".prose"`.
 
 ## For agents
 

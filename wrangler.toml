@@ -9,7 +9,7 @@ name = "prose"
 compatibility_date = "2026-10-01"
 
 [assets]
-directory = ".prose/site"
+directory = ".prose"
 # Serve the site's own 404.html for any missing address.
 not_found_handling = "404-page"
 # Serve /src/store.ts from src/store.ts.html, with no redirect.

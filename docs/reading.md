@@ -1,6 +1,6 @@
 # Reading a repository
 
-How `prose` behaves: what each page shows, what it reads, how it renders, and what `prose build` and `prose publish` write. The convention it reads is in [writing.md](writing.md), the reasons in [design.md](design.md), and how to use it in [usage.md](usage.md).
+How `prose` behaves: what each page shows, what it reads, how it renders, and what `prose build` writes. The convention it reads is in [writing.md](writing.md), the reasons in [design.md](design.md), and how to use it in [usage.md](usage.md).
 
 ## `prose .`
 
@@ -36,21 +36,13 @@ The text is on the left and the repository's file tree on the right, as an edito
 
 ## `prose build`
 
-`prose build [dir]` writes the same pages as static files, for any static host, into `.prose/site` (`--out` to change it). The pages come from the same code as the server's, so the site is the reader, not a second design.
+`prose build [dir]` writes the same pages as static files, for any static host, into `.prose`, the folder prose keeps for itself (`--out` to change it). The pages come from the same code as the server's, so the site is the reader, not a second design.
 
 - **One commit, as the public repository shows it.** The build renders `HEAD`'s tracked files (`git archive`), not the working tree: no untracked or ignored file reaches the site, and it warns when there are uncommitted changes, since they aren't in it. A folder's page doesn't name what's ignored, which exists only on one machine, and a tracked symbolic link is never followed, so it can't publish a file outside the commit.
 - **URLs as they are locally.** `/src/store.ts` is `/src/store.ts`: a folder's page is `folder/index.html` and a file's is its path plus `.html` (`src/store.ts.html`), which a static host such as Cloudflare Workers assets serves at the path without the `.html`, with no redirect. The site sits at a domain's root. A source file named `index.html` would be its folder's page there, so its page is `index.html.html`, and links to it say so. A folder's `README.md` is its page, so its own address goes there: a 301 locally, and a `README.md.html` that is a meta refresh to the folder on a static host.
 - **Its own 404 page.** `404.html`, with the file tree, which a host serves for any missing address (on Cloudflare, with `not_found_handling` set to `404-page`), so a dead link keeps the reader in the site.
 - **No live parts.** No live reload, no render time, no **Open in editor**; in the rail's footer, the snapshot instead: the short commit, and the tag only when `HEAD` is that tag (`Snapshot · v0.2.0 · 1c77293`), since the nearest earlier tag would name a release the page isn't. Both link to GitHub when `origin` is there. The same commit gives the same bytes, so a rebuild changes only the pages that changed.
 - **Its own folder only.** The build clears its output first, so it refuses a folder it didn't make: one holding the repository or tracked files, or a non-empty one without its marker. It never edits `.gitignore`; it warns when the output isn't ignored.
-
-## `prose publish`
-
-`prose publish [dir]` commits the build to a branch a host deploys from: `prose` by default (`--branch` to change it), an orphan branch holding only the site.
-
-- **Nothing else changes.** The branch is never checked out: the working tree, the index and `HEAD` stay as they were. The commit says which source commit it was built from; a publish that changes no page makes no commit.
-- **It doesn't push.** `git push origin prose` is a separate step, so nothing leaves the machine unasked.
-- **Plain files, for any host.** The branch holds the pages and nothing for one host: no `CNAME`, no `.nojekyll`, no config. The site sits at a domain's root ([`prose build`](#prose-build)), and a host's own settings (the domain, the 404 page) are set on the host ([usage](usage.md#publish)).
 
 ## Test cases
 
