@@ -2,6 +2,10 @@
 
 How to work on Prose itself: build it, test it, and cut a release. The rules for changing it, including the prose rules it follows, are in [AGENTS.md](../AGENTS.md).
 
+## Toolchain
+
+[`mise.toml`](../mise.toml) names the Node and pnpm to work with; `packageManager` in `package.json` names the same pnpm for CI and for Corepack. They move together, so a pnpm bump changes both.
+
 ## Build and test
 
 ```sh
