@@ -5,8 +5,8 @@
 # Release and publishes it to npm. The tag must match `package.json`'s version.
 #
 # npm publishing uses trusted publishing (OIDC, with provenance): there is no token to store. The
-# trusted publisher is set on npmjs.com once the package exists, so the first version is published
-# by hand and this step skips a version that is already on the registry.
+# publisher is only allowed to stage: the new version waits on npmjs.com until a maintainer approves it
+# with 2FA. This step skips a version that is already on the registry.
 
 name: release
 
@@ -39,14 +39,15 @@ jobs:
       # `pnpm pack` runs `prepack` (the full build) first.
       - run: pnpm pack
       # From a folder outside the repository: npm refuses to run in it, since `devEngines` names pnpm.
-      - name: Publish to npm
+      - name: Stage on npm
         working-directory: ${{ runner.temp }}
         run: |
+          npm install -g npm@latest
           v="$(node -p 'require(process.env.GITHUB_WORKSPACE + "/package.json").version')"
           if npm view "@amitkaps/prose@$v" version >/dev/null 2>&1; then
             echo "@amitkaps/prose@$v is already on npm"
           else
-            npm publish "$GITHUB_WORKSPACE"/amitkaps-prose-*.tgz --provenance --access public
+            npm stage publish "$GITHUB_WORKSPACE"/amitkaps-prose-*.tgz --provenance --access public
           fi
       - name: Publish release
         env:

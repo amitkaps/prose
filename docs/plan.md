@@ -13,7 +13,7 @@ The `@prose` convention and the read-only renderer work, and this repository is 
 
 ## Next, in order
 
-- [ ] **Install from npm.** The release workflow publishes `@amitkaps/prose` ([development](development.md#publishing-to-npm)); the first version is published by hand, then the trusted publisher is set. Then the README and usage say `npm install -g @amitkaps/prose` and `npx @amitkaps/prose .`, and the tarball URL goes. The unscoped `prose` is taken.
+- [ ] **Install from npm.** The release workflow publishes `@amitkaps/prose` ([development](development.md#publishing-to-npm)); the trusted publisher may only stage, and each version is approved on npmjs.com. Then the README and usage say `npm install -g @amitkaps/prose` and `npx @amitkaps/prose .`, and the tarball URL goes. The unscoped `prose` is taken.
 - [ ] **Republish the site**, so the old `examples/` content goes (`prose publish`, then `git push origin prose`).
 - [ ] **Use it.**
   - Look at it in a browser on sitez and markz: typography, folded code, mobile width.
