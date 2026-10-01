@@ -129,7 +129,7 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
   prepareOut(root, out, warnings);
 
   void warmHighlighter();
-  // `git archive` from a subfolder exports that subfolder, so `prose build examples/single` works.
+  // `git archive` from a subfolder exports that subfolder, so `prose build tests/fixtures/simple` works.
   const snapshot = mkdtempSync(join(tmpdir(), "prose-build-"));
   try {
     const tar = execFileSync("git", ["archive", "--format=tar", "HEAD"], {
