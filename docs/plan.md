@@ -24,6 +24,8 @@ The `@prose` convention and the read-only renderer work, and this repository is 
 ## Later
 
 - [ ] Accessibility review: keyboard navigation and shortcuts (the file tree, the mode switch, code runs, jumping between pages), focus order, and screen-reader names.
+- [ ] A first crumb, **Home**, linking to `/`, so a page reads `Home / tests / repo.test.ts`. Always shown, or only below the root: to decide.
+- [ ] Hidden folders on the published site. GitHub Pages' branch build seems not to publish dot-directories (`/.github/` is a 404, though the files are on the `prose` branch; dotfiles such as `.gitignore` serve), yet the rail and landing page list `.github/` first. Idea: the repository stays as it is, with no renaming of URLs. `prose build` leaves out folders whose name starts with a dot and what's below them, and the rail and listings show such a folder as a row, marked not published on this host, linking to it on GitHub (`<repo>/tree/<commit>/<folder>`; plain text with no remote). `prose .` renders it as any folder. State the rule and its reason in [reading](reading.md#prose-build). Other ideas set aside: renaming the folder in the URL (`/dot-github/`), grouping hidden folders, and a host that serves them.
 - [ ] A screenshot of a rendered file in the README, once the layout is stable.
 
 Open questions are in [reading](reading.md#open-questions).
