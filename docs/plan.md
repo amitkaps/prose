@@ -30,7 +30,7 @@ Roadmap for building `docs/spec.md`; section numbers refer to it. This file hold
 
 ### Later
 
-- [ ] `@prose` in `.gitignore`: its `#` comments are what the YAML and TOML scanner reads, so it's a mapping by file name and a row in spec §3.1. Python, shell, `Dockerfile` and `Makefile` use the same comment, when a repo has them.
+- [ ] `@prose` in `.gitignore`: its `#` comments are what the YAML and TOML scanner reads, so it's a mapping by file name and a row in [the convention](convention.md#prose-blocks). Python, shell, `Dockerfile` and `Makefile` use the same comment, when a repo has them.
 - [ ] Publish to npm once the CLI has settled; check whether an unscoped name is available for `npx`.
 
 ## Open questions
