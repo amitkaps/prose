@@ -13,7 +13,7 @@ The `@prose` convention and the read-only renderer work, and this repository is 
 
 ## Next, in order
 
-- [ ] **Install without the tarball:** `npx` or an npm install (see Later).
+- [ ] **Install from npm.** The release workflow publishes `@amitkaps/prose` ([development](development.md#publishing-to-npm)); the first version is published by hand, then the trusted publisher is set. Then the README and usage say `npm install -g @amitkaps/prose` and `npx @amitkaps/prose .`, and the tarball URL goes. The unscoped `prose` is taken.
 - [ ] **Republish the site**, so the old `examples/` content goes (`prose publish`, then `git push origin prose`).
 - [ ] **Use it.**
   - Look at it in a browser on sitez and markz: typography, folded code, mobile width.
@@ -26,6 +26,5 @@ The `@prose` convention and the read-only renderer work, and this repository is 
 
 - [ ] Accessibility review: keyboard navigation and shortcuts (the file tree, the mode switch, code runs, jumping between pages), focus order, and screen-reader names.
 - [ ] A screenshot of a rendered file in the README, once the layout is stable.
-- [ ] Publish to npm once the CLI has settled; check whether an unscoped name is available for `npx`.
 
 Open questions are in [reading](reading.md#open-questions).

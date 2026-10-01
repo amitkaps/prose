@@ -22,6 +22,9 @@
     },
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "prepack": "pnpm run build",
     "build": "vp pack",
