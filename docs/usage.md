@@ -26,7 +26,7 @@ It works on any repository, with no config and no `@prose` required: a repositor
 - **A source file** reads as one document: its prose blocks in order, with the code between them. The **Prose & Code / Prose only** switch sets whether the code starts open.
 - **Every other file** is shown as text, or as its type and size.
 
-The file tree is on the left, and the page reloads when its file changes. Relative links between prose and code work as they do on GitHub. Every page's behaviour is in [spec.md](spec.md).
+The file tree is on the right, and the page reloads when its file changes. Relative links between prose and code work as they do on GitHub. Every page's behaviour is in [spec.md](spec.md).
 
 ## Write prose
 

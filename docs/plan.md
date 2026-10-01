@@ -22,7 +22,7 @@ The order of the work and items that touch several files. Finished work is one l
 Reading first: the text on the left, the explorer on the right. Agreed 2026-10-01; each step is its own PR.
 
 - [x] **Footer: Snapshot and Live.** The rail's footer says **Live** (dim when the server is lost) on `prose .`, and **Snapshot · tag · commit** on a built site, the tag only when `HEAD` is exactly that tag, with a GitHub mark linking to the repository. The tag used to be the nearest earlier one, so a site built after a release named it wrongly.
-- [ ] **Layout.** The reading column left-aligned, the rail pinned to the right edge. The bar is the project name at the top left (plain text, a link to `/`, not underlined), the **Prose & Code / Prose only** switch, and the explorer toggle at the right. The breadcrumb moves to the top of the reading column, where it wraps, with **Open in editor** at its end, local only. This replaces the two mobile items under *Use it*.
+- [x] **Layout.** The reading column left-aligned, the rail pinned to the right edge. The bar is the project name at the top left (plain text, a link to `/`, not underlined), the **Prose & Code / Prose only** switch, and the explorer toggle at the right. The breadcrumb moves to the top of the reading column, where it wraps, with **Open in editor** at its end, local only. This replaces the two mobile items under *Use it*.
 - [ ] **Rail.** A sidebar-panel icon (right side) in place of the word **Files**; open by default on desktop, remembered, hidden on mobile where it slides over from the right. A folder's name opens its page, the chevron alone folds it, and a folder's `README.md` is listed first in it, highlighted on the folder page. Every tracked file is listed, dotfiles included; what `.gitignore` leaves out stays out.
 
 ### Fix what the first readers found
@@ -52,8 +52,6 @@ README and docs:
 ### 4. Use it
 
 - [ ] Look at it in a browser on sitez and markz: typography, folded code, mobile width.
-- [ ] Mobile: the button that shows the rail is an explorer icon, not the word **Files**.
-- [ ] Mobile: the bar stacks, the breadcrumb on one row and the **Prose & Code / Prose only** switch below it. Today they share a fixed row, and a long path is squeezed until it breaks one character per line.
 - [ ] base, sitez, markz: install 0.2.0, remove `prose()` from their Vite configs, replace the snippet in `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.
 - [ ] `prose/` → `docs/` in sitez and markz ([convention](convention.md#writing-that-spans-the-code)), with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website (markz.amitkaps.com), not docs: it moves to `site/` first (root scripts, workspace, package name, CI paths), then `prose/` takes `docs/` and the site reads its pages from there.
 - [ ] markz: make `@prose` blocks link to `grammar.md` instead of restating its rules ([convention](convention.md#references)).

@@ -1,7 +1,7 @@
 /** @prose
  * # The file tree
  *
- * The rail on the left of every page: the repository's folders and files, as an editor's
+ * The rail on the right of every page: the repository's folders and files, as an editor's
  * explorer shows them, folders first. It's built from the walk's file list alone, with no file
  * read, so it costs nothing per page beyond its HTML. Each folder is a `<details>`, open when the
  * current page is inside it, so the tree works without script; the page's script remembers which
