@@ -14,6 +14,13 @@ node dist/cli.js .     # read this repository with prose
 
 The build and server tests run against the committed [`tests/fixtures/simple`](../tests/fixtures/simple/), since `prose build` reads `HEAD`: commit a change to the fixture before testing it.
 
+## Workflows
+
+Two, in [`.github/workflows/`](../.github/workflows/); each file says what it does in its own prose.
+
+- `ci.yml`: format, lint and types, the tests and the build, on every pull request and push to `main`. Branch protection requires the `ci` check by that name.
+- `release.yml`: on a `v*` tag, checks the tag matches `package.json`, runs the checks and tests, builds, and attaches the `.tgz` to a Release.
+
 ## Release
 
 Bump `version` in `package.json`, merge to `main`, then tag and push:
