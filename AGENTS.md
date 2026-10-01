@@ -1,6 +1,6 @@
 # Agents
 
-How to work in this repository: the prose rules it ships, which it follows itself, then its commands and workflow. `CLAUDE.md` imports this file.
+How to work in this repository: the prose rules it ships, which it follows itself, then its commands and workflow.
 
 ## Prose
 
