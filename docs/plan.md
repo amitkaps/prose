@@ -35,6 +35,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
   - Remove `names.ts` and its tests. oxc stays only to find JS and TS comments, and the AST walk for declared names goes.
   - Remove sections, anchor assignment, the `chunk-N` fallback, the preamble and the pending flag, with its mark and its CSS. A file becomes its summary and a list of comments, each with its span and body.
   - A comment counts when it starts its own line, at any depth. That replaces the statement ranges in the JS path and the depth counter in the CSS scanner.
+  - Stop reading prose from Python and shell. Neither is used here or in the field repos, and Python's docstrings and indentation would need rules nobody is testing. YAML, TOML and `.gitignore` stay, since this repository's workflows, `wrangler.toml` and `.gitignore` carry prose. Update the table in [writing](writing.md#in-each-language) in the same change.
 - [ ] **Use it on base, sitez and markz.**
   - Install the latest release, and remove `prose()` from their Vite configs. Replace the snippet in their `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.
   - Move `prose/` to `docs/` in sitez and markz, with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website, so that moves to `site/` first, with its root scripts, workspace, package name and CI paths.
