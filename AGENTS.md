@@ -6,19 +6,20 @@ How to work in this repository: the prose rules it ships, which it follows itsel
 
 The same rules as [docs/usage.md](docs/usage.md#for-agents), the snippet we tell other projects to copy. If they change, change both. The renderer and the docs are the product, so a change that leaves prose stale is unfinished.
 
-- Every file has file prose, and every meaningful unit of it is in a chunk with prose. Trivial declarations, types, constants and mechanical helpers don't need a chunk of their own unless they carry architectural intent; a paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`, except `.github/`, where GitHub would show it in place of the root's.
-- Every prose block, file, folder and doc begins with a short first paragraph that is its summary for the human: about three lines, one idea per sentence. It says what the node means, not what its code does; detail goes in the chunks below. When a change alters a node's role, rewrite that paragraph in the same change.
+- Every source file opens with a `@prose` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`, except `.github/`, where GitHub would show it in place of the root's.
+- Every prose comment, README and doc begins with a short first paragraph, its summary for the human, in about three lines. It says what the file or section means, not what its code does. Detail goes below it. When a change alters a file's role, rewrite that paragraph in the same change.
+- Write plain sentences. Each one holds one idea, in about 25 words at most, in the active voice with a named subject. If a point doesn't fit, give it its own sentence or cut it. Don't join ideas with semicolons or colons, and keep parentheses for links and examples. Use one term for each concept, the one the docs already use.
 - Prose goes in `@prose` comments, in markz's Markdown. Ordinary comments stay for code-level notes.
 - Prose says what the code can't: why it exists, what it promises, what was decided and what was ruled out. It doesn't retell what reading the code shows, and it doesn't replace ordinary comments.
-- Keep prose current in the same change as the code. Rewrite it where it has drifted; don't append. A change that only tunes code (same behaviour, same stated costs) needn't touch prose.
+- Keep prose current in the same change as the code. Rewrite it where it has drifted, and don't append. A change that only tunes code (same behaviour, same stated costs) needn't touch prose.
 - State a rule once. If a doc or a tested file owns it, link to it by repo path and keep only how and why this code does it.
-- Decisions made in the chat go into the prose in the same change: into the doc they change when they span files, into the `@prose` block when they concern one spot. Write docs for a reader who wasn't in the chat, since they may be published as they are. Keep the promises doc short, and update its non-goals when something is ruled out.
-- Keep the plan current: what's done in one line each, what's next in order. Work that belongs to one file can be a pending chunk there instead.
-- To find your way: `grep -rn -A4 "@prose" src` is the map; `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet.
+- Decisions made in the chat go into the prose in the same change. One that spans files goes into the doc it changes, and one about a single spot goes into the `@prose` there. Write docs for a reader who wasn't in the chat, since they may be published as they are. When something is ruled out, write down that it's out and why, so it isn't rebuilt.
+- If the project keeps a plan, keep it current, with what's done in one line each and what's next in order.
+- To find your way, `grep -rn -A4 "@prose" src` is the map, and `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet.
 
 For this repository that means:
 
-- `docs/` is where writing that spans files lives: [design](docs/design.md) (why, and what's out), [writing](docs/writing.md) (the `@prose` rules), [usage](docs/usage.md), [reading](docs/reading.md) (what each page shows), [plan](docs/plan.md) (the order of the work), [lessons](docs/lessons.md), [development](docs/development.md) (build and release). Reference a section by file and heading (`docs/reading.md#pages`), never by a number.
+- `docs/` is where writing that spans files lives: [design](docs/design.md) (what it is, why, and what it isn't), [writing](docs/writing.md) (the `@prose` rules), [usage](docs/usage.md), [reading](docs/reading.md) (what each page shows), [plan](docs/plan.md) (the order of the work), [lessons](docs/lessons.md), [development](docs/development.md) (build and release). Reference a section by file and heading (`docs/reading.md#pages`), never by a number.
 - Every folder has a `README.md`, except `.github/` (the workflows carry their own prose, and [development](docs/development.md) covers them). `src/` and `tests/` say what lives there and how it's organised.
 - Tests carry file prose too: what the file covers, in a line or two.
 - A first paragraph is for the human reading a folder listing. If it's more than three lines, or says what the code does instead of what the file means, rewrite it.

@@ -1,64 +1,40 @@
 # Reading a repository
 
-How `prose` behaves: what each page shows, what it reads, how it renders, and what `prose build` writes. The convention it reads is in [writing.md](writing.md), the reasons in [design.md](design.md), and how to use it in [usage.md](usage.md).
+What the human sees when they read a repository with prose. Each file is one page, and the pages are the same locally and as a published site. How to run it is in [usage.md](usage.md), and the convention it reads is in [writing.md](writing.md).
 
-## `prose .`
+It works on any repository, with no config. A repository with no `@prose` at all still reads as its Markdown and its code.
 
-`prose [dir]` (default `.`) starts a small, read-only HTTP server on the repository and opens it in the browser. Every page is rendered to HTML on request: a folder, a Markdown file, or a source file shown as its prose. There's no client app and no state; the browser gets plain HTML, one stylesheet and a few lines of script for live reload.
+## Pages
 
-It needs no config, no Vite and no dev server, and it works on any repository: one with no `@prose` at all still reads as its Markdown and its code.
+A page's address is its file's path in the repository. So a relative link in the prose works the same here as on GitHub ([references](writing.md#links)).
 
-### Pages
+- **A folder** (`/src/`) shows its `README.md` first. Then it lists what's in it under **Folders**, **Docs** and **Code**, each with its first paragraph as a summary. A file that could carry prose but has none is named on one line, **No prose yet**. That makes coverage visible where you read, without a report. Files that can't carry prose, like `LICENSE` or a lockfile, are named on a last line, **Other files**. Locally, a dim line also names what `.gitignore` leaves out of the folder. It has no links, since there's nothing there to read.
+- **A Markdown file** (`/docs/plan.md`) renders as it is.
+- **A source file** (`/src/store.ts`) reads as one document. Its first `@prose` comes first, then each later one in source order, with the code between them. Each run of code sits in a panel that can fold. Its header shows which lines it holds and the language, and stays visible when the code is folded. Code keeps the formatter's width of 100 columns, wider than the prose, so it wraps only on a narrow screen. A prose comment with no code after it, before the next one, shows a *pending* mark. Headings in later comments show one level down. A `#` in the margin beside each comment [links](writing.md#links) to it. A file with no prose says so, and shows its code as one run.
+- **Any other file** (`package.json`, `.gitignore`) shows as highlighted text. A long one is cut, with a note on how much is left. A binary file shows its type and size, and a small image is shown.
 
-URLs mirror repo paths, so a relative link in the prose works the same in the renderer as on GitHub ([references](writing.md#references)). The renderer's own links (the file tree, the listings, the breadcrumb) are all root-absolute, one form everywhere.
+## Around the page
 
-- **A folder** (`/`, `/src/`): its `README.md`, with the breadcrumb ending in `README.md`, then what's in it under three labels, **Folders**, **Docs** and **Code**, each with its first paragraph: a folder's from its `README.md`, a Markdown file's from its first paragraph, a source file's from its file prose. What could carry prose and has none is one line of names at the end, **No prose yet**, so coverage is visible where you read, without a report; what can't (`LICENSE`, `package.json`, a lockfile, an image) is a last line, **Other files**. Locally, the page ends with one dim line naming what `.gitignore` leaves out of that folder, at the level it's named (`Ignored here: node_modules/ dist/ .env`): no links and no counts, since there's nothing there to read.
-- **A Markdown file** (`/docs/plan.md`): rendered as it is.
-- **A source file** (`/src/store.ts`): one document. The file prose first, then each chunk's prose in source order, with its code between them. Each run of code is a panel with a header that stays in every mode (a chevron, how many lines and which, the language), numbered with the file's own line numbers, highlighted, and wrapped only past 100 columns: prose keeps the reading measure, code widens to the formatter's print width. A pending chunk shows as its prose with a *pending* mark. Headings in the file prose show as written and in later blocks one level down. Each block's [anchor](writing.md#anchors) is its fragment, with a `#` in the margin beside its first line, heading or text, to link to it; the file prose, being the top of the page, has none. A **Prose & Code / Prose only** switch sets whether runs start open, remembered across pages; a run's header opens or closes that run on its own. The switch is on every page, in the same place, disabled where there's no code. A file with no prose says so, and is one run with the same header.
-- **Any other file** (`package.json`, `LICENSE`, `.gitignore`, a lockfile): a text file is one highlighted run, cut at 1,000 lines or 100 KB with how much is left said at the end; a binary file says what it is and how big, and an image up to 1 MB is shown.
+The text is on the left and the file tree on the right. The page grows with a wide window, so a wide screen shows more page and less margin. Tables and code samples in the prose can be wider than the text, up to the width of a code run.
 
-The text is on the left and the repository's file tree on the right, as an editor's explorer shows it, with a faint guide down each open folder, darker on the way to the current page: folders first, a folder's `README.md` ahead of its other files (a row for the folder's page, highlighted there), the folders around the current page open, and the reader's own opened folders kept from page to page. On a narrow screen the tree slides over the page from the right, behind an icon in the bar. The bar holds the project's name (a link to the root), which is the `origin` repository's rather than the checkout folder's ([src/repo.ts](../src/repo.ts)); then links to the docs in `docs/` ([writing](writing.md#writing-that-spans-the-code)), named without `.md`, the current one in bold, which on a narrow screen fold behind a **Docs** button; then the mode switch and that icon. The text's side margins, and the project's name above them, come from the width left beside the tree: equal on a narrow page, then the left stops at 7rem and the rest goes to the right, so the name always lines up with the text. Above the text is a breadcrumb from the project's name, on every page, to the page itself, every crumb a link, wrapping when long, with a link to open the file in the editor at its end, on a local page only. A page with three or more second- and third-level headings (on a source file, its blocks' headings) has a table of contents, **On this page**: a column beside the text on a doc, or beside the code on a source file, where the page is wide enough, and otherwise one folded line under the breadcrumb. The section being read is marked in it as the page scrolls. The whole page grows with a wide window, from 16px text at 1280px to 20px at 2560px, so a wide screen holds more page and less margin. A table or a code sample in the prose may be wider than the text, up to a code run's width, except on a doc with its contents beside it; past that a table scrolls and code wraps. The page reloads when a file it shows changes, keeping the scroll position.
+- **The file tree** shows the repository as an editor's explorer does. Folders come first, and a folder's `README.md` comes ahead of its other files. The folders around the current page are open, and folders the reader opened stay open from page to page. On a narrow screen, the tree slides over the page from an icon in the bar.
+- **The bar** holds the project's name, which links to the root. The name comes from the `origin` repository, not the checkout folder ([src/repo.ts](../src/repo.ts)). Next come links to the docs in `docs/`, in the order `docs/README.md` lists them ([writing](writing.md#folders-and-docs)). On a narrow screen they fold behind a **Docs** button.
+- **The breadcrumb** above the text runs from the project's name to the current page, and every crumb is a link. Locally, it ends with a link that opens the file in the editor.
+- **On this page** is a table of contents, on a page with three or more second- and third-level headings. It sits beside the text when there's room, and folds into one line under the breadcrumb when there isn't. It marks the section being read as the page scrolls.
+- **The Prose & Code / Prose only switch** sets whether code runs start open or folded. A run's header still opens or closes that run on its own. The switch is in the same place on every page, and disabled where there's no code. It's the reader's own setting, kept in their browser and not in the address. A `?view=` in the address was tried and dropped. A link that carried it passed the sharer's choice to whoever opened it. A link without it let the address and the page disagree.
 
-### What it reads
+## What it reads
 
-- Every file git would track, whatever its type: tracked files, plus untracked ones not ignored by `.gitignore`, so a brand-new file shows up before it's committed. Dotfiles and `.github/` included. Ignored files stay out of the file tree, which is the same locally and published; a folder's page names them ([pages](#pages)). Outside a git repository, a fixed skip list (`node_modules`, `dist`, dot-folders).
-- Prose is read from Markdown and from the languages in [writing.md](writing.md#prose-blocks), except generated files: lockfiles (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, …) and anything over 200 KB are shown as text.
-- A request for a path outside the root, or for a file the walk doesn't hold, is a 404.
+- **Every file git would track.** That's the tracked files, plus untracked ones that `.gitignore` doesn't exclude, so a new file shows up before it's committed. Dotfiles and `.github/` are included. Outside a git repository, it skips `node_modules`, `dist` and dot-folders.
+- **Prose from Markdown and the languages in [writing.md](writing.md#in-each-language).** Generated files, like lockfiles and anything over 200 KB, show as plain text, since nobody writes prose into them.
+- **Nothing outside the repository.** An address outside it, or for a file it doesn't read, is a 404.
 
-### How it renders
+## Local and published
 
-- JS and TS comments, including a `.svelte` file's `<script>`, come from `oxc-parser` (its comment list and the AST for depth). CSS, HTML and the `#`-comment languages (YAML, TOML, shell, Python, `.gitignore`) use a small scanner.
-- Markdown, in files and in prose blocks, is rendered with [markz](https://github.com/amitkaps/markz). What markz doesn't support stays literal text.
-- Code is highlighted on the server with shiki, in the page's own palette: each token's colour is a CSS variable the stylesheet sets for light and dark.
-- One stylesheet: a readable column, light and dark, tabs two columns wide. Moving between pages is a cross-document view transition with the file tree held still.
-- A file is parsed when its page is requested, and kept by its modification time and size, so a changed file is always read afresh; highlighted code is kept by its text. A folder page reads only its children's first paragraphs. The highlighter starts with the server, and Chrome prerenders a link when the pointer rests on it, so most pages are already built when clicked.
-- It binds to `127.0.0.1`; `--port` picks the port (default `1234`, or the next free one).
+`prose .` serves the pages locally, and `prose build` writes the same pages as static files ([usage.md](usage.md)). Both come from the same code, so a published site is the same reader, not a second design.
 
-## `prose build`
-
-`prose build [dir]` writes the same pages as static files, for any static host, into `.prose`, the folder prose keeps for itself (`--out` to change it). The pages come from the same code as the server's, so the site is the reader, not a second design.
-
-- **One commit, as the public repository shows it.** The build renders `HEAD`'s tracked files (`git archive`), not the working tree: no untracked or ignored file reaches the site, and it warns when there are uncommitted changes, since they aren't in it. A folder's page doesn't name what's ignored, which exists only on one machine, and a tracked symbolic link is never followed, so it can't publish a file outside the commit.
-- **URLs as they are locally.** `/src/store.ts` is `/src/store.ts`: a folder's page is `folder/index.html` and a file's is its path plus `.html` (`src/store.ts.html`), which a static host such as Cloudflare Workers assets serves at the path without the `.html`, with no redirect. The site sits at a domain's root. A source file named `index.html` would be its folder's page there, so its page is `index.html.html`, and links to it say so. A folder's `README.md` is its page, so its own address goes there: a 301 locally, and a `README.md.html` that is a meta refresh to the folder on a static host.
-- **Its own 404 page.** `404.html`, with the file tree, which a host serves for any missing address (on Cloudflare, with `not_found_handling` set to `404-page`), so a dead link keeps the reader in the site.
-- **No live parts.** No live reload, no render time, no **Open in editor**; in the rail's footer, the snapshot instead: the short commit, and the tag only when `HEAD` is that tag (`Snapshot · v0.2.0 · 1c77293`), since the nearest earlier tag would name a release the page isn't. Both link to GitHub when `origin` is there. The same commit gives the same bytes, so a rebuild changes only the pages that changed.
-- **Its own folder only.** The build clears its output first, so it refuses a folder it didn't make: one holding the repository or tracked files, or a non-empty one without its marker. It never edits `.gitignore`; it warns when the output isn't ignored.
-
-## Test cases
-
-- **[`tests/fixtures/simple/`](../tests/fixtures/simple/)**: the test fixture, a counter on one static page (`index.html`, `style.css`, `main.js`, `README.md`) with file prose in all three files, headed blocks, and one pending chunk. It exercises the parser and every page kind.
-- **Three real repos**, installing the released package as any outside project would: [amitkaps/base](https://github.com/amitkaps/base) (SvelteKit, `.svelte` with all three parts), [amitkaps/sitez](https://github.com/amitkaps/sitez) (89 `@prose` blocks and a short `prose/idea.md`), and [amitkaps/markz](https://github.com/amitkaps/markz) (about 4,600 lines, and a tested grammar in `prose/` that `@prose` should link to rather than restate).
-
-Verify:
-
-- [ ] `prose .` on each repo: folder, Markdown, source and plain-text pages render; relative links between prose and code resolve; the page reloads on save.
-- [ ] Unmarked comments (JSDoc, `//`, `svelte-ignore` and other pragmas) are not shown as prose.
-- [ ] A path outside the root is a 404.
-- [ ] **The real test:** over two weeks of work on sitez and markz, the human opens `prose .` without being prompted. If not, Prose is the convention alone, and the renderer is dropped too.
-
-## Open questions
-
-- **Nested chunks.** Should prose blocks for class members and nested functions become sub-chunks?
-- **Anchors beyond JS/TS.** CSS, HTML, YAML and Python chunks fall back to a heading or position ([anchors](writing.md#anchors)). A CSS chunk's first selector, or an HTML chunk's first `id`, could serve.
-- **Block anchors on GitHub.** `src/store.ts#addTodo` works in the renderer, but GitHub scrolls only to `#L42`. Accept it, or have whatever publishes the docs map anchors to lines when it links code.
-- **A map command.** `prose outline` printing every first paragraph, if the grep in [the agent rules](usage.md#for-agents) proves too noisy for agents.
+- **Local pages are live.** A page reloads when a file it shows changes, and keeps its scroll position.
+- **A published site is one commit.** The build renders the files tracked at `HEAD`, as the public repository shows them. Untracked, ignored and uncommitted files never reach the site, and the build warns when there are uncommitted changes. Below the file tree, a footer names the commit, and the tag when `HEAD` has one. Both link to GitHub.
+- **Addresses stay the same.** `/src/store.ts` is `/src/store.ts` in both, so a link works in either. A static host serves each page without its `.html`, and without a redirect.
+- **A missing page stays in the site.** The build writes its own `404.html`, with the file tree, for the host to serve.
+- **The build owns its folder.** It writes into `.prose` and clears it first. So it refuses any folder it didn't make, and it never follows a link out of the commit.

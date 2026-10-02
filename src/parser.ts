@@ -5,7 +5,7 @@
  * comments, each language its own way, then slice the code between them. Each chunk keeps its
  * comment's byte span, so a renderer can lay the file out in source order.
  *
- * What counts as a block, and how chunks and anchors are made, is [writing](../docs/writing.md#prose-blocks);
+ * What counts as a block, and how chunks and anchors are made, is [writing](../docs/writing.md#in-each-language);
  * this file is how it's read.
  */
 import { parseSync } from "oxc-parser";
