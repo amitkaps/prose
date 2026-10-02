@@ -8,6 +8,7 @@
 import { type FSWatcher, watch } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { resolve, sep } from "node:path";
+import { LIVE, SCRIPT, STYLE } from "./assets.js";
 import { escapeHtml, warmHighlighter } from "./highlight.js";
 import { binaryBody, folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
 import { docsNav, type NavItem } from "./nav.js";
@@ -156,7 +157,19 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
   return notFound();
 }
 
+/** The shared files, by address. A hashed name never changes its text, so it's cached for good. */
+const ASSETS = new Map([STYLE, SCRIPT, LIVE].map((a) => [a.url, a]));
+
 async function respond(root: string, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const asset = ASSETS.get((req.url ?? "").split("?")[0]!);
+  if (asset) {
+    res.writeHead(200, {
+      "content-type": asset.type,
+      "cache-control": "public, max-age=31536000, immutable",
+    });
+    res.end(asset.body);
+    return;
+  }
   let path: string;
   try {
     path = decodeURIComponent((req.url ?? "/").split("?")[0]!.replace(/^\/+/, ""));

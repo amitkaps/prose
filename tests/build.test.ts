@@ -19,6 +19,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, posix, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
+import { LIVE, STYLE } from "../src/assets.js";
 import { build } from "../src/build.js";
 import { renderRoute, type Site } from "../src/server.js";
 import { projectFiles } from "../src/tree.js";
@@ -107,7 +108,7 @@ describe("build: tests/fixtures/simple", () => {
     } catch {}
     for (const page of shown()) {
       const html = readFileSync(join(out, page), "utf-8");
-      expect(html).not.toContain("new EventSource");
+      expect(html).not.toContain(LIVE.url);
       expect(html).not.toContain("data-rendered=");
       expect(html).not.toContain('href="vscode://');
       // The tag is named only when HEAD is exactly that tag (a release run builds a tagged HEAD),
@@ -121,12 +122,18 @@ describe("build: tests/fixtures/simple", () => {
     }
   });
 
+  it("writes the shared files once, and tells the host to cache them for good", () => {
+    expect(readFileSync(join(out, STYLE.url), "utf-8")).toBe(STYLE.body);
+    expect(existsSync(join(out, LIVE.url))).toBe(false);
+    expect(readFileSync(join(out, "_headers"), "utf-8")).toContain("/prose/*\n  Cache-Control:");
+  });
+
   it("resolves every link to a page it wrote", () => {
     for (const page of pages) {
       const html = readFileSync(join(out, page), "utf-8");
       // The page's URL: a folder's `index.html` is served at its folder.
       const url = `/${page.endsWith("/index.html") || page === "index.html" ? page.slice(0, -"index.html".length) : page.slice(0, -".html".length)}`;
-      for (const [, href] of html.matchAll(/href="([^"#]+)(?:#[^"]*)?"/g)) {
+      for (const [, href] of html.matchAll(/(?:href|src)="([^"#]+)(?:#[^"]*)?"/g)) {
         if (href!.includes(":")) continue;
         // A link above the project's root (the example's README points into this repo's docs)
         // has no page on any host; it's a link out of the project, not a missing page.
@@ -222,8 +229,8 @@ describe("build: a repository", () => {
     );
     if (live.status !== 200 || built.status !== 200) throw new Error("expected pages");
     expect(main(built.html)).toBe(main(live.html));
-    expect(live.html).toContain("new EventSource");
-    expect(built.html).not.toContain("new EventSource");
+    expect(live.html).toContain(LIVE.url);
+    expect(built.html).not.toContain(LIVE.url);
   });
 
   it("names what's ignored on a local folder page, never on a built one", async () => {
