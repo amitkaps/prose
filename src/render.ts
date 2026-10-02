@@ -265,7 +265,7 @@ export function page(options: PageOptions): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <style>${STYLE}</style>
-<script>${MODE_SCRIPT}</script>
+<script>try { const r = document.documentElement.classList, s = localStorage; if (s.getItem("prose:mode") === "prose") r.add("prose-only"); } catch {}</script>
 </head>
 <body data-path="${escapeHtml(path)}"${live ? ` data-rendered="${Date.now()}"` : ""}>
 <input type="checkbox" id="dock" class="ctl" aria-label="Hide the file tree">
@@ -285,27 +285,6 @@ ${rail}
 </html>
 `;
 }
-
-/** @prose
- * # A link that says how to open
- *
- * `?view=prose` or `?view=code` on a link opens the page in that mode, so a page can be shared
- * with someone who wants only the writing. The link's mode lasts for the rest of that tab's
- * visit, so the next click doesn't switch back, and it never replaces the reader's own choice,
- * which comes back in a new tab. Choosing a mode on the switch ends the link's.
- *
- * It runs in `<head>`, before the first paint, so the page never shows the other mode first.
- */
-const MODE_SCRIPT = `{
-	let mode = null;
-	try {
-		const view = new URLSearchParams(location.search).get("view");
-		if (view === "prose" || view === "code") sessionStorage.setItem("prose:mode", view);
-		mode = sessionStorage.getItem("prose:mode");
-	} catch {}
-	try { mode ??= localStorage.getItem("prose:mode"); } catch {}
-	if (mode === "prose") document.documentElement.classList.add("prose-only");
-}`;
 
 /** @prose
  * Links on the page are prerendered when the pointer rests on one (Chrome's speculation rules,
@@ -362,7 +341,6 @@ for (const b of document.querySelectorAll("[data-mode]")) {
 		root.classList.toggle("prose-only", proseOnly);
 		for (const run of runs) run.classList.remove("opened", "closed");
 		try { localStorage.setItem("prose:mode", proseOnly ? "prose" : "code"); } catch {}
-		try { sessionStorage.removeItem("prose:mode"); } catch {}
 		sync();
 	});
 }
