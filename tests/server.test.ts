@@ -2,7 +2,7 @@
  * # Server tests
  *
  * `prose serve` ([reading](../docs/reading.md#pages)): route segments, the `tests/fixtures/simple` pages, folder pages, the
- * breadcrumb, EBNF fences, path traversal refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
+ * breadcrumb, the table of contents, EBNF fences, path traversal refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
  */
 
 import { execFileSync } from "node:child_process";
@@ -11,7 +11,7 @@ import { request } from "node:http";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import { segments } from "../src/render.js";
+import { segments, tableOfContents } from "../src/render.js";
 import { serve, type Served, touches } from "../src/server.js";
 import type { TreeNode } from "../src/tree.js";
 
@@ -54,6 +54,30 @@ describe("segments", () => {
       "block",
       ["const b = 1;", 6],
     ]);
+  });
+});
+
+describe("tableOfContents", () => {
+  it("lists a doc's second- and third-level headings by their ids, folded and beside the page", () => {
+    const toc = tableOfContents(
+      '<h1 id="t">T</h1><h2 id="a">A</h2><h3 id="b">B <code>x</code></h3><h4 id="c">C</h4><h2 id="d">D</h2>',
+    );
+    expect(toc).toContain('<details class="toc toc-top"><summary>On this page</summary>');
+    expect(toc).toContain('<nav class="toc toc-side" aria-label="On this page">');
+    expect(toc).toContain('<li class="toc-3"><a href="#b">B x</a></li>');
+    expect(toc).not.toContain('href="#c"');
+    expect(toc).not.toContain('href="#t"');
+  });
+
+  it("links a block's heading to its block, without the block's # link", () => {
+    const block = (id: string) =>
+      `<section class="block" id="${id}"><div class="prose"><h2><a class="anchor" href="#${id}" aria-label="Link to this block">#</a>${id}</h2></div></section>`;
+    const toc = tableOfContents(block("one") + block("two") + block("three"));
+    expect(toc).toContain('<li class="toc-2"><a href="#two">two</a></li>');
+  });
+
+  it("has none for a page with fewer than three", () => {
+    expect(tableOfContents('<h2 id="a">A</h2><h2 id="b">B</h2>')).toBe("");
   });
 });
 

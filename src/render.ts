@@ -211,6 +211,46 @@ function withAnchor(prose: string, anchor: string): string {
     : link + prose;
 }
 
+/** @prose
+ * # On this page
+ *
+ * A long page's second- and third-level headings, as a table of contents: beside the text where
+ * the page is wide enough, and above it, folded, where it isn't (`style.css`). It's read from the
+ * page as rendered, so a doc and a source file get the same one: a doc's headings carry their own
+ * ids, and a block's heading links to its block. A page with fewer than three has none, since a
+ * short page is its own contents.
+ *
+ * It's in the HTML twice, once for each place, rather than one element moved by script, so it
+ * works with none; the page's script only marks the section being read (`TOC_SCRIPT`).
+ */
+const HEADING_RE =
+  /<section class="block[^"]*" id="([^"]+)">|<h([23])(?: id="([^"]+)")?>([\s\S]*?)<\/h\2>/g;
+
+export function tableOfContents(body: string): string {
+  const entries: { level: number; id: string; text: string }[] = [];
+  let section = "";
+  for (const match of body.matchAll(HEADING_RE)) {
+    if (match[1]) {
+      section = match[1];
+      continue;
+    }
+    const id = match[3] ?? section;
+    const text = match[4]!
+      .replace(/<a class="anchor"[^>]*>#<\/a>/, "")
+      .replace(/<[^>]+>/g, "")
+      .trim();
+    if (id && text) entries.push({ level: Number(match[2]), id, text });
+  }
+  if (entries.length < 3) return "";
+  const list = `<ul>${entries
+    .map(
+      ({ level, id, text }) =>
+        `<li class="toc-${level}"><a href="#${escapeHtml(id)}">${text}</a></li>`,
+    )
+    .join("")}</ul>`;
+  return `<details class="toc toc-top"><summary>On this page</summary>${list}</details><nav class="toc toc-side" aria-label="On this page"><div><p>On this page</p>${list}</div></nav>`;
+}
+
 export interface PageOptions {
   /** The project's name, for the breadcrumb and the title. */
   project: string;
@@ -317,7 +357,7 @@ export function page(options: PageOptions): string {
 <header class="bar"><a class="project" href="/">${escapeHtml(project)}</a>${renderNav(nav, path)}<div class="bar-mode">${mode}</div><label class="rail-toggle dock" for="dock" title="Files" aria-label="Files">${PANEL_ICON}</label><button type="button" class="rail-toggle pop" popovertarget="rail" title="Files" aria-label="Files">${PANEL_ICON}</button></header>
 <div class="layout">
 <div class="page">
-<main><div class="where"><nav class="crumbs">${breadcrumb(project, path, readme)}</nav>${end}</div>${body}</main>
+<main${hasCode ? ` class="has-code"` : ""}><div class="where"><nav class="crumbs">${breadcrumb(project, path, readme)}</nav>${end}</div>${tableOfContents(body)}${body}</main>
 </div>
 ${rail}
 <script>${RAIL_SCRIPT}</script>
@@ -329,6 +369,37 @@ ${rail}
 </html>
 `;
 }
+
+/** @prose
+ * The section being read is marked in the contents as the page scrolls: the last heading whose
+ * top has passed a line a little under the bar. Choosing one from the folded contents folds it
+ * again, so the text it goes to isn't pushed down.
+ */
+const TOC_SCRIPT = `
+{
+	const links = [...document.querySelectorAll(".toc a")];
+	const idOf = (a) => decodeURIComponent(a.hash.slice(1));
+	const targets = [...new Set(links.map(idOf))].map((id) => document.getElementById(id)).filter(Boolean);
+	let frame = 0;
+	const mark = () => {
+		frame = 0;
+		const line = document.querySelector(".bar").offsetHeight + innerHeight * 0.15;
+		let current = targets[0]?.id;
+		for (const t of targets) {
+			if (t.getBoundingClientRect().top > line) break;
+			current = t.id;
+		}
+		for (const a of links) a.classList.toggle("here", idOf(a) === current);
+	};
+	if (targets.length) {
+		addEventListener("scroll", () => { frame ||= requestAnimationFrame(mark); }, { passive: true });
+		mark();
+	}
+	for (const a of document.querySelectorAll(".toc-top a")) {
+		a.addEventListener("click", () => { a.closest("details").open = false; });
+	}
+}
+`;
 
 /** @prose
  * Links on the page are prerendered when the pointer rests on one (Chrome's speculation rules,
@@ -367,7 +438,8 @@ const RAIL_SCRIPT = `
 }
 `;
 
-const SCRIPT = `
+const SCRIPT =
+  `
 const root = document.documentElement;
 const runs = [...document.querySelectorAll(".code")];
 const isOpen = (run) =>
@@ -400,7 +472,7 @@ try {
 	const y = sessionStorage.getItem(key);
 	if (y !== null) { sessionStorage.removeItem(key); scrollTo(0, Number(y)); }
 } catch {}
-`;
+` + TOC_SCRIPT;
 
 /** Live reload, on a page `prose .` serves; `key` is the scroll position `SCRIPT` restores. */
 const LIVE_SCRIPT = `

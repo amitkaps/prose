@@ -213,7 +213,7 @@ describe("build: a repository", () => {
   it("renders the same page as the server, less the live parts", async () => {
     const site: Site = { root, project: "demo", files: projectFiles(root), live: true, nav: [] };
     const main = (html: string) =>
-      html.slice(html.indexOf("</div>", html.indexOf("<main>")), html.indexOf("</main>"));
+      html.slice(html.indexOf("</div>", html.indexOf("<main")), html.indexOf("</main>"));
     const live = await renderRoute(site, "src/a.ts");
     const built = await renderRoute(
       { ...site, live: false, snapshot: { commit: "abc1234" } },

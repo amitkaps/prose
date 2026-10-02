@@ -578,8 +578,17 @@ a {
 /* The text's side margins come from the page's own width: equal while it's too narrow for more,
    then the left stops growing at --lead and the extra goes to the right. */
 main {
+  position: relative;
   margin: 0;
   padding: 1.5rem var(--side) 4rem;
+  /* How far a table or code sample may widen; the text's width while the contents are beside it
+     on a doc, so they don't run under it. */
+  --wide: var(--code-width);
+  /* What the contents sit beside: the text on a doc, the code on a source file. */
+  --toc-after: var(--measure);
+}
+main.has-code {
+  --toc-after: var(--code-width);
 }
 main > * {
   max-width: var(--measure);
@@ -620,7 +629,7 @@ main > * {
 .prose table,
 .prose pre.shiki {
   width: max-content;
-  max-width: min(var(--code-width), calc(100cqw - var(--docked) - 2 * var(--side)));
+  max-width: min(var(--wide), calc(100cqw - var(--docked) - 2 * var(--side)));
 }
 .prose pre.shiki {
   min-width: 100%;
@@ -850,4 +859,113 @@ pre {
   max-width: 100%;
   height: auto;
   margin-block: 1rem;
+}
+
+/* On this page (render.ts): folded under the breadcrumb, or a column beside the page where there's
+   room for one past the text on a doc, or past the code on a source file. The room depends on
+   whether the tree is docked, so each width is given twice. */
+.prose :is(h2, h3, h4) {
+  scroll-margin-top: calc(var(--bar) + 1rem);
+}
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.toc a {
+  display: block;
+  color: var(--muted);
+  text-decoration: none;
+}
+.toc a:hover,
+.toc a.here {
+  color: var(--ink);
+}
+.toc .toc-3 a {
+  padding-left: 0.75rem;
+}
+.toc-top {
+  margin: -1rem 0 1.5rem;
+  font-size: 0.9rem;
+}
+.toc-top summary {
+  cursor: pointer;
+  color: var(--muted);
+  width: max-content;
+}
+.toc-top summary:hover {
+  color: var(--ink);
+}
+.toc-top ul {
+  margin: 0.5rem 0 0;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--rule);
+}
+.toc-top a {
+  padding: 0.15rem 0;
+}
+.toc-side {
+  display: none;
+  position: absolute;
+  inset-block: 0;
+  left: calc(var(--side) + var(--toc-after) + 3rem);
+  width: 13rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+.toc-side > div {
+  position: sticky;
+  top: calc(var(--bar) + 1.5rem);
+  max-height: calc(100vh - var(--bar) - 3rem);
+  overflow-y: auto;
+}
+.toc-side p {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.toc-side a {
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  border-left: 2px solid var(--rule);
+}
+.toc-side .toc-3 a {
+  padding-left: 1.5rem;
+}
+.toc-side a.here {
+  border-left-color: var(--accent);
+}
+@container (min-width: 68rem) {
+  #dock:checked ~ .shell main:not(.has-code) {
+    --wide: var(--measure);
+  }
+  #dock:checked ~ .shell main:not(.has-code) .toc-side {
+    display: block;
+  }
+  #dock:checked ~ .shell main:not(.has-code) .toc-top {
+    display: none;
+  }
+}
+@container (min-width: 84rem) {
+  main:not(.has-code) {
+    --wide: var(--measure);
+  }
+  main:not(.has-code) .toc-side,
+  #dock:checked ~ .shell main .toc-side {
+    display: block;
+  }
+  main:not(.has-code) .toc-top,
+  #dock:checked ~ .shell main .toc-top {
+    display: none;
+  }
+}
+@container (min-width: 100rem) {
+  main .toc-side {
+    display: block;
+  }
+  main .toc-top {
+    display: none;
+  }
 }
