@@ -29,7 +29,7 @@ function makeProject(files: Record<string, string>): string {
 }
 
 describe("buildTree", () => {
-  it("walks files with @prose comments into file nodes, chunks and sections", () => {
+  it("walks files with @prose comments into file nodes, each summarised by its first", () => {
     const dir = makeProject({
       "main.js": '/** @prose\n * File summary.\n */\nimport x from "y";\n',
     });
@@ -70,30 +70,26 @@ describe("buildTree", () => {
     expect(page?.prose).not.toContain("title:");
   });
 
-  it("marks a chunk with no trailing code as pending", () => {
+  it("makes a file the leaf: its comments (the summary first) hang off it, not off children", () => {
     const dir = makeProject({
-      "main.js": "/** @prose File. */\n\n/** @prose Plan item. */\n",
-    });
-    const tree = buildTree(dir);
-    const chunk = findNode(tree, "main.js#chunk-1");
-    expect(chunk?.pending).toBe(true);
-  });
-
-  it("makes a file the leaf: its blocks (file prose first) hang off it, not off children", () => {
-    const dir = makeProject({
-      "main.js":
-        "/** @prose File. */\nimport x from 'y';\n\n/** @prose A chunk. */\nconst a = 1;\n",
+      "main.js": "/** @prose File. */\nimport x from 'y';\n\n/** @prose Later. */\nconst a = 1;\n",
     });
     const file = buildTree(dir).children[0]!;
     expect(file.children).toEqual([]);
-    expect(file.blocks?.map((b) => b.path)).toEqual(["main.js#file", "main.js#a"]);
-    // spans are the comment's exact byte range in the source, so a view can lay code around it
-    const [first, second] = file.blocks! as [
-      NonNullable<typeof file.blocks>[number],
-      NonNullable<typeof file.blocks>[number],
-    ];
-    expect(file.source!.slice(...first.span!)).toBe("/** @prose File. */");
-    expect(file.source!.slice(...second.span!)).toBe("/** @prose A chunk. */");
+    expect(file.prose).toBe("File.");
+    // Spans are each comment's exact byte range, so a page can lay the code out around them.
+    expect(file.comments?.map((c) => file.source!.slice(c.start, c.end))).toEqual([
+      "/** @prose File. */",
+      "/** @prose Later. */",
+    ]);
+  });
+
+  it("reads shell and Python files as text, not for prose", () => {
+    const dir = makeProject({
+      "run.sh": "# @prose\n# Not prose.\nset -e\n",
+      "app.py": "# @prose\n# Not prose.\nx = 1\n",
+    });
+    expect(buildTree(dir).children.map((n) => n.kind)).toEqual(["raw", "raw"]);
   });
 
   it("skips node_modules, dist and other generated directories", () => {
@@ -144,7 +140,7 @@ describe("buildTree: file source", () => {
 });
 
 describe("buildTree: raw files", () => {
-  it("shows JSON files as raw nodes carrying their text, with no chunks", () => {
+  it("shows JSON files as raw nodes carrying their text, not read for prose", () => {
     const dir = makeProject({ "package.json": '{ "name": "x" }\n', "main.ts": "const a = 1;\n" });
     const raw = buildTree(dir).children.find((n) => n.path === "package.json");
     expect(raw?.kind).toBe("raw");
@@ -275,14 +271,11 @@ describe("projectFiles: a git-aware walk ([reading](../docs/reading.md#what-it-r
 });
 
 describe("findNode", () => {
-  it("finds a node by its stable path, including a chunk's #-anchored path", () => {
-    const dir = makeProject({
-      "main.js": "/** @prose File. */\n\n/** @prose A chunk. */\nconst a = 1;\n",
-    });
-    const tree = buildTree(dir);
-    const found = findNode(tree, "main.js#a");
-    expect(found?.kind).toBe("chunk");
-    expect(found?.prose).toBe("A chunk.");
+  it("finds a file by its path", () => {
+    const dir = makeProject({ "lib/main.js": "/** @prose File. */\nconst a = 1;\n" });
+    const found = findNode(buildTree(dir), "lib/main.js");
+    expect(found?.kind).toBe("file");
+    expect(found?.prose).toBe("File.");
   });
 
   it("returns null for a path that does not exist in the tree", () => {

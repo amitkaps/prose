@@ -756,7 +756,6 @@ pre {
 .block {
   position: relative;
   margin: 1.5rem 0 0.5rem;
-  scroll-margin-top: 4rem;
 }
 /* No top or left: an absolute box keeps its place in the line, so the # sits on the heading's
    baseline at the heading's size, and is moved into the margin from there. */
@@ -774,22 +773,6 @@ pre {
 }
 .block > .prose > :first-child {
   margin-top: 0;
-}
-.block .pending-mark {
-  margin: 0.25rem 0 0;
-  font-size: 0.8rem;
-}
-.block.pending::before {
-  content: "";
-  position: absolute;
-  left: -0.75rem;
-  top: 0;
-  bottom: 0;
-  border-left: 3px dashed var(--accent);
-}
-.block .pending-mark {
-  color: var(--accent);
-  font-weight: 600;
 }
 /* A folder's listing (render.ts): a label per group, and its rows indented under it. */
 .group {

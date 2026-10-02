@@ -3,7 +3,7 @@
  *
  * Walks a repository into a tree of folders and files, each with a summary: a folder's from
  * its `README.md`, a Markdown file's from its first paragraph, a source file's from its file
- * prose. A source file also carries its text and its blocks, so a renderer can lay it out as
+ * prose. A source file also carries its text and its prose comments, so a renderer can lay it out as
  * one document.
  *
  * What a page shows is [reading](../docs/reading.md#pages); `docs/` is an ordinary folder here.
@@ -19,29 +19,22 @@ import {
   statSync,
 } from "node:fs";
 import { basename, join, resolve } from "node:path";
-import { type CodeLang, firstParagraph, parseFile, type ProseChunk } from "./parser.js";
+import { firstParagraph, parseFile, type ProseComment } from "./parser.js";
 
 export interface TreeNode {
   name: string;
-  kind: "project" | "folder" | "file" | "raw" | "binary" | "chunk";
-  /** The repo path, with `#anchor` for a chunk: `src/store.ts#addTodo`. */
+  kind: "project" | "folder" | "file" | "raw" | "binary";
+  /** The repo path: `src/store.ts`, or `src/` for a folder. */
   path: string;
   summary: string;
-  pending?: boolean;
   prose?: string | null;
+  /** Raw-only: the text shown, cut short when the file is long. */
   code?: string;
   /** File-only (not `.md`): the whole file's text, so its code shows whether or not it has prose. */
   source?: string;
-  /** File-only: every prose block in the file, the file prose first, in source order. A file is
+  /** File-only: every prose comment in the file, the summary first, in source order. A file is
    *  the smallest unit, so `children` is always empty for a file. */
-  blocks?: TreeNode[];
-  /** Chunk-only: the byte range `[start, end)` of this block's comment in the file's `source`,
-   *  so a renderer can put the prose where the comment was and show the code around it. */
-  span?: [number, number];
-  /** Chunk-only: the 1-based line the comment starts on. */
-  line?: number;
-  /** Chunk-only: the language of this chunk's code. */
-  codeLang?: CodeLang;
+  comments?: ProseComment[];
   /** Raw-only: what's past the shown text, `4,213 more lines`, when the file is cut short. */
   more?: string;
   /** Binary-only: what it is and how big, `PNG image · 12 KB`, and an image as a `data:` URL. */
@@ -63,10 +56,6 @@ const SOURCE_EXTENSIONS = new Set([
   "yaml",
   "yml",
   "toml",
-  "sh",
-  "bash",
-  "zsh",
-  "py",
   "gitignore",
 ]);
 /** Past this size a file is read as text, not parsed: nobody writes prose into a generated file. */
@@ -117,9 +106,9 @@ export function withoutMetadata(source: string): string {
 /** @prose
  * # One file's node
  *
- * A `.md` file that isn't a `README.md` is prose as it is, with any metadata block stripped: no
- * marker, no chunks. Every other source file goes through `parseFile`, and its blocks hang off
- * the file node in source order, the file prose first.
+ * A `.md` file that isn't a `README.md` is prose as it is, with any metadata block stripped, and
+ * needs no marker. Every other source file goes through `parseFile`, and its prose comments hang
+ * off the file node in source order, the summary first.
  */
 export function fileToNode(root: string, relPath: string): TreeNode {
   const absPath = join(root, relPath);
@@ -152,34 +141,16 @@ function readFileNode(absPath: string, relPath: string): TreeNode {
     };
   }
 
-  const parsed = parseFile(source, extensionOf(relPath));
-  const chunkNode = (chunk: ProseChunk): TreeNode => ({
-    name: chunk.heading ?? chunk.anchor,
-    kind: "chunk",
-    path: `${relPath}#${chunk.anchor}`,
-    summary: firstParagraph(chunk.prose),
-    pending: chunk.pending,
-    prose: chunk.prose,
-    code: chunk.code,
-    codeLang: chunk.codeLang,
-    line: chunk.startLine,
-    span: [chunk.startIndex, chunk.endIndex],
-    children: [],
-  });
-  const blocks: TreeNode[] = [];
-  if (parsed.fileBlock) blocks.push(chunkNode(parsed.fileBlock));
-  for (const section of parsed.sections) {
-    for (const chunk of section.chunks) blocks.push(chunkNode(chunk));
-  }
-
+  const comments = parseFile(source, extensionOf(relPath));
+  const fileProse = comments[0]?.body ?? null;
   return {
     name: relPath,
     kind: "file",
     path: relPath,
-    summary: parsed.fileProse ? firstParagraph(parsed.fileProse) : "undocumented",
-    prose: parsed.fileProse,
+    summary: fileProse ? firstParagraph(fileProse) : "undocumented",
+    prose: fileProse,
     source,
-    blocks,
+    comments,
     children: [],
   };
 }
@@ -479,11 +450,10 @@ export function buildTree(root: string): TreeNode {
   return projectNode;
 }
 
-/** Finds a node by its path, a block included (`src/store.ts#addTodo`). A plain recursive search:
- *  the tree is small enough that an index would be premature. */
+/** Finds a node by its path. A plain recursive search: the tree is small enough that an index
+ *  would be premature. */
 export function findNode(tree: TreeNode, path: string): TreeNode | null {
   if (tree.path === path) return tree;
-  for (const block of tree.blocks ?? []) if (block.path === path) return block;
   for (const child of tree.children) {
     const found = findNode(child, path);
     if (found) return found;

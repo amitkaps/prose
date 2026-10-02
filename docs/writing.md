@@ -58,23 +58,24 @@ docs/architecture.md            a doc
 docs/architecture.md#sessions   a section of it, by its heading
 ```
 
-In the renderer, the `#` in the margin beside a prose comment gives its link.
+A prose comment's link is its first heading's id, made the way GitHub makes one for a doc. A second `# Adding` in the same file becomes `#adding-1`. A comment without a heading has no link. In the renderer, the `#` in the margin beside the heading gives it.
 
 **State a rule once, and link to it.** When a doc or a tested file owns a rule, like a grammar, a schema or a contract, a prose comment links to it. It keeps only how and why this code follows the rule. A rule restated in several places is tested in only one of them, and the other copies drift.
 
 ## In each language
 
-This is reference, for when something surprises you. The rule is the same everywhere: a comment whose first word is `@prose`.
+This is reference, for when something surprises you. The rule is the same everywhere. A prose comment's first word is `@prose`, and the comment starts its own line, at any depth. So a class can read method by method. A comment that shares its line with code, like `call(/** @prose … */ x)`, is an ordinary comment.
 
-| Language                                | Prose comment                               |
-| --------------------------------------- | ------------------------------------------- |
-| JS, TS, CSS                             | `/** @prose … */` on its own line           |
-| HTML, markup                            | `<!-- @prose … -->`                         |
-| YAML, TOML, shell, Python, `.gitignore` | `# @prose …`, one `#` per line, at column 0 |
+| Language                 | Prose comment                     |
+| ------------------------ | --------------------------------- |
+| JS, TS, CSS              | `/** @prose … */`                 |
+| HTML, markup             | `<!-- @prose … -->`               |
+| YAML, TOML, `.gitignore` | `# @prose …`, with one `#` a line |
 
 - **The body is Markdown**, in [markz](https://github.com/amitkaps/markz)'s dialect. That's everyday GFM, without setext headings, reference links or raw HTML.
-- **JS, TS and CSS.** The body is everything after `@prose`, with each line's leading ` * ` stripped. A `*/` in the body would end the comment, so write `*\/`, and it shows as `*/`. A prose comment counts at any depth, inside a class, function or CSS rule, when it starts its own line. So a class can read method by method. One that shares its line with code, like `call(/** @prose … */ x)`, is an ordinary comment. TypeScript treats `@prose` as a JSDoc tag, so an editor's hover shows the prose as that tag's text.
-- **YAML, TOML, shell, Python and `.gitignore`.** These have no block comment. A prose comment is a run of `#` lines that starts with `# @prose`, with each line's `# ` stripped. Only lines at column 0 count, so an indented `#` comment is an ordinary one. So is a shebang line. Shell covers `.sh`, `.bash` and `.zsh`.
+- **JS, TS and CSS.** The body is everything after `@prose`, with each line's leading ` * ` stripped. A `*/` in the body would end the comment, so write `*\/`, and it shows as `*/`. TypeScript treats `@prose` as a JSDoc tag, so an editor's hover shows the prose as that tag's text.
+- **YAML, TOML and `.gitignore`.** These have no block comment. A prose comment is a run of `#` lines that starts with `# @prose`, with each line's `# ` stripped. It ends at the first line that isn't a comment, or at the next `# @prose`.
+- **Not shell or Python.** Neither is used in the projects prose reads, and Python's docstrings and indentation would need rules nobody tests. Their files show as highlighted text.
 - **Svelte.** Each part follows its own language. `<script>` follows JS or TS, the markup follows HTML, and `<style>` follows CSS. Prose from all three parts reads in source order.
 
 **Why a marker.** Comments already have many owners, like JSDoc, Vite, Svelte, formatters and linters. Every comment without the marker stays theirs, including unmarked `/** */`, `//`, `/* */` and `<!-- -->`. So `/** @param x */`, `// TODO` and `<!-- svelte-ignore … -->` are never read as prose. Adding the marker is the explicit step that makes a comment prose.

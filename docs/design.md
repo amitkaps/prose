@@ -6,7 +6,7 @@ Prose lets coding agents explain the code they write. It lets a human read the r
 
 Prose is two things, and nothing else is required.
 
-- **`@prose`**, a convention for writing human-oriented meaning into source code. A comment whose first token is `@prose` explains the code below it, in Markdown. It works in `.ts`, `.js`, `.css`, `.html`, `.svelte`, `.yaml`, `.toml`, `.sh` and `.py` files, and in `.gitignore` ([writing.md](writing.md)).
+- **`@prose`**, a convention for writing human-oriented meaning into source code. A comment whose first token is `@prose` explains the code below it, in Markdown. It works in `.ts`, `.js`, `.css`, `.html`, `.svelte`, `.yaml` and `.toml` files, and in `.gitignore` ([writing.md](writing.md)).
 - **`prose`**, a read-only renderer. It shows any repository in the browser as a Markdown-first document, with each source file's prose in order and its code between. `prose .` reads a repository locally, and `prose build` writes the same pages as a static site ([usage.md](usage.md), [reading.md](reading.md)).
 
 The first paragraph of every file, folder, prose block and doc is its summary. Together, those summaries are the map of the project.

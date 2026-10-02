@@ -1,8 +1,8 @@
 # Tests
 
-One test file for each source file that has logic, run with `pnpm run test`. The build and server tests run against [`fixtures/simple`](fixtures/simple/), a small committed project, because `prose build` reads `HEAD`. It's a counter on one static page, with file prose in all three files, headed blocks and one pending chunk, so it covers the parser and every kind of page.
+One test file for each source file that has logic, run with `pnpm run test`. The build and server tests run against [`fixtures/simple`](fixtures/simple/), a small committed project, because `prose build` reads `HEAD`. It's a counter on one static page, with file prose in all three files and headed comments, so it covers the parser and every kind of page.
 
-- [parser.test.ts](parser.test.ts) and [names.test.ts](names.test.ts): what counts as prose in each language, and the names a chunk declares.
+- [parser.test.ts](parser.test.ts): what counts as prose in each language.
 - [tree.test.ts](tree.test.ts): the walk, summaries, and which files are read.
 - [server.test.ts](server.test.ts) and [build.test.ts](build.test.ts): the pages and the static site.
 - [repo.test.ts](repo.test.ts): the project's name and GitHub address, and the rail's footer and README rows.
