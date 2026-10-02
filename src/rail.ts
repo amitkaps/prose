@@ -11,7 +11,6 @@
  * the rail was scrolled, across pages (`render.ts`).
  */
 import { escapeHtml } from "./highlight.js";
-import type { NavItem } from "./nav.js";
 
 interface Dir {
   dirs: Map<string, Dir>;
@@ -83,33 +82,14 @@ function renderDir(dir: Dir, prefix: string, current: string, depth: number): st
   return rows.join("");
 }
 
-/** The pinned docs (`nav.ts`), above the tree, a little larger than its rows. The page's own doc
- *  is highlighted here and in the tree both, since each says where the reader is. */
-function renderDocs(nav: NavItem[], current: string): string {
-  if (nav.length === 0) return "";
-  const rows = nav.map(
-    ({ path, label }) =>
-      `<li><a href="${escapeHtml(href(path, false))}"${
-        current === path ? ` aria-current="page"` : ""
-      }>${escapeHtml(label)}</a></li>`,
-  );
-  return `<div class="rail-docs"><p class="rail-label">Docs</p><ul>${rows.join("")}</ul></div>`;
-}
-
 /** The rail for a page at `current` (`""`, `src/`, or `src/store.ts`). A folder's `README.md` is
  *  listed first in it and links to the folder's page, where it is highlighted instead of the
  *  folder's own row. */
-export function renderRail(
-  files: string[],
-  current: string,
-  project: string,
-  footer = "",
-  nav: NavItem[] = [],
-): string {
+export function renderRail(files: string[], current: string, project: string, footer = ""): string {
   const top = index(files);
   return `<nav class="rail" id="rail" popover aria-label="Files"><a class="rail-project" href="/"${
     current === "" && !top.files.includes("README.md") ? ` aria-current="page"` : ""
-  }>${escapeHtml(project)}</a>${renderDocs(nav, current)}<ul class="rail-tree">${renderDir(top, "", current, 0)}</ul>${footer}</nav>`;
+  }>${escapeHtml(project)}</a><ul class="rail-tree">${renderDir(top, "", current, 0)}</ul>${footer}</nav>`;
 }
 
 /** What a built page was made from: the short commit, and the tag only when `HEAD` is that tag. */

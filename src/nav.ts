@@ -1,18 +1,19 @@
 /** @prose
- * # The docs at the top of the rail
+ * # The docs in the bar
  *
- * The docs a repository asks to be read first, pinned above the file tree, so they aren't one
- * folder among forty. It's a convention, not a site's navigation: the docs are always `docs/`'s,
- * and the only choice is which of them, in what order.
+ * The docs a repository asks to be read first, as links in the bar after the project's name, on
+ * every page, so they aren't one folder among forty. It's a convention, not a site's navigation:
+ * the docs are always `docs/`'s, and the only choice is which of them, in what order.
  *
  * `docs/README.md` chooses with a `nav` list in its metadata, by file name, in reading order:
- * `nav: [design.md, usage.md]`. With no list, every Markdown file in `docs/` is pinned,
+ * `nav: [design.md, usage.md]`. With no list, every Markdown file in `docs/` is linked,
  * alphabetically. A name that isn't a file there is skipped. The label is the file's name without
- * `.md`, capitalised, rather than its title, which is often a sentence too long for the rail.
+ * `.md`, capitalised, rather than its title, which is often a sentence too long for the bar.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "@amitkaps/markz";
+import { escapeHtml } from "./highlight.js";
 
 export interface NavItem {
   path: string;
@@ -25,7 +26,7 @@ function label(name: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/** The pinned docs for a repository whose files (the walk's list) are under `root`. */
+/** The docs to link for a repository whose files (the walk's list) are under `root`. */
 export function docsNav(root: string, files: string[]): NavItem[] {
   const docs = files
     .filter((path) => /^docs\/[^/]+\.md$/.test(path) && path !== "docs/README.md")
@@ -41,4 +42,20 @@ export function docsNav(root: string, files: string[]): NavItem[] {
   }
   const paths = chosen ? chosen.filter((path) => docs.includes(path)) : docs;
   return paths.map((path) => ({ path, label: label(path.slice("docs/".length)) }));
+}
+
+/** @prose
+ * The links, with the page's own doc marked current. One element serves both widths: in the bar
+ * itself while it has room, and below that a popover behind a **Docs** button, as the file tree
+ * is (`style.css`), so neither needs script.
+ */
+export function renderNav(nav: NavItem[], current: string): string {
+  if (nav.length === 0) return "";
+  const links = nav.map(
+    ({ path, label }) =>
+      `<a href="/${path.split("/").map(encodeURIComponent).join("/")}"${
+        current === path ? ` aria-current="page"` : ""
+      }>${escapeHtml(label)}</a>`,
+  );
+  return `<button type="button" class="docs-toggle" popovertarget="docs">Docs</button><nav class="docs" id="docs" popover aria-label="Docs">${links.join("")}</nav>`;
 }

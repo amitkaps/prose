@@ -10,6 +10,7 @@
  */
 import { html as markz } from "@amitkaps/markz";
 import { escapeHtml, highlight, highlightFences } from "./highlight.js";
+import { type NavItem, renderNav } from "./nav.js";
 import { FILE_ANCHOR } from "./parser.js";
 import { extensionOf, type TreeNode } from "./tree.js";
 import { STYLE } from "./style.js";
@@ -228,6 +229,8 @@ export interface PageOptions {
   live: boolean;
   /** A folder's page that shows its `README.md`, which the breadcrumb then ends in. */
   readme?: boolean;
+  /** The docs linked in the bar (`nav.ts`). */
+  nav?: NavItem[];
   /** On a built page, which snapshot it is: `v0.1.0 · 1c77293`. */
 }
 
@@ -273,7 +276,7 @@ function breadcrumb(project: string, path: string, readme: boolean): string {
  *
  * One stylesheet inline; the reading column on the left, with the breadcrumb above its text and
  * **Open in editor** at the breadcrumb's end; the file tree on the right (`rail.ts`); a bar with
- * the project's name, the mode switch and the tree's toggle, which is a checkbox and its label when the tree is docked and a popover button when it
+ * the project's name, the docs' links (`nav.ts`), the mode switch and the tree's toggle, which is a checkbox and its label when the tree is docked and a popover button when it
  * isn't, so showing and hiding it is CSS and HTML alone; and a few lines of script: the **Prose & Code / Prose only** switch, remembered across pages and applied in
  * `<head>` so the page never flashes its code first, and each code run's header; the rail's open folders and scroll position, restored before the
  * first paint; and live reload. The server
@@ -282,7 +285,17 @@ function breadcrumb(project: string, path: string, readme: boolean): string {
  * what changed while hidden. A built page leaves live reload out. Browser storage can be unavailable, so it's only ever tried.
  */
 export function page(options: PageOptions): string {
-  const { project, path, rail, body, editorLink, hasCode, live, readme = false } = options;
+  const {
+    project,
+    path,
+    rail,
+    body,
+    editorLink,
+    hasCode,
+    live,
+    readme = false,
+    nav = [],
+  } = options;
   const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
   const off = hasCode ? "" : ` disabled title="No code on this page"`;
   const mode = `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true"${off}>Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false"${off}>Prose only</button></div>`;
@@ -301,7 +314,7 @@ export function page(options: PageOptions): string {
 <body data-path="${escapeHtml(path)}"${live ? ` data-rendered="${Date.now()}"` : ""}>
 <input type="checkbox" id="dock" class="ctl" aria-label="Hide the file tree">
 <div class="shell">
-<header class="bar"><a class="project" href="/">${escapeHtml(project)}</a><div class="bar-mode">${mode}</div><label class="rail-toggle dock" for="dock" title="Files" aria-label="Files">${PANEL_ICON}</label><button type="button" class="rail-toggle pop" popovertarget="rail" title="Files" aria-label="Files">${PANEL_ICON}</button></header>
+<header class="bar"><a class="project" href="/">${escapeHtml(project)}</a>${renderNav(nav, path)}<div class="bar-mode">${mode}</div><label class="rail-toggle dock" for="dock" title="Files" aria-label="Files">${PANEL_ICON}</label><button type="button" class="rail-toggle pop" popovertarget="rail" title="Files" aria-label="Files">${PANEL_ICON}</button></header>
 <div class="layout">
 <div class="page">
 <main><div class="where"><nav class="crumbs">${breadcrumb(project, path, readme)}</nav>${end}</div>${body}</main>

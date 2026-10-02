@@ -65,7 +65,7 @@ export interface Site {
   snapshot?: Snapshot;
   /** The repository's GitHub address, read from the real repository: a build's `root` is an export with no `.git`. */
   repo?: string;
-  /** The docs pinned above the file tree (`nav.ts`). */
+  /** The docs linked in the bar (`nav.ts`). */
   nav: NavItem[];
 }
 
@@ -85,11 +85,12 @@ export function notFoundPage(site: Site): string {
   return page({
     project: site.project,
     path: "",
-    rail: renderRail(site.files, "", site.project, footerOf(site), site.nav),
+    rail: renderRail(site.files, "", site.project, footerOf(site)),
     body: `<p class="missing">Nothing at this address in this repository.</p>`,
     editorLink: null,
     hasCode: false,
     live: site.live,
+    nav: site.nav,
   });
 }
 
@@ -99,12 +100,13 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
     page({
       project,
       path,
-      rail: renderRail(files, path, project, footerOf(site), site.nav),
+      rail: renderRail(files, path, project, footerOf(site)),
       body,
       editorLink: live ? editorLink : null,
       hasCode,
       live,
       readme,
+      nav: site.nav,
     });
   const notFound = (): Route => ({
     status: 404,

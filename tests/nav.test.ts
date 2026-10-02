@@ -1,15 +1,14 @@
 /** @prose
  * # Docs nav tests
  *
- * The docs pinned above the tree: the `nav` list in `docs/README.md` in its order, every doc
+ * The docs linked in the bar: the `nav` list in `docs/README.md` in its order, every doc
  * alphabetically without one, names that aren't files skipped, and the labels.
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { docsNav } from "../src/nav.js";
-import { renderRail } from "../src/rail.js";
+import { docsNav, renderNav } from "../src/nav.js";
 
 let root: string;
 afterEach(() => rmSync(root, { recursive: true, force: true }));
@@ -42,14 +41,12 @@ describe("docsNav", () => {
     ]);
   });
 
-  it("puts the docs above the tree, the current one highlighted", () => {
-    const html = renderRail(["docs/design.md"], "docs/design.md", "demo", "", [
-      { path: "docs/design.md", label: "Design" },
-    ]);
+  it("links the docs in the bar, the current one marked, and nothing without docs", () => {
+    const html = renderNav([{ path: "docs/design.md", label: "Design" }], "docs/design.md");
     expect(html).toContain(
-      '<div class="rail-docs"><p class="rail-label">Docs</p><ul><li><a href="/docs/design.md" aria-current="page">Design</a>',
+      '<nav class="docs" id="docs" popover aria-label="Docs"><a href="/docs/design.md" aria-current="page">Design</a></nav>',
     );
-    expect(html.indexOf("rail-docs")).toBeLessThan(html.indexOf("rail-tree"));
-    expect(renderRail(["a.ts"], "", "demo")).not.toContain("rail-docs");
+    expect(html).toContain('popovertarget="docs"');
+    expect(renderNav([], "")).toBe("");
   });
 });

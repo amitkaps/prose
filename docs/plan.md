@@ -11,7 +11,7 @@ The `@prose` convention and the read-only renderer work, and this repository is 
 - **0.2.0**: the README around the two things, and the docs in `docs/`.
 - **0.3.0**: the reader's layout (text left, file tree right, a popover on narrow screens), a `README.md` in every folder, a README that opens with the problem and links to the docs, links and headings that match how GitHub shows them, `@prose` in shell, Python and `.gitignore`, current dependencies (Node 26 and 24, TypeScript 7), an npm release (the workflow stages each version for approval on npmjs.com).
 - **The site on Cloudflare, and no `prose publish`**: a Worker builds from `main` with `wrangler.toml` in the repository, so a merge deploys it and prose holds no host code ([usage](usage.md#deploying-this-site)). The command that committed a site to a branch was dropped: the one site that could have used it deploys without it, and other projects will do the same.
-- **Reading on any screen**: the breadcrumb runs from the project's name, the page grows with a wide window, tables and code samples widen past the text, `docs/` is pinned above the tree, folder pages group what's in them, and EBNF is highlighted ([reading](reading.md#pages)). A view in the URL was tried and dropped ([design](design.md#whats-out-and-why)).
+- **Reading on any screen**: the breadcrumb runs from the project's name, the page grows with a wide window, tables and code samples widen past the text, the bar links the docs `docs/README.md` lists, folder pages group what's in them, and EBNF is highlighted ([reading](reading.md#pages)). A view in the URL was tried and dropped ([design](design.md#whats-out-and-why)).
 
 ## Next, in order
 
