@@ -1,8 +1,9 @@
 /** @prose
  * # Build tests
  *
- * `prose build`: the static site for `tests/fixtures/simple` and for a git repository, every page rendered the same
- * way the server renders it, and the output folder it will and won't clear.
+ * `prose build`, run on `tests/fixtures/simple` and on a throwaway git repository. Every page
+ * must match the server's, less the live parts. The build must clear only an output folder it
+ * made.
  */
 
 import { execFileSync } from "node:child_process";

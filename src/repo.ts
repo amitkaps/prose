@@ -1,12 +1,12 @@
 /** @prose
  * # Where the repository lives
  *
- * The repository's name and GitHub address, read from its `origin` remote. The name is the
- * project's on every page; the address lets a page link to the repository, a commit and a tag.
+ * The repository's name and GitHub address, read from its `origin` remote. Every page shows the
+ * name. The address lets a page link to the repository, a commit and a tag.
  *
  * The name comes from the remote, not the folder, because a host builds in a checkout folder of
- * its own (Cloudflare's is `repo`). With no remote, or for a subfolder, the folder's name stands in, and with no
- * GitHub remote the page leaves the links out.
+ * its own. Cloudflare's is called `repo`. With no remote, or for a subfolder, the folder's name
+ * stands in. With no GitHub remote, the page leaves the links out.
  */
 import { execFileSync } from "node:child_process";
 import { realpathSync } from "node:fs";

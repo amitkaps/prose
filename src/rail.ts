@@ -1,14 +1,13 @@
 /** @prose
  * # The file tree
  *
- * The rail on the right of every page: the repository's folders and files, as an editor's
- * explorer shows them. Folders come first, and in each folder its `README.md` comes ahead of the
- * other files.
+ * The rail on the right of every page shows the repository's folders and files, as an editor's
+ * explorer does. Folders come first. In each folder, its `README.md` comes ahead of the rest.
  *
- * It's built from the walk's file list alone, with no file read, so it costs nothing per page
- * beyond its HTML. Each folder is a `<details>`, open when the current page is inside it, so the
- * tree works without script; the page's script remembers which folders a reader opened, and where
- * the rail was scrolled, across pages (`render.ts`).
+ * It's built from the walk's list of files, and reads none of them, so it costs a page only its
+ * HTML. Each folder is a `<details>`, open when the current page is inside it, so the tree works
+ * without script. The page's script remembers which folders a reader opened, and where the rail
+ * was scrolled ([render.ts](render.ts)).
  */
 import { escapeHtml } from "./highlight.js";
 
@@ -40,10 +39,12 @@ function href(path: string, folder: boolean): string {
 }
 
 /** @prose
- * Each row carries its depth, and indents itself by it, rather than nesting padding in the
- * lists: so a row's highlight spans the rail's full width, as an editor's explorer does, while
- * its chevron and name sit at their depth. A folder's list carries the folder's depth too, for
- * the guide drawn down from its chevron.
+ * # Rows and depth
+ *
+ * Each row carries its depth and indents itself by it. The lists don't nest padding. So a row's
+ * highlight spans the rail's full width, as in an editor, while its chevron and name sit at
+ * their depth. A folder's list carries the folder's depth too, for the guide drawn down from its
+ * chevron.
  */
 function renderDir(dir: Dir, prefix: string, current: string, depth: number): string {
   const rows: string[] = [];
@@ -103,11 +104,11 @@ const GITHUB_MARK = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden
 /** @prose
  * # The rail's footer
  *
- * What the page is, at the bottom of the rail. A page served locally says **Live**, with a dot
- * that goes dim when the page has lost the server; a built page says **Snapshot**, with the
- * commit it was built from and the tag only if that commit is the tag, since the nearest earlier
- * tag would name a release the page isn't. A GitHub mark links to the repository, and the commit
- * and tag to theirs, when `origin` is on GitHub.
+ * The bottom of the rail says what the page is. A page served locally says **Live**, with a dot
+ * that dims when the page loses the server. A built page says **Snapshot**, with the commit it
+ * was built from. It names a tag only when that commit is the tag. The nearest earlier tag would
+ * name a release the page isn't. When `origin` is on GitHub, a GitHub mark links to the
+ * repository, and the commit and tag link to their pages.
  */
 export function railFooter(options: { live: boolean; snapshot?: Snapshot; repo?: string }): string {
   const { live, snapshot, repo } = options;

@@ -1,7 +1,9 @@
 /** @prose
- * The package's library surface. The commands are `prose [dir]` and `prose build`
- * (`cli.ts`, [reading](../docs/reading.md)); the same server, build, parser and tree walk are
- * exported for anyone who wants that view of a repository in code.
+ * # The library
+ *
+ * What the package exports for use in code. The commands are `prose [dir]` and `prose build`
+ * ([cli.ts](cli.ts)). The same server, build, parser and tree walk are here for anyone who wants
+ * that view of a repository in code.
  */
 export { firstParagraph, parseFile } from "./parser.js";
 export type { ProseComment } from "./parser.js";

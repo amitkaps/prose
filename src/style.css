@@ -1,21 +1,21 @@
 /** @prose
  * # The stylesheet
  *
- * One readable column on the left and the file tree on the right, light and dark from the
- * reader's setting. Prose is the page and code is the aside, in a quieter panel, so a file reads
- * as its prose first.
+ * One stylesheet for every page. A readable column is on the left and the file tree on the
+ * right, in light or dark from the reader's setting. Prose is the page and code is the aside, in
+ * a quieter panel, so a file reads as its prose first.
  *
- * Every page shares one left edge: prose keeps the reading measure, and code runs widen to 100
- * columns, oxfmt's print width, so code wraps only on a narrow window and prose never moves
- * between a doc and a source file. The text's side margins come from the page's own width: equal
- * while it's narrow, then the left stops at 7rem and the rest goes to the right. Below 62rem the
- * tree is a popover sliding in from the right, under the bar.
+ * It runs in the order of the page, from the tokens and the frame to the bar, the text, the code
+ * and the contents. Each part says why it's built the way it is.
+ */
+/** @prose
+ * # Tokens
  *
- * Code takes its colours from the same tokens: shiki's CSS-variables theme names each token's
- * colour (`--shiki-token-keyword`), and the palette below sets them, for light and for dark, in
- * the page's warm ink. Lines wrap with a hanging indent rather than scroll, tabs are two columns,
- * and file line numbers sit in a gutter that isn't copied with the code. Moving between pages is
- * a cross-document view transition with the rail held still, so only the page changes.
+ * Colours, widths and the type size are set once, here. The dark palette redefines the same
+ * names. Every size is in rem, so the whole page scales as one, as browser zoom would.
+ *
+ * Code takes its colours from the same tokens. Shiki's CSS-variables theme names each token's
+ * colour, like `--shiki-token-keyword`, and the palette sets them in the page's warm ink.
  */
 :root {
   color-scheme: light dark;
@@ -85,6 +85,12 @@
     --shiki-token-changed: #e3b341;
   }
 }
+/** @prose
+ * # Moving between pages
+ *
+ * A move to another page is a cross-document view transition. The rail is held still, so only
+ * the page changes, in a quick fade.
+ */
 @view-transition {
   navigation: auto;
 }
@@ -99,6 +105,11 @@
 ::view-transition-new(root) {
   animation-duration: 0.12s;
 }
+/** @prose
+ * # The base
+ *
+ * Box sizing, the page's paper and ink, links and selection.
+ */
 * {
   box-sizing: border-box;
 }
@@ -115,9 +126,13 @@ a {
 ::selection {
   background: var(--selection);
 }
-/* The bar and the page share one container, so both take their margins from its width: --docked
-   is how much of it the docked tree holds, and it animates, so the column and the margins move
-   together. */
+/** @prose
+ * # The frame
+ *
+ * The bar and the page share one container, so both take their margins from its width.
+ * `--docked` is how much of that width the docked tree holds. It animates, so the column and the
+ * margins move together.
+ */
 @property --docked {
   syntax: "<length>";
   inherits: true;
@@ -151,10 +166,13 @@ a {
   --twisty: 0.9rem;
   --gap: 0.35rem;
 }
-/* Rows span the rail's full width, so a highlight does too; each indents itself by its depth.
-   A folder's chevron sits under the start of its parent's name, and a file leaves the chevron's
-   slot empty, so names at one level line up, and the top-level chevrons line up with the
-   project's name. */
+/** @prose
+ * # The file tree
+ *
+ * Rows span the rail's full width, so a highlight does too. Each row indents itself by its depth.
+ * A folder's chevron sits under the start of its parent's name. A file leaves the chevron's slot
+ * empty, so names at one level line up. The top-level chevrons line up with the project's name.
+ */
 .rail ul {
   list-style: none;
   margin: 0;
@@ -198,9 +216,13 @@ a {
   flex: 1;
   font-weight: 500;
 }
-/* A guide runs down from each open folder's chevron, beside its contents; the guides on the way
-   to the current page are darker, so the eye can follow the path. Vertical only: elbows to each
-   row would make it a diagram of the tree rather than a list of files. */
+/** @prose
+ * ## Guides
+ *
+ * A guide runs down from each open folder's chevron, beside its contents. The guides on the way
+ * to the current page are darker, so the eye can follow the path. They're only vertical. Elbows to
+ * each row would make a diagram of the tree, not a list of files.
+ */
 .rail details > ul {
   position: relative;
 }
@@ -232,11 +254,16 @@ a {
 .rail details[open] > summary::before {
   transform: rotate(90deg);
 }
-/* The rail is docked beside the text while the text keeps its measure beside it, and the bar's
-   icon (a checkbox's label) folds it away; below that it is a popover, the same width, under the
-   bar, which gives Esc, a click outside and focus return without script. Both open and close
-   animate: the docked column's width, and the popover's slide and backdrop (@starting-style
-   lets it animate from display: none). */
+/** @prose
+ * ## Docked or a popover
+ *
+ * The rail is docked beside the text while the text keeps its measure beside it. The bar's icon,
+ * a checkbox's label, folds it away. Below 62rem, it's a popover of the same width under the bar.
+ * A popover gives Esc, a click outside and focus return without script.
+ *
+ * Opening and closing both animate. The docked column's width changes, and the popover slides in
+ * over a backdrop. `@starting-style` lets it animate from `display: none`.
+ */
 .ctl {
   position: absolute;
   opacity: 0;
@@ -338,6 +365,12 @@ a {
     transition: none;
   }
 }
+/** @prose
+ * # The bar
+ *
+ * The bar stays at the top of the page. It holds the project's name, the docs' links, the mode
+ * switch and the tree's icon.
+ */
 .bar {
   position: sticky;
   top: 0;
@@ -363,8 +396,13 @@ a {
 .bar-mode {
   margin-left: auto;
 }
-/* The docs' links (nav.ts) follow the name in the bar. Below 62rem they're a popover behind a
-   Docs button, dropping from the bar, as the file tree is; the same element, so no script. */
+/** @prose
+ * ## The docs' links
+ *
+ * The docs' links ([nav.ts](nav.ts)) follow the name in the bar. Below 62rem they're a popover
+ * behind a **Docs** button, dropping from the bar, as the file tree does. It's the same element at
+ * every width, so it needs no script.
+ */
 .docs-toggle {
   display: none;
 }
@@ -435,8 +473,12 @@ a {
     background: var(--panel);
   }
 }
-/* On a phone the name, Docs, the switch and the tree's icon share 390px: tighter gaps and
-   buttons keep them on one line. */
+/** @prose
+ * ## On a phone
+ *
+ * On a phone, the name, **Docs**, the switch and the tree's icon share 390px. Tighter gaps and
+ * buttons keep them on one line.
+ */
 @media (max-width: 30rem) {
   .bar {
     gap: 0.5rem;
@@ -457,6 +499,12 @@ a {
     display: none;
   }
 }
+/** @prose
+ * # Around the text
+ *
+ * The breadcrumb and **Open in editor** above the text, the rail's footer, and the controls in
+ * the bar.
+ */
 .where {
   display: flex;
   flex-wrap: wrap;
@@ -574,9 +622,16 @@ a {
   background: var(--rule);
   color: var(--ink);
 }
-/* One centre line on every page: prose at the reading measure, code wider on both sides of it. */
-/* The text's side margins come from the page's own width: equal while it's too narrow for more,
-   then the left stops growing at --lead and the extra goes to the right. */
+/** @prose
+ * # The column
+ *
+ * Every page shares one centre line. Prose keeps the reading measure, and code is wider on both
+ * sides of it. Code runs widen to 100 columns, oxfmt's print width, so code wraps only on a narrow
+ * window. Prose never moves between a doc and a source file.
+ *
+ * The text's side margins come from the page's own width. They're equal while the page is
+ * narrow. Then the left stops growing at `--lead`, and the extra goes to the right.
+ */
 main {
   position: relative;
   margin: 0;
@@ -594,6 +649,11 @@ main > * {
   max-width: var(--measure);
   margin-inline: 0;
 }
+/** @prose
+ * # Prose
+ *
+ * Headings, lists, tables and quotes in a doc or a prose comment.
+ */
 .prose {
   overflow-wrap: anywhere;
 }
@@ -623,9 +683,13 @@ main > * {
   border-radius: 4px;
   padding: 0.1em 0.3em;
 }
-/* A table or a code sample in the prose may grow past the text, as far as a code run does or the
-   page allows: it's a grid or code to scan, not lines to read, so the measure isn't for it. Past
-   that a table scrolls and code wraps. A short sample keeps the text's width, as a run does. */
+/** @prose
+ * ## Wide tables and code samples
+ *
+ * A table or a code sample in the prose may grow past the text, as far as a code run does or the
+ * page allows. It's a grid or code to scan, not lines to read, so the measure isn't for it. Past
+ * that, a table scrolls and code wraps. A short sample keeps the text's width, as a run does.
+ */
 .prose table,
 .prose pre.shiki {
   width: max-content;
@@ -651,6 +715,13 @@ main > * {
   border-left: 3px solid var(--rule);
   color: var(--muted);
 }
+/** @prose
+ * # Code
+ *
+ * A run of code sits in a quieter panel, with a header that opens and folds it. Lines wrap with a
+ * hanging indent instead of scrolling, and tabs are two columns. The file's line numbers sit in a
+ * gutter that isn't copied with the code.
+ */
 pre.shiki {
   margin: 0.75rem 0;
   padding: 0.75rem 1rem;
@@ -753,6 +824,12 @@ code,
 pre {
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
+/** @prose
+ * # Prose comments
+ *
+ * Each prose comment on a source page is a block. The `#` that links to a comment's heading
+ * sits in the margin, and shows when the block is hovered or the link has focus.
+ */
 .block {
   position: relative;
   margin: 1.5rem 0 0.5rem;
@@ -774,7 +851,11 @@ pre {
 .block > .prose > :first-child {
   margin-top: 0;
 }
-/* A folder's listing (render.ts): a label per group, and its rows indented under it. */
+/** @prose
+ * # A folder's listing
+ *
+ * A label for each group, and its rows indented under it ([render.ts](render.ts)).
+ */
 .group {
   margin: 2rem 0 0;
 }
@@ -818,6 +899,12 @@ pre {
 .group .names .sep {
   color: var(--muted);
 }
+/** @prose
+ * # Short notes
+ *
+ * The line on a missing page, what's ignored in a folder, what was cut from a long file, and a
+ * binary file's description.
+ */
 .missing {
   color: var(--muted);
 }
@@ -844,9 +931,13 @@ pre {
   margin-block: 1rem;
 }
 
-/* On this page (render.ts): folded under the breadcrumb, or a column beside the page where there's
-   room for one past the text on a doc, or past the code on a source file. The room depends on
-   whether the tree is docked, so each width is given twice. */
+/** @prose
+ * # On this page
+ *
+ * The table of contents folds under the breadcrumb. Where there's room, it's a column beside the
+ * page instead. On a doc it sits past the text, and on a source file past the code. The room
+ * depends on whether the tree is docked, so each width is given twice.
+ */
 .prose :is(h2, h3, h4) {
   scroll-margin-top: calc(var(--bar) + 1rem);
 }

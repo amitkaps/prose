@@ -1,10 +1,9 @@
 /** @prose
  * # The server
  *
- * A small read-only HTTP server on a repository ([reading](../docs/reading.md)). It renders each page when it's
- * requested, from the files on disk, and caches nothing but the highlighter, so what it shows is
- * always the working tree. It binds to loopback, serves only files the walk lists, and writes
- * nothing.
+ * A small, read-only HTTP server on a repository ([reading](../docs/reading.md)). It renders
+ * each page from the files on disk when it's asked for, so what it shows is always the working
+ * tree. It binds to loopback, serves only the files the walk lists, and writes nothing.
  */
 import { type FSWatcher, watch } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
@@ -45,13 +44,14 @@ const PORT_ATTEMPTS = 20;
 /** @prose
  * # Routing
  *
- * URLs mirror repo paths. `/` and any path ending in `/` is a folder; a folder asked
- * for without its slash is redirected to it, so relative links in its README resolve from inside
- * it, and so is a folder's `README.md`, which is that page. A path is served only if the walk lists it: anything else, a path outside the root
- * included, is a 404.
+ * An address is a repo path. `/`, and any path that ends in `/`, is a folder. A folder asked for
+ * without its slash redirects to it, so the relative links in its README resolve from inside it.
+ * A folder's `README.md` redirects there too, since it's the same page. A path is served only if
+ * the walk lists it. Anything else is a 404, including a path outside the root.
  *
- * `renderRoute` is the whole of it, with no HTTP: the server answers a request with it, and
- * `prose build` calls it once per page (`build.ts`), so the static site is these same pages.
+ * `renderRoute` is all of routing, with no HTTP in it. The server answers each request with it,
+ * and `prose build` calls it once a page ([build.ts](build.ts)). So the static site is these
+ * same pages.
  */
 export interface Site {
   /** Where the files are read from: the repository, or a build's export of one commit. */
@@ -72,11 +72,13 @@ export interface Site {
 export type Route = { status: 200 | 404; html: string } | { status: 301; location: string };
 
 /** @prose
- * A static host's own 404 page, `404.html` at the site's root: GitHub Pages and Cloudflare serve
- * it for any address the site doesn't have, so a missing page keeps the file tree instead of
- * dropping the reader on the host's page. It's served at whatever address was missing, so it
- * can't name it; its links are absolute, so they work from any. GitHub Pages also serves it for
- * everything under `.github/`, which it never publishes.
+ * # The host's 404 page
+ *
+ * A static host serves `404.html`, at the site's root, for any address the site doesn't have.
+ * So a missing page still shows the file tree, not the host's own page. It's served at whatever
+ * address was missing, so it can't name that address. Its links are absolute, so they work from
+ * any address. GitHub Pages also serves it for everything under `.github/`, which it never
+ * publishes.
  */
 const footerOf = (site: Site) =>
   railFooter({ live: site.live, snapshot: site.snapshot, repo: site.repo });
@@ -187,14 +189,17 @@ function send(res: ServerResponse, status: number, body: string): void {
 /** @prose
  * # Live reload
  *
- * One recursive watcher on the root records each changed path, repo-relative, with the time it
- * changed. A page connects with its own path and the time it was rendered, and is told to reload
- * only when a change touches what it shows: its own file, or anything inside the folder it lists.
- * A page connects only while it's visible (`render.ts`), since a browser allows six connections to
- * one server and each open page would otherwise hold one, so a few idle tabs could leave a new
- * page waiting to load. A page that comes back into view reconnects with its render time, and
- * hears at once about anything it missed. Changes inside `.git`, `node_modules` and prose's own
- * `.prose/` are dropped: git's bookkeeping, dependencies and a build's output aren't pages. Where the platform has no recursive watch, pages don't reload.
+ * One recursive watcher on the root records each changed path, with the time it changed. A page
+ * connects with its own path and the time it was rendered. It's told to reload only when a change
+ * touches what it shows, which is its own file or anything in the folder it lists.
+ *
+ * A page connects only while it's visible ([render.ts](render.ts)). A browser allows six
+ * connections to one server, so a few idle tabs could otherwise leave a new page waiting. A page
+ * that comes back into view reconnects with its render time, and hears at once about anything it
+ * missed.
+ *
+ * Changes inside `.git`, `node_modules` and `.prose/` are dropped, since they aren't pages.
+ * Where the platform has no recursive watch, pages don't reload.
  */
 interface Listener {
   res: ServerResponse;
@@ -257,6 +262,12 @@ function listenForChanges(req: IncomingMessage, res: ServerResponse, changes: Ch
   req.on("close", () => changes.listeners.delete(listener));
 }
 
+/** @prose
+ * # A free port
+ *
+ * The server tries the port it's given, then the next ones, up to 20 in all. So a second
+ * `prose .` opens beside the first instead of failing. Port `0` lets the system pick.
+ */
 function listen(
   server: ReturnType<typeof createServer>,
   port: number,

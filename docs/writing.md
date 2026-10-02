@@ -26,6 +26,7 @@ That is the whole convention:
 
 - **The first `@prose` in a file is its summary.** Its first paragraph is what a folder's page shows beside the file's name.
 - **Later ones explain what follows them.** Put one wherever a reader needs it. There's no fixed shape, and not every function needs one.
+- **A comment that opens a part of the file starts with a heading.** The heading gives it a [link](#links) and a place in the page's contents. A short note on one declaration can go without.
 - **A heading in a later comment shows one level down.** Write `#` in every comment, and the file's own title stays the page's only top-level heading.
 - **`@prose` and the closing delimiter each sit on their own line.** Never write `/** @prose text */` on one line. Formatters then re-indent the comment as they do JSDoc. A Markdown bullet that starts with `*` also can't be mistaken for the comment's gutter.
 

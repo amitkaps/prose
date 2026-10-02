@@ -1,19 +1,18 @@
 /** @prose
  * # Syntax highlighting
  *
- * Code is highlighted on the server with shiki, with only the languages a repository here is
- * likely to hold (and EBNF, which shiki lacks, from `ebnf.ts`), and in the page's own palette, so
- * one render serves light and dark.
+ * Code is highlighted on the server with shiki, in the page's own palette. One render serves
+ * both light and dark.
  *
- * It comes in through `shiki/core`, not the full bundle of every grammar. The theme is shiki's
- * CSS-variables theme: each token's colour is a variable, set in `style.css` for light and for
- * dark, so code and page follow the reader's setting without a second render. The highlighter
- * is created on first use and kept for the life of the server.
+ * It loads only the languages a repository here is likely to hold, through `shiki/core`, not the
+ * bundle of every grammar. EBNF, which shiki lacks, comes from [ebnf.ts](ebnf.ts). The theme is
+ * shiki's CSS-variables theme, so each token's colour is a variable. `style.css` sets those for
+ * light and for dark, so code follows the reader's setting without a second render.
  *
- * It's the cost of a page: a 1,300-line TypeScript file takes about 0.4 s with the WASM regex
- * engine, 1.1 s with the JavaScript one. So the WASM engine, and a cache of highlighted runs keyed
- * by their text: after an edit, only the code that changed is highlighted again, and a key made
- * of the text can never serve a stale result.
+ * Highlighting is most of what a page costs. A 1,300-line TypeScript file takes about 0.4 s with
+ * the WASM regex engine, and 1.1 s with the JavaScript one. So it uses the WASM engine. It also
+ * caches each highlighted run by its text. After an edit, only the code that changed is
+ * highlighted again. A key made of the text can never serve a stale result.
  */
 import { createCssVariablesTheme, createHighlighterCore, type HighlighterCore } from "shiki/core";
 import { createOnigurumaEngine } from "shiki/engine/oniguruma";
@@ -127,8 +126,10 @@ function unescapeHtml(text: string): string {
 }
 
 /** @prose
- * Fenced code in rendered Markdown arrives as `<pre><code class="language-…">`, escaped. Each one
- * is swapped for shiki's output, so a code sample in a doc looks like the code in a source page.
+ * # Code samples in Markdown
+ *
+ * markz renders a fence as escaped `<pre><code class="language-…">`. Each one is swapped for
+ * shiki's output, so a code sample in a doc looks like the code on a source page.
  */
 export async function highlightFences(html: string): Promise<string> {
   const matches = [...html.matchAll(FENCE_RE)];

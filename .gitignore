@@ -1,7 +1,8 @@
 # @prose
 # # What git leaves out
 #
-# Dependencies, build output, secrets and the reader's and wrangler's own output, so none of them reaches a commit or the published site.
+# Dependencies, build output, secrets, and the output of prose and wrangler. None of them should
+# reach a commit or the published site.
 
 node_modules/
 dist/

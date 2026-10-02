@@ -1,16 +1,15 @@
 # @prose
 # # Release
 #
-# Pushing a `vX.Y.Z` tag runs the same checks as CI, then packs the tarball, attaches it to a GitHub
-# Release and publishes it to npm. The tag must match `package.json`'s version.
+# Pushing a `vX.Y.Z` tag runs the same checks as CI, then packs the tarball. It attaches the
+# tarball to a GitHub Release and stages it on npm. The tag must match `package.json`'s version.
 #
-# npm publishing uses trusted publishing (OIDC, with provenance): there is no token to store. The
-# publisher is only allowed to stage: the new version waits on npmjs.com until a maintainer approves it
-# with 2FA. This step skips a version that is already on the registry.
+# npm uses trusted publishing, with OIDC and provenance, so there's no token to store. The
+# publisher may only stage. The new version waits on npmjs.com until a maintainer approves it
+# with 2FA. A version already on the registry is skipped.
 
 name: release
 
-# Push a `vX.Y.Z` tag → build, verify, and attach the installable tarball to a GitHub Release.
 on:
   push:
     tags: ["v*"]
