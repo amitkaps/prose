@@ -11,9 +11,9 @@ import { request } from "node:http";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import { segments, tableOfContents } from "../src/render.js";
+import { segments, sourceBody, tableOfContents } from "../src/render.js";
 import { serve, type Served, touches } from "../src/server.js";
-import type { TreeNode } from "../src/tree.js";
+import { parseFile } from "../src/parser.js";
 
 /** A raw GET, so a path like `/../x` reaches the server as written instead of being normalized. */
 function get(
@@ -35,25 +35,43 @@ function get(
 }
 
 describe("segments", () => {
-  it("lays a file out as code runs around its blocks, dropping the comment text", () => {
+  it("lays a file out as code runs around its comments, dropping the comment text", () => {
     const source = "/** @prose A. */\nimport x;\n\n/** @prose B. */\n\nconst b = 1;\n";
-    const block = (start: number, end: number): TreeNode => ({
-      name: "",
-      kind: "chunk",
-      path: "f.ts#x",
-      summary: "",
-      span: [start, end],
-      children: [],
-    });
+    const comment = (start: number) => ({ body: "", start, end: start + 16 });
     const a = source.indexOf("/** @prose A. */");
     const b = source.indexOf("/** @prose B. */");
-    const parts = segments(source, [block(b, b + 16), block(a, a + 16)]);
-    expect(parts.map((p) => (p.kind === "code" ? [p.text, p.line] : "block"))).toEqual([
-      "block",
+    const parts = segments(source, [comment(b), comment(a)]);
+    expect(parts.map((p) => (p.kind === "code" ? [p.text, p.line] : "comment"))).toEqual([
+      "comment",
       ["import x;", 2],
-      "block",
+      "comment",
       ["const b = 1;", 6],
     ]);
+  });
+});
+
+describe("sourceBody", () => {
+  it("links each later comment by its first heading, unique on the page, and one with none not at all", async () => {
+    const source = [
+      "/** @prose\n * # Store\n */",
+      "/** @prose\n * # Adding\n */\nconst a = 1;",
+      "/** @prose\n * # Adding\n */\nconst b = 1;",
+      "/** @prose\n * No heading.\n */\nconst c = 1;",
+    ].join("\n");
+    const comments = parseFile(source, "ts");
+    const body = await sourceBody({
+      name: "s.ts",
+      kind: "file",
+      path: "s.ts",
+      summary: "",
+      source,
+      comments,
+      children: [],
+    });
+    expect(body).toContain('<h1 id="store">Store</h1>');
+    expect(body).toContain('<h2 id="adding"><a class="anchor" href="#adding"');
+    expect(body).toContain('<h2 id="adding-1"><a class="anchor" href="#adding-1"');
+    expect(body.match(/class="anchor"/g)).toHaveLength(2);
   });
 });
 
@@ -69,9 +87,9 @@ describe("tableOfContents", () => {
     expect(toc).not.toContain('href="#t"');
   });
 
-  it("links a block's heading to its block, without the block's # link", () => {
+  it("lists a comment's heading by its id, without its # link", () => {
     const block = (id: string) =>
-      `<section class="block" id="${id}"><div class="prose"><h2><a class="anchor" href="#${id}" aria-label="Link to this block">#</a>${id}</h2></div></section>`;
+      `<section class="block"><div class="prose"><h2 id="${id}"><a class="anchor" href="#${id}" aria-label="Link to this section">#</a>${id}</h2></div></section>`;
     const toc = tableOfContents(block("one") + block("two") + block("three"));
     expect(toc).toContain('<li class="toc-2"><a href="#two">two</a></li>');
   });
@@ -96,23 +114,21 @@ describe("serve: tests/fixtures/simple", () => {
     expect(body).toContain("holds the count, applies a step");
   });
 
-  it("renders a source file as one document: blocks by anchor, code numbered from its file line, pending marked", async () => {
+  it("renders a source file as one document: comments linked by heading, code numbered from its file line", async () => {
     const { status, body } = await get(served.url, "/main.js");
     expect(status).toBe(200);
-    expect(body).toContain('id="file"');
-    // A block that opens with a heading is named by it, and its `#` sits inside that heading,
-    // one level down from the file prose's.
+    // A later comment's heading keeps markz's id, one level down, with its `#` inside it.
     expect(body).toContain(
-      'id="state"><div class="prose"><h2><a class="anchor" href="#state" aria-label="Link to this block">#</a>',
+      '<h2 id="state"><a class="anchor" href="#state" aria-label="Link to this section">#</a>State</h2>',
     );
-    expect(body).not.toContain('href="#file"');
-    expect(body).toContain('id="input"');
-    expect(body).toMatch(/class="block pending" id="persistence"/);
-    // The State chunk's code starts on line 12 of main.js, so the gutter counts on from 11.
+    expect(body).toContain('<h2 id="input">');
+    expect(body).toContain('<h2 id="persistence">');
+    // The file's own comment has no heading here, so no link.
+    expect(body.match(/class="anchor"/g)).toHaveLength(3);
+    // The State comment's code starts on line 12 of main.js, so the gutter counts on from 11.
     expect(body).toMatch(/<div class="code" style="counter-reset: line 11;/);
     expect(body).toContain('data-mode="prose"');
     expect(body).toContain('class="code-head"');
-    expect(body).not.toContain("#file L");
     expect(body).not.toContain("@prose");
   });
 

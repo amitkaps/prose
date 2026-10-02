@@ -4,7 +4,7 @@
  * exported for anyone who wants that view of a repository in code.
  */
 export { firstParagraph, parseFile } from "./parser.js";
-export type { CodeLang, FileParse, ProseChunk, ProseSection } from "./parser.js";
+export type { ProseComment } from "./parser.js";
 export { buildTree, findNode, projectFiles } from "./tree.js";
 export type { TreeNode } from "./tree.js";
 export { serve } from "./server.js";

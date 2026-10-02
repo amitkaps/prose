@@ -11,7 +11,7 @@
 import { html as markz } from "@amitkaps/markz";
 import { escapeHtml, highlight, highlightFences } from "./highlight.js";
 import { type NavItem, renderNav } from "./nav.js";
-import { FILE_ANCHOR } from "./parser.js";
+import type { ProseComment } from "./parser.js";
 import { extensionOf, type TreeNode } from "./tree.js";
 import { STYLE } from "./style.js";
 
@@ -26,18 +26,20 @@ function renderSummary(text: string): string {
     .replace(/^<p>([\s\S]*)<\/p>$/, "$1");
 }
 
-type Segment = { kind: "block"; block: TreeNode } | { kind: "code"; text: string; line: number };
+type Segment =
+  | { kind: "comment"; comment: ProseComment }
+  | { kind: "code"; text: string; line: number };
 
 /** @prose
  * # A file, in order
  *
- * Lays a file out as it was written: the code between the prose comments, and each prose block
- * at the byte range its comment took (`span`). The comment text itself is dropped, since the page
+ * Lays a file out as it was written: the code between the prose comments, and each comment's
+ * prose at the byte range the comment took. The comment text itself is dropped, since the page
  * renders the prose in its place, so the whole file shows and nothing repeats. Blank lines at the
  * edges of each code run are trimmed, a run that's only whitespace disappears, and each run keeps
  * the line it starts on.
  */
-export function segments(source: string, blocks: TreeNode[]): Segment[] {
+export function segments(source: string, comments: ProseComment[]): Segment[] {
   const out: Segment[] = [];
   const pushCode = (from: number, to: number) => {
     const raw = source.slice(from, to);
@@ -50,10 +52,10 @@ export function segments(source: string, blocks: TreeNode[]): Segment[] {
     out.push({ kind: "code", text, line });
   };
   let at = 0;
-  for (const block of [...blocks].filter((b) => b.span).sort((a, b) => a.span![0] - b.span![0])) {
-    pushCode(at, block.span![0]);
-    out.push({ kind: "block", block });
-    at = block.span![1];
+  for (const comment of [...comments].sort((a, b) => a.start - b.start)) {
+    pushCode(at, comment.start);
+    out.push({ kind: "comment", comment });
+    at = comment.end;
   }
   pushCode(at, source.length);
   return out;
@@ -163,36 +165,40 @@ async function codeRun(text: string, lang: string, startLine: number): Promise<s
 /** @prose
  * # A source file as one document
  *
- * The file prose, then each chunk's prose in source order, with its code between them. A block's anchor is its `id`, so `src/store.ts#addTodo` lands on it, and a pending chunk
- * says so. The `#` that links to it goes inside the block's first heading or paragraph, so it
- * sits on that line at that size; the heading gives up the `id` markz gave it, since the block
- * carries the anchor. The file prose is the top of the page and gets no `#`, and its headings
- * stay as written while every later block's go one level down (`demote`), so a block can open
- * with `#` and the file's own title is still the page's only `h1`. Code shows by default; the page's **Prose only**
- * switch folds it (`page`). A file with no prose says so, above its code.
+ * The file's first comment, then each later one in source order, with its code between them.
+ * The first is the top of the page, and its headings stay as written. Every later comment's
+ * headings go one level down (`demote`), so a comment can open with `#` and the file's title is
+ * still the page's only `h1`. Code shows by default, and the page's **Prose only** switch folds
+ * it (`page`). A file with no prose says so, above its code.
+ *
+ * A comment's link is its first heading's id, as markz makes it, so `src/store.ts#adding` lands
+ * on `# Adding`. Each comment renders on its own, so `uniqueIds` makes a repeat on the page
+ * unique in source order. The `#` beside that heading links to it. A later comment without a
+ * heading has no link, and neither does the first, which is the page itself.
  */
 export async function sourceBody(node: TreeNode): Promise<string> {
-  const blocks = node.blocks ?? [];
+  const comments = node.comments ?? [];
   const lang = extensionOf(node.path) || "text";
-  if (blocks.length === 0) return NO_PROSE + (await codeRun(node.source ?? "", lang, 1));
-  const parts = await Promise.all(
-    segments(node.source ?? "", blocks).map(async (segment) => {
-      if (segment.kind === "code") return codeRun(segment.text, lang, segment.line);
-      const { block } = segment;
-      const anchor = escapeHtml(block.path.slice(block.path.indexOf("#") + 1));
-      const isFile = block.path.endsWith(`#${FILE_ANCHOR}`);
-      const prose = isFile
-        ? await renderMarkdown(block.prose ?? "")
-        : demote(await renderMarkdown(block.prose ?? ""));
-      return `<section class="block${block.pending ? " pending" : ""}" id="${anchor}"><div class="prose">${
-        isFile ? prose : withAnchor(prose, anchor)
-      }</div>${block.pending ? `<p class="pending-mark">pending</p>` : ""}</section>`;
-    }),
-  );
+  if (comments.length === 0) return NO_PROSE + (await codeRun(node.source ?? "", lang, 1));
+  const used = new Set<string>();
+  let first = true;
+  const parts: string[] = [];
+  for (const segment of segments(node.source ?? "", comments)) {
+    if (segment.kind === "code") {
+      parts.push(await codeRun(segment.text, lang, segment.line));
+      continue;
+    }
+    const rendered = await renderMarkdown(segment.comment.body);
+    const prose = uniqueIds(first ? rendered : demote(rendered), used);
+    parts.push(
+      `<section class="block"><div class="prose">${first ? prose : withAnchor(prose)}</div></section>`,
+    );
+    first = false;
+  }
   return parts.join("");
 }
 
-/** A later block's headings one level down, so the file prose's title is the page's only `h1`. */
+/** A later comment's headings one level down, so the file's title is the page's only `h1`. */
 function demote(html: string): string {
   return html.replace(
     /<(\/?)h([1-6])\b/g,
@@ -200,15 +206,26 @@ function demote(html: string): string {
   );
 }
 
-const FIRST_LINE_RE = /^<(h[1-6]|p)(?: id="[^"]*")?>/;
+const HEADING_ID_RE = /<(h[1-6]) id="([^"]+)">/g;
 
-/** Puts the block's `#` link at the start of its first heading or paragraph, or before the prose
- *  when it opens with something else, such as a list. */
-function withAnchor(prose: string, anchor: string): string {
-  const link = `<a class="anchor" href="#${anchor}" aria-label="Link to this block">#</a>`;
-  return FIRST_LINE_RE.test(prose)
-    ? prose.replace(FIRST_LINE_RE, (_, tag: string) => `<${tag}>${link}`)
-    : link + prose;
+/** Gives each heading an id not yet `used` on the page, adding `-1`, `-2` to a repeat as markz
+ *  does within one text. */
+function uniqueIds(html: string, used: Set<string>): string {
+  return html.replace(HEADING_ID_RE, (_, tag: string, id: string) => {
+    let unique = id;
+    for (let n = 1; used.has(unique); n++) unique = `${id}-${n}`;
+    used.add(unique);
+    return `<${tag} id="${unique}">`;
+  });
+}
+
+/** Puts the `#` link to a comment's first heading inside that heading, on its line at its size. */
+function withAnchor(prose: string): string {
+  return prose.replace(
+    /<(h[1-6]) id="([^"]+)">/,
+    (_, tag: string, id: string) =>
+      `<${tag} id="${id}"><a class="anchor" href="#${id}" aria-label="Link to this section">#</a>`,
+  );
 }
 
 /** @prose
@@ -216,30 +233,23 @@ function withAnchor(prose: string, anchor: string): string {
  *
  * A long page's second- and third-level headings, as a table of contents: beside the text where
  * the page is wide enough, and above it, folded, where it isn't (`style.css`). It's read from the
- * page as rendered, so a doc and a source file get the same one: a doc's headings carry their own
- * ids, and a block's heading links to its block. A page with fewer than three has none, since a
- * short page is its own contents.
+ * page as rendered, so a doc and a source file get the same one, each heading by its id. A page
+ * with fewer than three has none, since a short page is its own contents.
  *
  * It's in the HTML twice, once for each place, rather than one element moved by script, so it
  * works with none; the page's script only marks the section being read (`TOC_SCRIPT`).
  */
-const HEADING_RE =
-  /<section class="block[^"]*" id="([^"]+)">|<h([23])(?: id="([^"]+)")?>([\s\S]*?)<\/h\2>/g;
+const HEADING_RE = /<h([23]) id="([^"]+)">([\s\S]*?)<\/h\1>/g;
 
 export function tableOfContents(body: string): string {
   const entries: { level: number; id: string; text: string }[] = [];
-  let section = "";
   for (const match of body.matchAll(HEADING_RE)) {
-    if (match[1]) {
-      section = match[1];
-      continue;
-    }
-    const id = match[3] ?? section;
-    const text = match[4]!
+    const id = match[2]!;
+    const text = match[3]!
       .replace(/<a class="anchor"[^>]*>#<\/a>/, "")
       .replace(/<[^>]+>/g, "")
       .trim();
-    if (id && text) entries.push({ level: Number(match[2]), id, text });
+    if (text) entries.push({ level: Number(match[1]), id, text });
   }
   if (entries.length < 3) return "";
   const list = `<ul>${entries
