@@ -10,6 +10,7 @@
  */
 import { html as markz } from "@amitkaps/markz";
 import { escapeHtml, highlight, highlightFences } from "./highlight.js";
+import { type NavItem, renderNav } from "./nav.js";
 import { FILE_ANCHOR } from "./parser.js";
 import { extensionOf, type TreeNode } from "./tree.js";
 import { STYLE } from "./style.js";
@@ -58,34 +59,63 @@ export function segments(source: string, blocks: TreeNode[]): Segment[] {
   return out;
 }
 
-/** The listing on a folder page: each child with its summary, *undocumented* where it has none. */
+/** @prose
+ * # A folder's listing
+ *
+ * What's in a folder, under its README, in groups: **Folders**, then **Docs**, then **Code**, each
+ * a label with its rows indented under it, a name and its summary. What has no prose yet isn't a
+ * row each: it's one line of names at the end, **No prose yet**, so coverage still shows where
+ * you read without filling the page with *undocumented*. Files that can't carry prose (`LICENSE`,
+ * `package.json`, an image) are a last line, **Other files**. Groups are labels, not icons.
+ */
 function renderListing(children: TreeNode[]): string {
-  if (children.length === 0) return "";
-  const items = children.map((child) => {
+  const href = (child: TreeNode) =>
+    `/${child.path.split("/").map(encodeURIComponent).join("/")}${child.kind === "folder" ? "/" : ""}`;
+  const link = (child: TreeNode) => {
     const name = child.path.split("/").at(-1)!;
-    const href = `/${child.path.split("/").map(encodeURIComponent).join("/")}${
-      child.kind === "folder" ? "/" : ""
-    }`;
-    const label = child.kind === "folder" ? `${name}/` : name;
-    const summary =
-      child.kind === "raw"
-        ? ""
-        : child.summary === "undocumented" || !child.summary
-          ? `<span class="undocumented">undocumented</span>`
-          : renderSummary(child.summary);
-    return `<li class="${child.kind}"><a href="${escapeHtml(href)}">${escapeHtml(label)}</a>${
-      summary ? `<p>${summary}</p>` : ""
-    }</li>`;
-  });
-  return `<ul class="listing">${items.join("")}</ul>`;
+    return `<a href="${escapeHtml(href(child))}">${escapeHtml(child.kind === "folder" ? `${name}/` : name)}</a>`;
+  };
+  const undocumented = (child: TreeNode) =>
+    child.kind !== "raw" && (child.summary === "undocumented" || !child.summary);
+  const documented = children.filter((child) => child.kind !== "raw" && !undocumented(child));
+  const isDoc = (child: TreeNode) => child.kind === "file" && extensionOf(child.path) === "md";
+  const group = (label: string, rows: TreeNode[]) =>
+    rows.length
+      ? `<section class="group"><p class="group-label">${label}</p><ul class="listing">${rows
+          .map(
+            (child) =>
+              `<li class="${child.kind}">${link(child)}<p>${renderSummary(child.summary)}</p></li>`,
+          )
+          .join("")}</ul></section>`
+      : "";
+  const line = (label: string, rows: TreeNode[]) =>
+    rows.length
+      ? `<section class="group"><p class="group-label">${label}</p><p class="names">${rows
+          .map(link)
+          .join(`<span class="sep"> · </span>`)}</p></section>`
+      : "";
+  return [
+    group(
+      "Folders",
+      documented.filter((child) => child.kind === "folder"),
+    ),
+    group("Docs", documented.filter(isDoc)),
+    group(
+      "Code",
+      documented.filter((child) => child.kind !== "folder" && !isDoc(child)),
+    ),
+    line("No prose yet", children.filter(undocumented)),
+    line(
+      "Other files",
+      children.filter((child) => child.kind === "raw"),
+    ),
+  ].join("");
 }
 
 /** A folder's README, its listing, and, on a local page, one line naming what `.gitignore`
  *  leaves out of it (`ignoredIn`): no links and no counts, since there's nothing there to read. */
 export async function folderBody(node: TreeNode, ignored: string[] = []): Promise<string> {
-  const readme = node.prose
-    ? `<p class="from">From <code>README.md</code></p><div class="prose">${await renderMarkdown(node.prose)}</div>`
-    : "";
+  const readme = node.prose ? `<div class="prose">${await renderMarkdown(node.prose)}</div>` : "";
   const names = ignored.map((name) => `<code>${escapeHtml(name)}</code>`).join(" ");
   const line = ignored.length ? `<p class="ignored">Ignored here: ${names}</p>` : "";
   return `${readme}${renderListing(node.children)}${line}`;
@@ -181,6 +211,46 @@ function withAnchor(prose: string, anchor: string): string {
     : link + prose;
 }
 
+/** @prose
+ * # On this page
+ *
+ * A long page's second- and third-level headings, as a table of contents: beside the text where
+ * the page is wide enough, and above it, folded, where it isn't (`style.css`). It's read from the
+ * page as rendered, so a doc and a source file get the same one: a doc's headings carry their own
+ * ids, and a block's heading links to its block. A page with fewer than three has none, since a
+ * short page is its own contents.
+ *
+ * It's in the HTML twice, once for each place, rather than one element moved by script, so it
+ * works with none; the page's script only marks the section being read (`TOC_SCRIPT`).
+ */
+const HEADING_RE =
+  /<section class="block[^"]*" id="([^"]+)">|<h([23])(?: id="([^"]+)")?>([\s\S]*?)<\/h\2>/g;
+
+export function tableOfContents(body: string): string {
+  const entries: { level: number; id: string; text: string }[] = [];
+  let section = "";
+  for (const match of body.matchAll(HEADING_RE)) {
+    if (match[1]) {
+      section = match[1];
+      continue;
+    }
+    const id = match[3] ?? section;
+    const text = match[4]!
+      .replace(/<a class="anchor"[^>]*>#<\/a>/, "")
+      .replace(/<[^>]+>/g, "")
+      .trim();
+    if (id && text) entries.push({ level: Number(match[2]), id, text });
+  }
+  if (entries.length < 3) return "";
+  const list = `<ul>${entries
+    .map(
+      ({ level, id, text }) =>
+        `<li class="toc-${level}"><a href="#${escapeHtml(id)}">${text}</a></li>`,
+    )
+    .join("")}</ul>`;
+  return `<details class="toc toc-top"><summary>On this page</summary>${list}</details><nav class="toc toc-side" aria-label="On this page"><div><p>On this page</p>${list}</div></nav>`;
+}
+
 export interface PageOptions {
   /** The project's name, for the breadcrumb and the title. */
   project: string;
@@ -197,29 +267,48 @@ export interface PageOptions {
   /** Served by `prose .`: the page listens for changes and says when it was rendered. A built
    *  page (`prose build`) does neither, so the same commit always gives the same bytes. */
   live: boolean;
+  /** A folder's page that shows its `README.md`, which the breadcrumb then ends in. */
+  readme?: boolean;
+  /** The docs linked in the bar (`nav.ts`). */
+  nav?: NavItem[];
   /** On a built page, which snapshot it is: `v0.1.0 · 1c77293`. */
 }
 
 /** The right-hand sidebar icon: a window with its right panel marked. */
 const PANEL_ICON = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1.75" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 3v10" stroke="currentColor" stroke-width="1.5"/></svg>`;
 
-/** The path to the page, each ancestor a link; the project itself is the bar's name. */
-function breadcrumb(path: string): string {
+/** @prose
+ * # The breadcrumb
+ *
+ * The path from the project to the page, as GitHub writes it: `prose / docs / design.md`. It starts
+ * with the project's name on every page, so the way back is always there, the root page's included.
+ *
+ * A folder's page that shows its README ends in `README.md`, the row the tree highlights there,
+ * so the page needs no line of its own to say where its text is from, and its text starts at the
+ * same height as every other page's. Every crumb is a link, the last one too: on a folder's page
+ * the folder and its `README.md` are the same page, and one being a link while the other isn't
+ * read as a difference that isn't there. The last is marked as the current page.
+ */
+function breadcrumb(project: string, path: string, readme: boolean): string {
   const segments = path.split("/").filter(Boolean);
-  const crumbs: string[] = [];
-  segments.forEach((segment, i) => {
-    const last = i === segments.length - 1;
-    const href = `/${segments
-      .slice(0, i + 1)
-      .map(encodeURIComponent)
-      .join("/")}${last && !path.endsWith("/") ? "" : "/"}`;
-    crumbs.push(
-      last
-        ? `<span aria-current="page">${escapeHtml(segment)}</span>`
-        : `<a href="${escapeHtml(href)}">${escapeHtml(segment)}</a>`,
-    );
-  });
-  return crumbs.join(`<span class="sep">/</span>`);
+  const hrefs = segments.map(
+    (_, i) =>
+      `/${segments
+        .slice(0, i + 1)
+        .map(encodeURIComponent)
+        .join("/")}${i === segments.length - 1 && !path.endsWith("/") ? "" : "/"}`,
+  );
+  const crumbs: [string, string][] = [
+    [project, "/"],
+    ...segments.map((segment, i): [string, string] => [segment, hrefs[i]!]),
+  ];
+  if (readme) crumbs.push(["README.md", hrefs.at(-1) ?? "/"]);
+  return crumbs
+    .map(
+      ([label, href], i) =>
+        `<a href="${escapeHtml(href)}"${i === crumbs.length - 1 ? ` aria-current="page"` : ""}>${escapeHtml(label)}</a>`,
+    )
+    .join(`<span class="sep">/</span>`);
 }
 
 /** @prose
@@ -227,7 +316,7 @@ function breadcrumb(path: string): string {
  *
  * One stylesheet inline; the reading column on the left, with the breadcrumb above its text and
  * **Open in editor** at the breadcrumb's end; the file tree on the right (`rail.ts`); a bar with
- * the project's name, the mode switch and the tree's toggle, which is a checkbox and its label when the tree is docked and a popover button when it
+ * the project's name, the docs' links (`nav.ts`), the mode switch and the tree's toggle, which is a checkbox and its label when the tree is docked and a popover button when it
  * isn't, so showing and hiding it is CSS and HTML alone; and a few lines of script: the **Prose & Code / Prose only** switch, remembered across pages and applied in
  * `<head>` so the page never flashes its code first, and each code run's header; the rail's open folders and scroll position, restored before the
  * first paint; and live reload. The server
@@ -236,7 +325,17 @@ function breadcrumb(path: string): string {
  * what changed while hidden. A built page leaves live reload out. Browser storage can be unavailable, so it's only ever tried.
  */
 export function page(options: PageOptions): string {
-  const { project, path, rail, body, editorLink, hasCode, live } = options;
+  const {
+    project,
+    path,
+    rail,
+    body,
+    editorLink,
+    hasCode,
+    live,
+    readme = false,
+    nav = [],
+  } = options;
   const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
   const off = hasCode ? "" : ` disabled title="No code on this page"`;
   const mode = `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true"${off}>Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false"${off}>Prose only</button></div>`;
@@ -255,10 +354,10 @@ export function page(options: PageOptions): string {
 <body data-path="${escapeHtml(path)}"${live ? ` data-rendered="${Date.now()}"` : ""}>
 <input type="checkbox" id="dock" class="ctl" aria-label="Hide the file tree">
 <div class="shell">
-<header class="bar"><a class="project" href="/">${escapeHtml(project)}</a><div class="bar-mode">${mode}</div><label class="rail-toggle dock" for="dock" title="Files" aria-label="Files">${PANEL_ICON}</label><button type="button" class="rail-toggle pop" popovertarget="rail" title="Files" aria-label="Files">${PANEL_ICON}</button></header>
+<header class="bar"><a class="project" href="/">${escapeHtml(project)}</a>${renderNav(nav, path)}<div class="bar-mode">${mode}</div><label class="rail-toggle dock" for="dock" title="Files" aria-label="Files">${PANEL_ICON}</label><button type="button" class="rail-toggle pop" popovertarget="rail" title="Files" aria-label="Files">${PANEL_ICON}</button></header>
 <div class="layout">
 <div class="page">
-<main><div class="where"><nav class="crumbs">${breadcrumb(path)}</nav>${end}</div>${body}</main>
+<main${hasCode ? ` class="has-code"` : ""}><div class="where"><nav class="crumbs">${breadcrumb(project, path, readme)}</nav>${end}</div>${tableOfContents(body)}${body}</main>
 </div>
 ${rail}
 <script>${RAIL_SCRIPT}</script>
@@ -270,6 +369,37 @@ ${rail}
 </html>
 `;
 }
+
+/** @prose
+ * The section being read is marked in the contents as the page scrolls: the last heading whose
+ * top has passed a line a little under the bar. Choosing one from the folded contents folds it
+ * again, so the text it goes to isn't pushed down.
+ */
+const TOC_SCRIPT = `
+{
+	const links = [...document.querySelectorAll(".toc a")];
+	const idOf = (a) => decodeURIComponent(a.hash.slice(1));
+	const targets = [...new Set(links.map(idOf))].map((id) => document.getElementById(id)).filter(Boolean);
+	let frame = 0;
+	const mark = () => {
+		frame = 0;
+		const line = document.querySelector(".bar").offsetHeight + innerHeight * 0.15;
+		let current = targets[0]?.id;
+		for (const t of targets) {
+			if (t.getBoundingClientRect().top > line) break;
+			current = t.id;
+		}
+		for (const a of links) a.classList.toggle("here", idOf(a) === current);
+	};
+	if (targets.length) {
+		addEventListener("scroll", () => { frame ||= requestAnimationFrame(mark); }, { passive: true });
+		mark();
+	}
+	for (const a of document.querySelectorAll(".toc-top a")) {
+		a.addEventListener("click", () => { a.closest("details").open = false; });
+	}
+}
+`;
 
 /** @prose
  * Links on the page are prerendered when the pointer rests on one (Chrome's speculation rules,
@@ -308,7 +438,8 @@ const RAIL_SCRIPT = `
 }
 `;
 
-const SCRIPT = `
+const SCRIPT =
+  `
 const root = document.documentElement;
 const runs = [...document.querySelectorAll(".code")];
 const isOpen = (run) =>
@@ -341,7 +472,7 @@ try {
 	const y = sessionStorage.getItem(key);
 	if (y !== null) { sessionStorage.removeItem(key); scrollTo(0, Number(y)); }
 } catch {}
-`;
+` + TOC_SCRIPT;
 
 /** Live reload, on a page `prose .` serves; `key` is the scroll position `SCRIPT` restores. */
 const LIVE_SCRIPT = `

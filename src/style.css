@@ -55,6 +55,10 @@
     "Segoe UI",
     sans-serif;
   line-height: 1.6;
+  /* 16px up to a 1280px window, then growing to 20px at 2560px. Every size here is in rem, so the
+     whole page scales as one, as browser zoom would, and a wide screen holds more page and less
+     margin. */
+  font-size: clamp(1rem, 0.75rem + 0.3125vw, 1.25rem);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -143,7 +147,7 @@ a {
   font-size: 0.82rem;
   line-height: 1.35;
   --edge: 0.9rem;
-  --step: 1rem;
+  --step: 0.75rem;
   --twisty: 0.9rem;
   --gap: 0.35rem;
 }
@@ -192,6 +196,24 @@ a {
 }
 .rail summary a {
   flex: 1;
+  font-weight: 500;
+}
+/* A guide runs down from each open folder's chevron, beside its contents; the guides on the way
+   to the current page are darker, so the eye can follow the path. Vertical only: elbows to each
+   row would make it a diagram of the tree rather than a list of files. */
+.rail details > ul {
+  position: relative;
+}
+.rail details > ul::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: calc(var(--edge) + var(--depth) * var(--step) + var(--twisty) / 2);
+  border-left: 1px solid var(--rule);
+  pointer-events: none;
+}
+.rail details:has([aria-current]) > ul::before {
+  border-left-color: color-mix(in srgb, var(--muted) 60%, transparent);
 }
 .rail summary::-webkit-details-marker {
   display: none;
@@ -202,9 +224,9 @@ a {
   width: var(--twisty);
   height: var(--twisty);
   background: currentColor;
-  opacity: 0.6;
+  opacity: 0.4;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E")
-    center / contain no-repeat;
+    center / 80% no-repeat;
   transition: transform 0.1s;
 }
 .rail details[open] > summary::before {
@@ -337,7 +359,103 @@ a {
   color: var(--ink);
   font-weight: 600;
   text-decoration: none;
-  margin-right: auto;
+}
+.bar-mode {
+  margin-left: auto;
+}
+/* The docs' links (nav.ts) follow the name in the bar. Below 62rem they're a popover behind a
+   Docs button, dropping from the bar, as the file tree is; the same element, so no script. */
+.docs-toggle {
+  display: none;
+}
+@media not (max-width: 62rem) {
+  .bar .docs {
+    display: flex;
+    gap: 1.25rem;
+    position: static;
+    inset: auto;
+    margin: 0 0 0 1rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    overflow: visible;
+    min-width: 0;
+  }
+}
+.bar .docs a {
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.bar .docs a:hover,
+.bar .docs [aria-current] {
+  color: var(--ink);
+}
+.bar .docs [aria-current] {
+  font-weight: 600;
+}
+@media (max-width: 62rem) {
+  .docs-toggle {
+    display: inline-flex;
+    font: inherit;
+    color: var(--ink);
+    background: none;
+    border: 0;
+    padding: 0.3rem 0.4rem;
+    cursor: pointer;
+  }
+  .docs-toggle::after {
+    content: "";
+    width: 0.7em;
+    margin-left: 0.3em;
+    background: currentColor;
+    opacity: 0.5;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+  .bar .docs:popover-open {
+    position: fixed;
+    inset: var(--bar) auto auto var(--side);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 12rem;
+    padding: 0.4rem 0;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.15);
+  }
+  .bar .docs:popover-open a {
+    padding: 0.4rem 1rem;
+  }
+  .bar .docs:popover-open a:hover {
+    background: var(--panel);
+  }
+}
+/* On a phone the name, Docs, the switch and the tree's icon share 390px: tighter gaps and
+   buttons keep them on one line. */
+@media (max-width: 30rem) {
+  .bar {
+    gap: 0.5rem;
+    padding-right: 0.75rem;
+  }
+  .mode button {
+    padding: 0.15rem 0.45rem;
+  }
+  .docs-toggle {
+    padding-inline: 0.25rem;
+  }
+}
+@media (max-width: 24rem) {
+  .shell {
+    --side: 1rem;
+  }
+  .docs-toggle::after {
+    display: none;
+  }
 }
 .where {
   display: flex;
@@ -345,7 +463,7 @@ a {
   gap: 0.25rem 1rem;
   justify-content: space-between;
   font-size: 0.9rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 2rem;
 }
 .where .editor {
   white-space: nowrap;
@@ -364,7 +482,7 @@ a {
   color: var(--muted);
   font-size: 0.78rem;
 }
-.rail > ul {
+.rail > .rail-tree {
   margin-bottom: 1rem;
 }
 .rail-foot a {
@@ -404,6 +522,8 @@ a {
 }
 .crumbs [aria-current] {
   font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
 }
 .rail-toggle {
   font: inherit;
@@ -458,8 +578,17 @@ a {
 /* The text's side margins come from the page's own width: equal while it's too narrow for more,
    then the left stops growing at --lead and the extra goes to the right. */
 main {
+  position: relative;
   margin: 0;
   padding: 1.5rem var(--side) 4rem;
+  /* How far a table or code sample may widen; the text's width while the contents are beside it
+     on a doc, so they don't run under it. */
+  --wide: var(--code-width);
+  /* What the contents sit beside: the text on a doc, the code on a source file. */
+  --toc-after: var(--measure);
+}
+main.has-code {
+  --toc-after: var(--code-width);
 }
 main > * {
   max-width: var(--measure);
@@ -493,6 +622,17 @@ main > * {
   background: var(--panel);
   border-radius: 4px;
   padding: 0.1em 0.3em;
+}
+/* A table or a code sample in the prose may grow past the text, as far as a code run does or the
+   page allows: it's a grid or code to scan, not lines to read, so the measure isn't for it. Past
+   that a table scrolls and code wraps. A short sample keeps the text's width, as a run does. */
+.prose table,
+.prose pre.shiki {
+  width: max-content;
+  max-width: min(var(--wide), calc(100cqw - var(--docked) - 2 * var(--side)));
+}
+.prose pre.shiki {
+  min-width: 100%;
 }
 .prose table {
   border-collapse: collapse;
@@ -584,11 +724,6 @@ pre.shiki .line {
   overflow: hidden;
   clip-path: inset(50%);
 }
-.from {
-  margin: 0 0 1rem;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
 .code-head .lang {
   margin-left: auto;
 }
@@ -656,17 +791,28 @@ pre {
   color: var(--accent);
   font-weight: 600;
 }
+/* A folder's listing (render.ts): a label per group, and its rows indented under it. */
+.group {
+  margin: 2rem 0 0;
+}
+.group-label {
+  margin: 0 0 0.4rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .listing {
   list-style: none;
-  padding: 0;
-  margin: 1.5rem 0;
-  border-top: 1px solid var(--rule);
+  margin: 0;
+  padding: 0 0 0 1rem;
 }
 .listing li {
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--rule);
+  padding: 0.35rem 0;
 }
-.listing li > a {
+.listing li > a,
+.group .names a {
   font-weight: 600;
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.92rem;
@@ -675,12 +821,19 @@ pre {
   color: var(--ink);
 }
 .listing p {
-  margin: 0.2rem 0 0;
+  margin: 0.1rem 0 0;
   color: var(--muted);
   font-size: 0.92rem;
 }
-.undocumented {
-  font-style: italic;
+.group .names {
+  margin: 0;
+  padding-left: 1rem;
+}
+.group .names a {
+  font-weight: 400;
+}
+.group .names .sep {
+  color: var(--muted);
 }
 .missing {
   color: var(--muted);
@@ -706,4 +859,113 @@ pre {
   max-width: 100%;
   height: auto;
   margin-block: 1rem;
+}
+
+/* On this page (render.ts): folded under the breadcrumb, or a column beside the page where there's
+   room for one past the text on a doc, or past the code on a source file. The room depends on
+   whether the tree is docked, so each width is given twice. */
+.prose :is(h2, h3, h4) {
+  scroll-margin-top: calc(var(--bar) + 1rem);
+}
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.toc a {
+  display: block;
+  color: var(--muted);
+  text-decoration: none;
+}
+.toc a:hover,
+.toc a.here {
+  color: var(--ink);
+}
+.toc .toc-3 a {
+  padding-left: 0.75rem;
+}
+.toc-top {
+  margin: -1rem 0 1.5rem;
+  font-size: 0.9rem;
+}
+.toc-top summary {
+  cursor: pointer;
+  color: var(--muted);
+  width: max-content;
+}
+.toc-top summary:hover {
+  color: var(--ink);
+}
+.toc-top ul {
+  margin: 0.5rem 0 0;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--rule);
+}
+.toc-top a {
+  padding: 0.15rem 0;
+}
+.toc-side {
+  display: none;
+  position: absolute;
+  inset-block: 0;
+  left: calc(var(--side) + var(--toc-after) + 3rem);
+  width: 13rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+.toc-side > div {
+  position: sticky;
+  top: calc(var(--bar) + 1.5rem);
+  max-height: calc(100vh - var(--bar) - 3rem);
+  overflow-y: auto;
+}
+.toc-side p {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.toc-side a {
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  border-left: 2px solid var(--rule);
+}
+.toc-side .toc-3 a {
+  padding-left: 1.5rem;
+}
+.toc-side a.here {
+  border-left-color: var(--accent);
+}
+@container (min-width: 68rem) {
+  #dock:checked ~ .shell main:not(.has-code) {
+    --wide: var(--measure);
+  }
+  #dock:checked ~ .shell main:not(.has-code) .toc-side {
+    display: block;
+  }
+  #dock:checked ~ .shell main:not(.has-code) .toc-top {
+    display: none;
+  }
+}
+@container (min-width: 84rem) {
+  main:not(.has-code) {
+    --wide: var(--measure);
+  }
+  main:not(.has-code) .toc-side,
+  #dock:checked ~ .shell main .toc-side {
+    display: block;
+  }
+  main:not(.has-code) .toc-top,
+  #dock:checked ~ .shell main .toc-top {
+    display: none;
+  }
+}
+@container (min-width: 100rem) {
+  main .toc-side {
+    display: block;
+  }
+  main .toc-top {
+    display: none;
+  }
 }

@@ -42,7 +42,8 @@ function href(path: string, folder: boolean): string {
 /** @prose
  * Each row carries its depth, and indents itself by it, rather than nesting padding in the
  * lists: so a row's highlight spans the rail's full width, as an editor's explorer does, while
- * its chevron and name sit at their depth.
+ * its chevron and name sit at their depth. A folder's list carries the folder's depth too, for
+ * the guide drawn down from its chevron.
  */
 function renderDir(dir: Dir, prefix: string, current: string, depth: number): string {
   const rows: string[] = [];
@@ -54,7 +55,7 @@ function renderDir(dir: Dir, prefix: string, current: string, depth: number): st
     rows.push(
       `<li><details data-folder="${escapeHtml(path)}"${open ? " open" : ""}><summary style="--depth: ${depth}"${
         here && !sub.files.includes("README.md") ? ` aria-current="page"` : ""
-      }><a href="${escapeHtml(href(path, true))}">${escapeHtml(name)}</a></summary><ul>${renderDir(sub, path, current, depth + 1)}</ul></details></li>`,
+      }><a href="${escapeHtml(href(path, true))}">${escapeHtml(name)}</a></summary><ul style="--depth: ${depth}">${renderDir(sub, path, current, depth + 1)}</ul></details></li>`,
     );
   }
   // A folder's `README.md` is its page, so its row goes to the folder and is first in it.
@@ -88,7 +89,7 @@ export function renderRail(files: string[], current: string, project: string, fo
   const top = index(files);
   return `<nav class="rail" id="rail" popover aria-label="Files"><a class="rail-project" href="/"${
     current === "" && !top.files.includes("README.md") ? ` aria-current="page"` : ""
-  }>${escapeHtml(project)}</a><ul>${renderDir(top, "", current, 0)}</ul>${footer}</nav>`;
+  }>${escapeHtml(project)}</a><ul class="rail-tree">${renderDir(top, "", current, 0)}</ul>${footer}</nav>`;
 }
 
 /** What a built page was made from: the short commit, and the tag only when `HEAD` is that tag. */

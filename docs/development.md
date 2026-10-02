@@ -14,6 +14,7 @@ pnpm run check         # format, lint and types
 pnpm run test
 pnpm run build         # the library and the command (vp pack)
 node dist/cli.js .     # read this repository with prose
+pnpm run preview       # build, then read it
 ```
 
 The build and server tests run against the committed [`tests/fixtures/simple`](../tests/fixtures/simple/), since `prose build` reads `HEAD`: commit a change to the fixture before testing it.

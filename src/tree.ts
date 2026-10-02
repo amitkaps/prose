@@ -103,16 +103,21 @@ export function isSource(root: string, relPath: string): boolean {
 
 function readReadme(dir: string): string | null {
   try {
-    return readFileSync(join(dir, "README.md"), "utf-8");
+    return withoutMetadata(readFileSync(join(dir, "README.md"), "utf-8"));
   } catch {
     return null;
   }
 }
 
+/** A Markdown file's text without its metadata block, which is for tools, not the reader. */
+export function withoutMetadata(source: string): string {
+  return source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
+}
+
 /** @prose
  * # One file's node
  *
- * A `.md` file that isn't a `README.md` is prose as it is, with any frontmatter stripped: no
+ * A `.md` file that isn't a `README.md` is prose as it is, with any metadata block stripped: no
  * marker, no chunks. Every other source file goes through `parseFile`, and its blocks hang off
  * the file node in source order, the file prose first.
  */
@@ -136,7 +141,7 @@ const parseCache = new Map<string, { mtimeMs: number; size: number; node: TreeNo
 function readFileNode(absPath: string, relPath: string): TreeNode {
   const source = readFileSync(absPath, "utf-8");
   if (extensionOf(relPath) === "md") {
-    const prose = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
+    const prose = withoutMetadata(source);
     return {
       name: relPath,
       kind: "file",

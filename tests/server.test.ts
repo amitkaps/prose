@@ -1,17 +1,17 @@
 /** @prose
  * # Server tests
  *
- * `prose serve` ([reading](../docs/reading.md#pages)): route segments, the `tests/fixtures/simple` pages, folder pages, path traversal
- * refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
+ * `prose serve` ([reading](../docs/reading.md#pages)): route segments, the `tests/fixtures/simple` pages, folder pages, the
+ * breadcrumb, the table of contents, EBNF fences, path traversal refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
  */
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import { segments } from "../src/render.js";
+import { segments, tableOfContents } from "../src/render.js";
 import { serve, type Served, touches } from "../src/server.js";
 import type { TreeNode } from "../src/tree.js";
 
@@ -57,6 +57,30 @@ describe("segments", () => {
   });
 });
 
+describe("tableOfContents", () => {
+  it("lists a doc's second- and third-level headings by their ids, folded and beside the page", () => {
+    const toc = tableOfContents(
+      '<h1 id="t">T</h1><h2 id="a">A</h2><h3 id="b">B <code>x</code></h3><h4 id="c">C</h4><h2 id="d">D</h2>',
+    );
+    expect(toc).toContain('<details class="toc toc-top"><summary>On this page</summary>');
+    expect(toc).toContain('<nav class="toc toc-side" aria-label="On this page">');
+    expect(toc).toContain('<li class="toc-3"><a href="#b">B x</a></li>');
+    expect(toc).not.toContain('href="#c"');
+    expect(toc).not.toContain('href="#t"');
+  });
+
+  it("links a block's heading to its block, without the block's # link", () => {
+    const block = (id: string) =>
+      `<section class="block" id="${id}"><div class="prose"><h2><a class="anchor" href="#${id}" aria-label="Link to this block">#</a>${id}</h2></div></section>`;
+    const toc = tableOfContents(block("one") + block("two") + block("three"));
+    expect(toc).toContain('<li class="toc-2"><a href="#two">two</a></li>');
+  });
+
+  it("has none for a page with fewer than three", () => {
+    expect(tableOfContents('<h2 id="a">A</h2><h2 id="b">B</h2>')).toBe("");
+  });
+});
+
 describe("serve: tests/fixtures/simple", () => {
   let served: Served;
   beforeAll(async () => {
@@ -97,12 +121,12 @@ describe("serve: tests/fixtures/simple", () => {
     expect((await get(served.url, "/index.html")).body).toContain('class="block');
   });
 
-  it("sends a folder's README.md to the folder's page, and says where its text is from", async () => {
+  it("sends a folder's README.md to the folder's page, which the breadcrumb ends in", async () => {
     const res = await get(served.url, "/README.md");
     expect(res.status).toBe(301);
     expect(res.location).toBe("/");
-    expect((await get(served.url, "/")).body).toContain(
-      '<p class="from">From <code>README.md</code></p>',
+    expect((await get(served.url, "/")).body).toMatch(
+      /<span class="sep">\/<\/span><a href="\/" aria-current="page">README\.md<\/a><\/nav>/,
     );
   });
 
@@ -127,6 +151,7 @@ describe("serve: folders", () => {
       "src/a.ts": "/** @prose\n * Does a.\n */\nexport const a = 1;\n",
       "src/b.ts": "export const b = 2;\n",
       "docs/plan.md": "# Plan\n\nWhat's next.\n",
+      "docs/grammar.md": "# Grammar\n\n```ebnf\ndigit ::= [0-9] | 'x'\n```\n",
     };
     for (const [path, text] of Object.entries(files)) {
       mkdirSync(join(root, path, ".."), { recursive: true });
@@ -140,11 +165,17 @@ describe("serve: folders", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  it("lists a folder's files with their summaries, and marks the undocumented", async () => {
+  it("lists a folder's files in groups with their summaries, and names the undocumented on one line", async () => {
     const { body } = await get(served.url, "/src/");
     expect(body).toContain("The source.");
-    expect(body).toContain("Does a.");
-    expect(body).toMatch(/b\.ts<\/a><p><span class="undocumented">undocumented/);
+    expect(body).toMatch(
+      /<p class="group-label">Code<\/p><ul class="listing"><li class="file"><a href="\/src\/a\.ts">a\.ts<\/a><p>Does a\.<\/p>/,
+    );
+    expect(body).toContain(
+      '<p class="group-label">No prose yet</p><p class="names"><a href="/src/b.ts">b.ts</a></p>',
+    );
+    const root = (await get(served.url, "/")).body;
+    expect(root.indexOf(">Folders<")).toBeLessThan(root.indexOf(">No prose yet<"));
   });
 
   it("shows a file with no prose as one run with the same header, and says so", async () => {
@@ -173,7 +204,7 @@ describe("serve: folders", () => {
     );
     // A folder's README.md is listed first in it, and goes to the folder's page.
     expect(rail).toMatch(
-      /<ul><li><a class="file" style="--depth: 1" href="\/src\/">README.md<\/a>/,
+      /<ul style="--depth: 0"><li><a class="file" style="--depth: 1" href="\/src\/">README.md<\/a>/,
     );
     expect(rail).not.toContain('href="/src/README.md"');
   });
@@ -183,6 +214,32 @@ describe("serve: folders", () => {
     expect(status).toBe(200);
     expect(body).toContain('<div class="prose"><h1');
     expect(body).toContain('data-mode="prose" aria-pressed="false" disabled');
+  });
+
+  it("starts every breadcrumb at the project, and ends a folder's page with its README", async () => {
+    const crumbs = (body: string) =>
+      body.slice(
+        body.indexOf('<nav class="crumbs">'),
+        body.indexOf("</nav>", body.indexOf('<nav class="crumbs">')),
+      );
+    const sep = '<span class="sep">/</span>';
+    const name = basename(root);
+    expect(crumbs((await get(served.url, "/")).body)).toBe(
+      `<nav class="crumbs"><a href="/">${name}</a>${sep}<a href="/" aria-current="page">README.md</a>`,
+    );
+    expect(crumbs((await get(served.url, "/src/")).body)).toBe(
+      `<nav class="crumbs"><a href="/">${name}</a>${sep}<a href="/src/">src</a>${sep}<a href="/src/" aria-current="page">README.md</a>`,
+    );
+    expect(crumbs((await get(served.url, "/src/a.ts")).body)).toBe(
+      `<nav class="crumbs"><a href="/">${name}</a>${sep}<a href="/src/">src</a>${sep}<a href="/src/a.ts" aria-current="page">a.ts</a>`,
+    );
+  });
+
+  it("highlights an EBNF fence: the rule's name, its terminals and character classes", async () => {
+    const { body } = await get(served.url, "/docs/grammar.md");
+    expect(body).toMatch(/--shiki-token-function[^>]*>digit</);
+    expect(body).toMatch(/--shiki-token-constant[^>]*>\s*\[0-9\]</);
+    expect(body).toMatch(/--shiki-token-string[^>]*>\s*'x'</);
   });
 
   it("redirects a folder asked for without its slash", async () => {

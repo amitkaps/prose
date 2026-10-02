@@ -11,6 +11,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { resolve, sep } from "node:path";
 import { escapeHtml, warmHighlighter } from "./highlight.js";
 import { binaryBody, folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
+import { docsNav, type NavItem } from "./nav.js";
 import { renderRail, railFooter, type Snapshot } from "./rail.js";
 import { projectName, repoUrl } from "./repo.js";
 import {
@@ -64,6 +65,8 @@ export interface Site {
   snapshot?: Snapshot;
   /** The repository's GitHub address, read from the real repository: a build's `root` is an export with no `.git`. */
   repo?: string;
+  /** The docs linked in the bar (`nav.ts`). */
+  nav: NavItem[];
 }
 
 export type Route = { status: 200 | 404; html: string } | { status: 301; location: string };
@@ -87,12 +90,13 @@ export function notFoundPage(site: Site): string {
     editorLink: null,
     hasCode: false,
     live: site.live,
+    nav: site.nav,
   });
 }
 
 export async function renderRoute(site: Site, path: string): Promise<Route> {
   const { root, project, files, live } = site;
-  const shell = (body: string, editorLink: string | null = null, hasCode = false) =>
+  const shell = (body: string, editorLink: string | null = null, hasCode = false, readme = false) =>
     page({
       project,
       path,
@@ -101,6 +105,8 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
       editorLink: live ? editorLink : null,
       hasCode,
       live,
+      readme,
+      nav: site.nav,
     });
   const notFound = (): Route => ({
     status: 404,
@@ -114,7 +120,10 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
     if (!node) return notFound();
     // What's ignored exists only on this machine, so a built page doesn't list it.
     const ignored = live ? ignoredIn(root, path.replace(/\/$/, "")) : [];
-    return { status: 200, html: shell(await folderBody(node, ignored)) };
+    return {
+      status: 200,
+      html: shell(await folderBody(node, ignored), null, false, Boolean(node.prose)),
+    };
   }
 
   // A folder's README.md is that folder's page, so its own address goes there.
@@ -152,12 +161,14 @@ async function respond(root: string, req: IncomingMessage, res: ServerResponse):
   } catch {
     return send(res, 400, "Bad request");
   }
+  const files = projectFiles(root);
   const site: Site = {
     root,
     project: projectName(root),
-    files: projectFiles(root),
+    files,
     live: true,
     repo: repoUrl(root),
+    nav: docsNav(root, files),
   };
   const route = await renderRoute(site, path);
   if (route.status === 301) {
