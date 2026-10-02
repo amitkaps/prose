@@ -33,6 +33,6 @@ Most of these were built or planned once, and dropped. Each keeps a one-line rea
 
 - **Not an editor.** The human's editor and the agent change the repository. So prose has no editing, no notes in the source and no review of changes. Discussion happens in the chat, and the prose says what the code means now.
 - **Not a checker.** No symbol or staleness checks, coverage reports or LLM summaries. The one real drift found in use was about meaning, which no mechanical check catches.
-- **Not a site generator or a host.** Navigation stops at the bar's links to the docs. A site with its own navigation and design needs a static site generator ([writing.md](writing.md#folders-and-docs)). Deploying, and each host's config, belong to the project ([usage.md](usage.md#deploying-this-site)).
+- **Not a site generator or a host.** Navigation stops at the bar's links to the docs. A site with its own navigation and design needs a static site generator ([writing.md](writing.md#folders-and-docs)). Deploying, and each host's config, belong to the project ([usage.md](usage.md#build)).
 - **Not a new file format.** No `.ts.md` and no tangling. `@prose` stays a comment, so standard tools keep working.
 - **Not part of the app.** No dev route in the app's server, no build plugin and no custom dev tools. The renderer reads any repository without the app running.

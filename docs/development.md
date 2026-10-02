@@ -1,6 +1,6 @@
 # Development
 
-How to work on prose itself: build it, test it and release it. The rules for changing it, including the prose rules it follows, are in [AGENTS.md](../AGENTS.md).
+How to work on prose itself: build it, test it, release it and deploy its site. The rules for changing it, including the prose rules it follows, are in [AGENTS.md](../AGENTS.md).
 
 ## Toolchain
 
@@ -36,7 +36,7 @@ Bump `version` in `package.json` and merge to `main`. Then tag the release and p
 git tag v0.3.0 && git push origin v0.3.0
 ```
 
-The `release` workflow does the rest. The site needs no step of its own, because Cloudflare builds it from `main` ([usage](usage.md#deploying-this-site)).
+The `release` workflow does the rest. The site needs no step of its own, because Cloudflare builds it from `main` ([the site](#the-site)).
 
 ### Publishing to npm
 
@@ -51,3 +51,15 @@ pnpm pack && cd /tmp && npm login && npm publish ~/code/prose/amitkaps-prose-<ve
 ```
 
 The workflow skips a version that's already on the registry.
+
+## The site
+
+[prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, on a Cloudflare Worker with static assets. It builds from `main`, so its configuration is a file in the repository, [wrangler.toml](../wrangler.toml). Every merge deploys it.
+
+In Cloudflare, create a Worker named `prose` from the repository, with these settings.
+
+- **Production branch:** `main`
+- **Build command:** `pnpm install && pnpm run build && node dist/cli.js build`
+- **Deploy command:** `pnpm dlx wrangler deploy`
+
+Then set the domain on the Worker, in the dashboard. `wrangler.toml` sets up the two things [usage](usage.md#build) asks of a host. It points the Worker at `.prose`, serves `404.html` for a missing address, and serves `/src/store.ts` from `src/store.ts.html`. The deploy command uses `pnpm dlx`, not `npx`, because `npx` refuses to run in a repository whose `devEngines` names pnpm.

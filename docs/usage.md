@@ -49,21 +49,14 @@ prose build             # the same pages as static files, in .prose
 prose build --out site  # somewhere else
 ```
 
-`prose build` renders the last commit, not the working tree. Nothing untracked, ignored or uncommitted reaches the site, and the build warns when there are uncommitted changes. Add `.prose/` to `.gitignore`, since the folder is prose's own and each build clears it. How the published pages differ from local ones is in [reading.md](reading.md#local-and-published). Serving them is the host's job, and prose has no command for it.
+`prose build` renders the last commit, not the working tree. Nothing untracked, ignored or uncommitted reaches the site, and the build warns when there are uncommitted changes. Add `.prose/` to `.gitignore`, since the folder is prose's own and each build clears it. How the published pages differ from local ones is in [reading.md](reading.md#local-and-published).
 
-## Deploying this site
+The folder is plain static files, and any static host can serve it. Point the host at the folder, and set it up for two things.
 
-[prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, on a Cloudflare Worker with static assets. It builds from `main`, so its configuration is a file in the repository, [wrangler.toml](../wrangler.toml). Every merge deploys it.
+- **Addresses without `.html`.** The page for `/src/store.ts` is `src/store.ts.html`, and the host should serve it there with no redirect.
+- **A 404 page.** The build writes `404.html`, with the file tree, for any missing address.
 
-In Cloudflare, create a Worker named `prose` from the repository, with these settings.
-
-- **Production branch:** `main`
-- **Build command:** `pnpm install && pnpm run build && node dist/cli.js build`
-- **Deploy command:** `pnpm dlx wrangler deploy`
-
-Then set the domain on the Worker, in the dashboard. `wrangler.toml` points the Worker at `.prose`, and serves the site's `404.html` for missing addresses. It also serves `/src/store.ts` from `src/store.ts.html`. Cloudflare reads the build's `_headers` file, so readers cache the shared stylesheet and script for good. The deploy command uses `pnpm dlx`, not `npx`, because `npx` refuses to run in a repository whose `devEngines` names pnpm.
-
-Another project does the same with the published package. Its build command is `npx @amitkaps/prose build`, and its own `wrangler.toml` sets `directory = ".prose"`.
+The build also writes a `_headers` file, which Cloudflare and Netlify read. It caches the shared stylesheet and script in `/assets/` for good. Deploying is the host's job, and prose has no command for it. This repository's own site, on Cloudflare, is set up in [development.md](development.md#the-site).
 
 ## For agents
 
