@@ -125,7 +125,7 @@ describe("build: tests/fixtures/simple", () => {
   it("writes the shared files once, and tells the host to cache them for good", () => {
     expect(readFileSync(join(out, STYLE.url), "utf-8")).toBe(STYLE.body);
     expect(existsSync(join(out, LIVE.url))).toBe(false);
-    expect(readFileSync(join(out, "_headers"), "utf-8")).toContain("/prose/*\n  Cache-Control:");
+    expect(readFileSync(join(out, "_headers"), "utf-8")).toContain("/assets/*\n  Cache-Control:");
   });
 
   it("resolves every link to a page it wrote", () => {

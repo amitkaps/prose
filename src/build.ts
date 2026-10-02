@@ -88,12 +88,12 @@ function redirectPage(location: string): string {
 /** @prose
  * # Caching the shared files
  *
- * The stylesheet and the script are written once, under `prose/` ([assets.ts](assets.ts)).
+ * The stylesheet and the script are written once, under `assets/` ([assets.ts](assets.ts)).
  * A `_headers` file tells the host to cache them for good, since a new text gets a new name.
  * Cloudflare and Netlify read it and don't serve it. Another host serves it as a small text file,
  * and its pages still work.
  */
-const HEADERS = "/prose/*\n  Cache-Control: public, max-age=31536000, immutable\n";
+const HEADERS = "/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n";
 
 /** Every folder that holds a listed file, with its slash: `src/`, `src/lib/`. */
 function folders(files: string[]): string[] {
