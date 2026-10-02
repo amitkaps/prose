@@ -118,7 +118,7 @@ docs/
 
 - **Keep one short promises doc.** `idea.md`, `spec.md`, whatever the project calls it: what the project promises and what it leaves out ("not in v1"). In use it was the most valuable file: decisions could be argued from it, and its non-goals stopped scope creep. It pays off because it's short enough to hold in mind.
 - **Decisions land in the prose.** A decision reached in the chat that spans files goes into the doc it changes, in the same change as the code ([the agent rules](usage.md#for-agents)). One that concerns a single spot goes into that spot's `@prose`.
-- **`docs/` is a suggestion, not a mechanism.** The renderer treats it as an ordinary folder of Markdown ([reading](reading.md#pages)). Because it's plain Markdown linked by repo path, a static site generator can publish it as it is; what gets published, and how internal docs like `plan.md` stay off a site, is that tool's concern.
+- **`docs/` is a suggestion, not a mechanism.** The renderer shows it as an ordinary folder of Markdown, and pins its docs above the file tree: every one, or those a `nav: [design.md, usage.md]` list in `docs/README.md`'s metadata names, in that order ([src/nav.ts](../src/nav.ts)). Because it's plain Markdown linked by repo path, a static site generator can publish it as it is; what gets published, and how internal docs like `plan.md` stay off a site, is that tool's concern.
 
 ## References
 

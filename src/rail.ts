@@ -11,6 +11,7 @@
  * the rail was scrolled, across pages (`render.ts`).
  */
 import { escapeHtml } from "./highlight.js";
+import type { NavItem } from "./nav.js";
 
 interface Dir {
   dirs: Map<string, Dir>;
@@ -42,7 +43,8 @@ function href(path: string, folder: boolean): string {
 /** @prose
  * Each row carries its depth, and indents itself by it, rather than nesting padding in the
  * lists: so a row's highlight spans the rail's full width, as an editor's explorer does, while
- * its chevron and name sit at their depth.
+ * its chevron and name sit at their depth. A folder's list carries the folder's depth too, for
+ * the guide drawn down from its chevron.
  */
 function renderDir(dir: Dir, prefix: string, current: string, depth: number): string {
   const rows: string[] = [];
@@ -54,7 +56,7 @@ function renderDir(dir: Dir, prefix: string, current: string, depth: number): st
     rows.push(
       `<li><details data-folder="${escapeHtml(path)}"${open ? " open" : ""}><summary style="--depth: ${depth}"${
         here && !sub.files.includes("README.md") ? ` aria-current="page"` : ""
-      }><a href="${escapeHtml(href(path, true))}">${escapeHtml(name)}</a></summary><ul>${renderDir(sub, path, current, depth + 1)}</ul></details></li>`,
+      }><a href="${escapeHtml(href(path, true))}">${escapeHtml(name)}</a></summary><ul style="--depth: ${depth}">${renderDir(sub, path, current, depth + 1)}</ul></details></li>`,
     );
   }
   // A folder's `README.md` is its page, so its row goes to the folder and is first in it.
@@ -81,14 +83,33 @@ function renderDir(dir: Dir, prefix: string, current: string, depth: number): st
   return rows.join("");
 }
 
+/** The pinned docs (`nav.ts`), above the tree, a little larger than its rows. The page's own doc
+ *  is highlighted here and in the tree both, since each says where the reader is. */
+function renderDocs(nav: NavItem[], current: string): string {
+  if (nav.length === 0) return "";
+  const rows = nav.map(
+    ({ path, label }) =>
+      `<li><a href="${escapeHtml(href(path, false))}"${
+        current === path ? ` aria-current="page"` : ""
+      }>${escapeHtml(label)}</a></li>`,
+  );
+  return `<div class="rail-docs"><p class="rail-label">Docs</p><ul>${rows.join("")}</ul></div>`;
+}
+
 /** The rail for a page at `current` (`""`, `src/`, or `src/store.ts`). A folder's `README.md` is
  *  listed first in it and links to the folder's page, where it is highlighted instead of the
  *  folder's own row. */
-export function renderRail(files: string[], current: string, project: string, footer = ""): string {
+export function renderRail(
+  files: string[],
+  current: string,
+  project: string,
+  footer = "",
+  nav: NavItem[] = [],
+): string {
   const top = index(files);
   return `<nav class="rail" id="rail" popover aria-label="Files"><a class="rail-project" href="/"${
     current === "" && !top.files.includes("README.md") ? ` aria-current="page"` : ""
-  }>${escapeHtml(project)}</a><ul>${renderDir(top, "", current, 0)}</ul>${footer}</nav>`;
+  }>${escapeHtml(project)}</a>${renderDocs(nav, current)}<ul class="rail-tree">${renderDir(top, "", current, 0)}</ul>${footer}</nav>`;
 }
 
 /** What a built page was made from: the short commit, and the tag only when `HEAD` is that tag. */

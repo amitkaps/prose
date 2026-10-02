@@ -196,6 +196,48 @@ a {
 }
 .rail summary a {
   flex: 1;
+  font-weight: 500;
+}
+/* A guide runs down from each open folder's chevron, beside its contents; the guides on the way
+   to the current page are darker, so the eye can follow the path. Vertical only: elbows to each
+   row would make it a diagram of the tree rather than a list of files. */
+.rail details > ul {
+  position: relative;
+}
+.rail details > ul::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: calc(var(--edge) + var(--depth) * var(--step) + var(--twisty) / 2);
+  border-left: 1px solid var(--rule);
+  pointer-events: none;
+}
+.rail details:has([aria-current]) > ul::before {
+  border-left-color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+/* The docs a repository pins (nav.ts), above the tree: names, not files, a little larger, at
+   the top-level names' indent. */
+.rail-docs {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+.rail-label {
+  margin: 0;
+  padding: 0.2rem var(--edge);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.rail-docs a {
+  display: block;
+  padding: 0.25rem var(--edge) 0.25rem calc(var(--edge) + var(--twisty) + var(--gap));
+  font-size: 1.1em;
+}
+.rail-docs a:hover {
+  background: var(--rule);
 }
 .rail summary::-webkit-details-marker {
   display: none;
@@ -206,9 +248,9 @@ a {
   width: var(--twisty);
   height: var(--twisty);
   background: currentColor;
-  opacity: 0.6;
+  opacity: 0.4;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E")
-    center / contain no-repeat;
+    center / 80% no-repeat;
   transition: transform 0.1s;
 }
 .rail details[open] > summary::before {
@@ -368,7 +410,7 @@ a {
   color: var(--muted);
   font-size: 0.78rem;
 }
-.rail > ul {
+.rail > .rail-tree {
   margin-bottom: 1rem;
 }
 .rail-foot a {
@@ -668,17 +710,28 @@ pre {
   color: var(--accent);
   font-weight: 600;
 }
+/* A folder's listing (render.ts): a label per group, and its rows indented under it. */
+.group {
+  margin: 2rem 0 0;
+}
+.group-label {
+  margin: 0 0 0.4rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .listing {
   list-style: none;
-  padding: 0;
-  margin: 1.5rem 0;
-  border-top: 1px solid var(--rule);
+  margin: 0;
+  padding: 0 0 0 1rem;
 }
 .listing li {
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--rule);
+  padding: 0.35rem 0;
 }
-.listing li > a {
+.listing li > a,
+.group .names a {
   font-weight: 600;
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.92rem;
@@ -687,12 +740,19 @@ pre {
   color: var(--ink);
 }
 .listing p {
-  margin: 0.2rem 0 0;
+  margin: 0.1rem 0 0;
   color: var(--muted);
   font-size: 0.92rem;
 }
-.undocumented {
-  font-style: italic;
+.group .names {
+  margin: 0;
+  padding-left: 1rem;
+}
+.group .names a {
+  font-weight: 400;
+}
+.group .names .sep {
+  color: var(--muted);
 }
 .missing {
   color: var(--muted);

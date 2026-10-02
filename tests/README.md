@@ -5,6 +5,7 @@ One test file for each source file that has logic, run with `pnpm run test`. The
 - [parser.test.ts](parser.test.ts) and [names.test.ts](names.test.ts): what counts as prose in each language, and the names a chunk declares.
 - [tree.test.ts](tree.test.ts): the walk, summaries, and which files are read.
 - [server.test.ts](server.test.ts) and [build.test.ts](build.test.ts): the pages and the static site.
-- [repo.test.ts](repo.test.ts): the GitHub address, and the rail's footer and README rows.
+- [repo.test.ts](repo.test.ts): the project's name and GitHub address, and the rail's footer and README rows.
+- [nav.test.ts](nav.test.ts): the docs pinned above the tree.
 
 Commit a change to the fixture before running them, since a build exports `HEAD`.

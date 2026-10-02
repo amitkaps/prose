@@ -11,6 +11,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { resolve, sep } from "node:path";
 import { escapeHtml, warmHighlighter } from "./highlight.js";
 import { binaryBody, folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
+import { docsNav, type NavItem } from "./nav.js";
 import { renderRail, railFooter, type Snapshot } from "./rail.js";
 import { projectName, repoUrl } from "./repo.js";
 import {
@@ -64,6 +65,8 @@ export interface Site {
   snapshot?: Snapshot;
   /** The repository's GitHub address, read from the real repository: a build's `root` is an export with no `.git`. */
   repo?: string;
+  /** The docs pinned above the file tree (`nav.ts`). */
+  nav: NavItem[];
 }
 
 export type Route = { status: 200 | 404; html: string } | { status: 301; location: string };
@@ -82,7 +85,7 @@ export function notFoundPage(site: Site): string {
   return page({
     project: site.project,
     path: "",
-    rail: renderRail(site.files, "", site.project, footerOf(site)),
+    rail: renderRail(site.files, "", site.project, footerOf(site), site.nav),
     body: `<p class="missing">Nothing at this address in this repository.</p>`,
     editorLink: null,
     hasCode: false,
@@ -96,7 +99,7 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
     page({
       project,
       path,
-      rail: renderRail(files, path, project, footerOf(site)),
+      rail: renderRail(files, path, project, footerOf(site), site.nav),
       body,
       editorLink: live ? editorLink : null,
       hasCode,
@@ -156,12 +159,14 @@ async function respond(root: string, req: IncomingMessage, res: ServerResponse):
   } catch {
     return send(res, 400, "Bad request");
   }
+  const files = projectFiles(root);
   const site: Site = {
     root,
     project: projectName(root),
-    files: projectFiles(root),
+    files,
     live: true,
     repo: repoUrl(root),
+    nav: docsNav(root, files),
   };
   const route = await renderRoute(site, path);
   if (route.status === 301) {

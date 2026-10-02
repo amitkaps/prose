@@ -75,7 +75,9 @@ describe("renderRail: README.md", () => {
 
   it("lists a folder's README first, linking to the folder's page", () => {
     const html = renderRail(files, "src/x.ts", "demo");
-    expect(html).toMatch(/<ul><li><a class="file" style="--depth: 1" href="\/docs\/">README.md</);
+    expect(html).toMatch(
+      /<ul style="--depth: 0"><li><a class="file" style="--depth: 1" href="\/docs\/">README.md</,
+    );
     expect(html.indexOf('href="/docs/"')).toBeLessThan(html.indexOf('href="/docs/a.md"'));
     expect(html.indexOf('href="/"')).toBeLessThan(html.indexOf('href="/app.ts"'));
   });

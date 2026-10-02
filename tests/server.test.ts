@@ -141,11 +141,17 @@ describe("serve: folders", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  it("lists a folder's files with their summaries, and marks the undocumented", async () => {
+  it("lists a folder's files in groups with their summaries, and names the undocumented on one line", async () => {
     const { body } = await get(served.url, "/src/");
     expect(body).toContain("The source.");
-    expect(body).toContain("Does a.");
-    expect(body).toMatch(/b\.ts<\/a><p><span class="undocumented">undocumented/);
+    expect(body).toMatch(
+      /<p class="group-label">Code<\/p><ul class="listing"><li class="file"><a href="\/src\/a\.ts">a\.ts<\/a><p>Does a\.<\/p>/,
+    );
+    expect(body).toContain(
+      '<p class="group-label">No prose yet</p><p class="names"><a href="/src/b.ts">b.ts</a></p>',
+    );
+    const root = (await get(served.url, "/")).body;
+    expect(root.indexOf(">Folders<")).toBeLessThan(root.indexOf(">No prose yet<"));
   });
 
   it("shows a file with no prose as one run with the same header, and says so", async () => {
@@ -174,7 +180,7 @@ describe("serve: folders", () => {
     );
     // A folder's README.md is listed first in it, and goes to the folder's page.
     expect(rail).toMatch(
-      /<ul><li><a class="file" style="--depth: 1" href="\/src\/">README.md<\/a>/,
+      /<ul style="--depth: 0"><li><a class="file" style="--depth: 1" href="\/src\/">README.md<\/a>/,
     );
     expect(rail).not.toContain('href="/src/README.md"');
   });

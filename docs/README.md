@@ -1,3 +1,7 @@
+---
+nav: [design.md, usage.md, writing.md, reading.md, plan.md, lessons.md, development.md]
+---
+
 # Docs
 
 The writing that spans the code: what Prose is for, how to use it, and how it works. Read them in this order.

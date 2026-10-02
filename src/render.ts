@@ -58,26 +58,57 @@ export function segments(source: string, blocks: TreeNode[]): Segment[] {
   return out;
 }
 
-/** The listing on a folder page: each child with its summary, *undocumented* where it has none. */
+/** @prose
+ * # A folder's listing
+ *
+ * What's in a folder, under its README, in groups: **Folders**, then **Docs**, then **Code**, each
+ * a label with its rows indented under it, a name and its summary. What has no prose yet isn't a
+ * row each: it's one line of names at the end, **No prose yet**, so coverage still shows where
+ * you read without filling the page with *undocumented*. Files that can't carry prose (`LICENSE`,
+ * `package.json`, an image) are a last line, **Other files**. Groups are labels, not icons.
+ */
 function renderListing(children: TreeNode[]): string {
-  if (children.length === 0) return "";
-  const items = children.map((child) => {
+  const href = (child: TreeNode) =>
+    `/${child.path.split("/").map(encodeURIComponent).join("/")}${child.kind === "folder" ? "/" : ""}`;
+  const link = (child: TreeNode) => {
     const name = child.path.split("/").at(-1)!;
-    const href = `/${child.path.split("/").map(encodeURIComponent).join("/")}${
-      child.kind === "folder" ? "/" : ""
-    }`;
-    const label = child.kind === "folder" ? `${name}/` : name;
-    const summary =
-      child.kind === "raw"
-        ? ""
-        : child.summary === "undocumented" || !child.summary
-          ? `<span class="undocumented">undocumented</span>`
-          : renderSummary(child.summary);
-    return `<li class="${child.kind}"><a href="${escapeHtml(href)}">${escapeHtml(label)}</a>${
-      summary ? `<p>${summary}</p>` : ""
-    }</li>`;
-  });
-  return `<ul class="listing">${items.join("")}</ul>`;
+    return `<a href="${escapeHtml(href(child))}">${escapeHtml(child.kind === "folder" ? `${name}/` : name)}</a>`;
+  };
+  const undocumented = (child: TreeNode) =>
+    child.kind !== "raw" && (child.summary === "undocumented" || !child.summary);
+  const documented = children.filter((child) => child.kind !== "raw" && !undocumented(child));
+  const isDoc = (child: TreeNode) => child.kind === "file" && extensionOf(child.path) === "md";
+  const group = (label: string, rows: TreeNode[]) =>
+    rows.length
+      ? `<section class="group"><p class="group-label">${label}</p><ul class="listing">${rows
+          .map(
+            (child) =>
+              `<li class="${child.kind}">${link(child)}<p>${renderSummary(child.summary)}</p></li>`,
+          )
+          .join("")}</ul></section>`
+      : "";
+  const line = (label: string, rows: TreeNode[]) =>
+    rows.length
+      ? `<section class="group"><p class="group-label">${label}</p><p class="names">${rows
+          .map(link)
+          .join(`<span class="sep"> · </span>`)}</p></section>`
+      : "";
+  return [
+    group(
+      "Folders",
+      documented.filter((child) => child.kind === "folder"),
+    ),
+    group("Docs", documented.filter(isDoc)),
+    group(
+      "Code",
+      documented.filter((child) => child.kind !== "folder" && !isDoc(child)),
+    ),
+    line("No prose yet", children.filter(undocumented)),
+    line(
+      "Other files",
+      children.filter((child) => child.kind === "raw"),
+    ),
+  ].join("");
 }
 
 /** A folder's README, its listing, and, on a local page, one line naming what `.gitignore`
