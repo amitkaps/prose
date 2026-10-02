@@ -13,9 +13,9 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { escapeHtml, warmHighlighter } from "./highlight.js";
-import { repoUrl } from "./repo.js";
+import { projectName, repoUrl } from "./repo.js";
 import { notFoundPage, renderRoute, type Site } from "./server.js";
 import { walkFiles } from "./tree.js";
 
@@ -152,7 +152,7 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
     const files = walkFiles(snapshot, "").sort();
     const site: Site = {
       root: snapshot,
-      project: basename(root),
+      project: projectName(root),
       files,
       live: false,
       snapshot: { commit, tag },
