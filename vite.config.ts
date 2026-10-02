@@ -1,7 +1,11 @@
 /** @prose
- * Drives `vp fmt`, `vp lint`, `vp test` and `vp pack` for the package's own source. There is no
- * app to build, so `plugins` stays empty. `tests/fixtures/**` are fixtures with their own style, and
- * running `vp` from the repo root must not reach into them, so `ignored` excludes them.
+ * # The toolchain
+ *
+ * One config for formatting, linting, tests and the build, all run through `vp`. There's no app
+ * to build, so `plugins` stays empty.
+ *
+ * The fixtures in `tests/fixtures/` keep their own style. So `ignored` keeps `vp` out of them
+ * when it runs from the root.
  */
 import { readFileSync } from "node:fs";
 import { defineConfig } from "vite-plus";
@@ -24,8 +28,10 @@ export default defineConfig({
   },
 
   /** @prose
-   * Builds the library and the command (`src/index.ts`, `src/cli.ts` → `dist/*.js` + `.d.ts`)
-   * for Node, where the parser and the renderer run.
+   * # The build
+   *
+   * Builds the library and the command for Node, where the parser and the renderer run.
+   * `src/index.ts` and `src/cli.ts` become `dist/*.js`, with their types.
    */
   pack: {
     entry: ["src/index.ts", "src/cli.ts"],

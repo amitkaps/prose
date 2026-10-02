@@ -2,12 +2,12 @@
 /** @prose
  * # `prose [dir]`
  *
- * The command: serve a repository and open it in the browser; as `prose build`, write the same
- * pages as static files for any host to serve. No config, and only the few flags a person
- * would reach for.
+ * The command. `prose` serves a repository and opens it in the browser. `prose build` writes the
+ * same pages as static files, for any host to serve. There's no config.
  *
- * What each does is in [reading](../docs/reading.md); the flags are a port, not opening the
- * browser, and where a build goes (`build.ts`).
+ * The flags are only the few a person would reach for. They set the port, skip opening the
+ * browser, and say where a build goes ([build.ts](build.ts)). What each page shows is in
+ * [reading](../docs/reading.md).
  */
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";

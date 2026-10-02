@@ -1,9 +1,9 @@
 # @prose
 # # CI
 #
-# One job, `ci`, on every pull request and every push to `main`: format, lint and types, the tests, then the
-# build. Branch protection requires that exact check name. A second job, `node-24`, runs the tests on
-# the previous LTS.
+# Runs on every pull request and every push to `main`. The `ci` job checks format, lint and
+# types, runs the tests, then builds. Branch protection requires that exact check name. A second
+# job, `node-24`, runs the tests on the previous LTS.
 
 name: ci
 

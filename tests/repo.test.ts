@@ -1,9 +1,9 @@
 /** @prose
  * # Repository and footer tests
  *
- * A GitHub address from every spelling of a remote, and none from any other host; a name from any
- * remote; and the rail's footer: Live locally, a snapshot with its commit and, only when given one, its tag; and a folder's
- * `README.md` row, first in its folder and standing for the folder's page.
+ * The project's name and GitHub address, read from a remote in each of its spellings. Also the
+ * rail's footer, and a folder's `README.md` row, which comes first and stands for the folder's
+ * page.
  */
 import { describe, expect, it } from "vite-plus/test";
 import { railFooter, renderRail } from "../src/rail.js";

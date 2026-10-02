@@ -1,8 +1,9 @@
 /** @prose
  * # Tree tests
  *
- * The walk into folders and files ([reading](../docs/reading.md)): summaries, raw files such as lockfiles shown as text, `docs/` as an
- * ordinary folder, and the git-aware file list, all against throwaway projects built in a temp directory.
+ * The walk into folders and files ([reading](../docs/reading.md#what-it-reads)), run on throwaway
+ * projects in a temporary folder. It covers summaries, which files are read for prose, and the
+ * file list git gives.
  */
 
 import { execFileSync } from "node:child_process";

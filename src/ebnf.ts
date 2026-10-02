@@ -1,11 +1,11 @@
 /** @prose
  * # EBNF
  *
- * A grammar for the W3C's EBNF, the notation the XML spec writes its grammar in, so a ` ```ebnf `
- * fence in a doc is highlighted like the code around it. Shiki ships none.
+ * A grammar for the W3C's EBNF, the notation the XML spec uses for its grammar. With it, an
+ * `ebnf` fence in a doc is highlighted like the code around it. Shiki ships none.
  *
- * It's the notation's few parts and no more: a rule's name before `::=`, quoted terminals,
- * character classes and `#x` code points, the operators, and C-style and `(* *)` comments. A
+ * It covers the notation's few parts and no more. Those are a rule's name before `::=`, quoted
+ * terminals, character classes, `#x` code points, the operators, and both kinds of comment. A
  * name used inside a rule stays plain text, so the rule being defined is what stands out.
  */
 import type { LanguageRegistration } from "shiki/core";

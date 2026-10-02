@@ -1,8 +1,8 @@
 /** @prose
  * # Docs nav tests
  *
- * The docs linked in the bar: the `nav` list in `docs/README.md` in its order, every doc
- * alphabetically without one, names that aren't files skipped, and the labels.
+ * The docs linked in the bar. A `nav` list in `docs/README.md` sets their order, and without one
+ * every doc is linked in alphabetical order. Names that aren't files are skipped.
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

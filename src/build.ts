@@ -1,14 +1,14 @@
 /** @prose
  * # `prose build`
  *
- * The reader as static files, for any static host: the pages `prose .` serves, written by the
- * same `renderRoute` (`server.ts`), not a second site. It builds one commit, `HEAD`, as the
- * public repository shows it, and the same commit always gives the same bytes.
+ * The pages `prose .` serves, written as static files for any static host. The same
+ * `renderRoute` in [server.ts](server.ts) writes them, so it isn't a second site. It builds one
+ * commit, `HEAD`, as the public repository shows it.
  *
- * `git archive` exports the committed, tracked files into a temporary folder and the pages are
- * rendered from there, so no untracked scratch file, no `.env` and no ignored output can reach
- * the site, and uncommitted edits don't either (it warns about them). The live parts drop out,
- * and the page's footer says which commit it is.
+ * `git archive` exports the tracked files of that commit into a temporary folder, and the pages
+ * are rendered from there. So no untracked file, no `.env` and no ignored output can reach the
+ * site. Uncommitted edits can't either, and the build warns about them. The live parts drop out,
+ * and the footer says which commit it is. The same commit always gives the same bytes.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
@@ -56,12 +56,13 @@ function tryGit(root: string, args: string[]): string | null {
 /** @prose
  * # Where a page is written
  *
- * A page keeps its local URL ([reading](../docs/reading.md)). A folder's page is `folder/index.html`, and a file's is
- * its path plus `.html`: GitHub Pages answers `/src/expression.ts` with `src/expression.ts.html`,
- * with no redirect (the spike, `docs/plan.md` 2b). The one clash is a source file named
- * `index.html`, whose URL is its folder's page there; its page is `index.html.html`, and links to
- * it say so (`linkIndexPages`). A folder's `README.md` is a redirect to the folder's page
- * (`redirectPage`), as the server's 301 is.
+ * A page keeps its local address ([reading](../docs/reading.md#local-and-published)). A
+ * folder's page is `folder/index.html`. A file's page is its path plus `.html`, because a static
+ * host answers `/src/store.ts` with `src/store.ts.html`, with no redirect.
+ *
+ * The one clash is a source file named `index.html`, whose address is its folder's page. So its
+ * page is `index.html.html`, and links to it say so (`linkIndexPages`). A folder's `README.md` is
+ * a page that redirects to the folder's, as the server's 301 does (`redirectPage`).
  */
 function pageFile(path: string): string {
   return path === "" || path.endsWith("/") ? `${path}index.html` : `${path}.html`;
@@ -96,10 +97,10 @@ function folders(files: string[]): string[] {
 /** @prose
  * # A safe output folder
  *
- * The build clears its output before writing, so it refuses any folder it didn't make: one that
- * holds the repository, one with tracked files in it, or a non-empty one without a previous
- * build's marker. It never edits `.gitignore`; it warns when the output would show up as
- * untracked files, since committing them to the source branch is rarely what's wanted.
+ * The build clears its output before writing, so it refuses any folder it didn't make. That's a
+ * folder that holds the repository, one with tracked files in it, or a non-empty one without a
+ * previous build's marker. It never edits `.gitignore`. It warns when the output would show as
+ * untracked files instead, since committing them is rarely what's wanted.
  */
 function prepareOut(root: string, out: string, warnings: string[]): void {
   const rel = relative(out, root);

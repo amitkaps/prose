@@ -1,12 +1,12 @@
 /** @prose
  * # Pages as HTML
  *
- * Turns the tree's nodes into the renderer's pages: a folder, a Markdown file, a source file
- * read as one document, or a plain text file. Each is a complete HTML string, with nothing
- * running in the browser but the few lines in `page`.
+ * Turns the tree's nodes into pages. A page is a folder, a Markdown file, a source file read as
+ * one document, or a plain text file. Each is a complete HTML string, and only the few lines of
+ * script in `page` run in the browser.
  *
- * What each page shows is [reading](../docs/reading.md#pages). Markdown goes through markz, the
- * same parser in files and in prose blocks, and code through `highlight.ts`.
+ * What each page shows is [reading](../docs/reading.md#pages). Markdown goes through markz, in
+ * docs and in prose comments alike, and code goes through [highlight.ts](highlight.ts).
  */
 import { html as markz } from "@amitkaps/markz";
 import { escapeHtml, highlight, highlightFences } from "./highlight.js";
@@ -33,11 +33,12 @@ type Segment =
 /** @prose
  * # A file, in order
  *
- * Lays a file out as it was written: the code between the prose comments, and each comment's
- * prose at the byte range the comment took. The comment text itself is dropped, since the page
- * renders the prose in its place, so the whole file shows and nothing repeats. Blank lines at the
- * edges of each code run are trimmed, a run that's only whitespace disappears, and each run keeps
- * the line it starts on.
+ * Lays a file out as it was written, with each comment's prose at the place the comment took and
+ * the code between. The comment's own text is dropped, since the prose shows in its place. So the
+ * whole file shows, and nothing repeats.
+ *
+ * Blank lines at the edges of each code run are trimmed, and a run of only whitespace
+ * disappears. Each run keeps the line it starts on.
  */
 export function segments(source: string, comments: ProseComment[]): Segment[] {
   const out: Segment[] = [];
@@ -64,11 +65,12 @@ export function segments(source: string, comments: ProseComment[]): Segment[] {
 /** @prose
  * # A folder's listing
  *
- * What's in a folder, under its README, in groups: **Folders**, then **Docs**, then **Code**, each
- * a label with its rows indented under it, a name and its summary. What has no prose yet isn't a
- * row each: it's one line of names at the end, **No prose yet**, so coverage still shows where
- * you read without filling the page with *undocumented*. Files that can't carry prose (`LICENSE`,
- * `package.json`, an image) are a last line, **Other files**. Groups are labels, not icons.
+ * What's in a folder, under its README, in three groups. **Folders** come first, then **Docs**,
+ * then **Code**. Each group is a label, not an icon, with a row for each name and its summary.
+ *
+ * Files with no prose yet don't get a row each. They're named on one line at the end, **No prose
+ * yet**. So coverage shows where you read, without a page full of *undocumented*. Files that
+ * can't carry prose, like `LICENSE` or an image, are named on a last line, **Other files**.
  */
 function renderListing(children: TreeNode[]): string {
   const href = (child: TreeNode) =>
@@ -147,12 +149,14 @@ const NO_PROSE = `<p class="no-prose">No prose in this file.</p>`;
 /** @prose
  * # Code runs
  *
- * A run of code in a panel with a header of its own: a chevron, how many lines and which, and the
- * language. The header stays in both modes, so a prose-only page still shows where the code is
- * and how much of it; clicking it opens or closes that one run, against the page's mode, until the
- * mode changes. Line numbers are the file's own: the run knows the line it starts on, and a CSS
- * counter carries on from there, in a gutter as wide as the largest number. A file with no prose,
- * JSON included, is one run with the same header, and folds like any other.
+ * Each run of code sits in a panel with its own header. The header shows a chevron, how many
+ * lines and which, and the language. It stays in both modes, so a prose-only page still shows
+ * where the code is and how much. Clicking it opens or closes that one run, until the mode
+ * changes.
+ *
+ * Line numbers are the file's own. The run knows the line it starts on, and a CSS counter
+ * carries on from there, in a gutter as wide as the largest number. A file with no prose is one
+ * run with the same header, and folds like any other.
  */
 async function codeRun(text: string, lang: string, startLine: number): Promise<string> {
   const count = text.split("\n").length;
@@ -231,13 +235,13 @@ function withAnchor(prose: string): string {
 /** @prose
  * # On this page
  *
- * A long page's second- and third-level headings, as a table of contents: beside the text where
- * the page is wide enough, and above it, folded, where it isn't (`style.css`). It's read from the
- * page as rendered, so a doc and a source file get the same one, each heading by its id. A page
- * with fewer than three has none, since a short page is its own contents.
+ * A long page's second- and third-level headings, as a table of contents. It sits beside the
+ * text where the page is wide enough, and folds above it where it isn't. It's read from the page
+ * as rendered, so a doc and a source file get the same one. A page with fewer than three headings
+ * has none, since a short page is its own contents.
  *
- * It's in the HTML twice, once for each place, rather than one element moved by script, so it
- * works with none; the page's script only marks the section being read (`TOC_SCRIPT`).
+ * It's in the HTML twice, once for each place, so it works without script. Moving one element by
+ * script would need it. The page's script only marks the section being read (`TOC_SCRIPT`).
  */
 const HEADING_RE = /<h([23]) id="([^"]+)">([\s\S]*?)<\/h\1>/g;
 
@@ -290,14 +294,17 @@ const PANEL_ICON = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden=
 /** @prose
  * # The breadcrumb
  *
- * The path from the project to the page, as GitHub writes it: `prose / docs / design.md`. It starts
- * with the project's name on every page, so the way back is always there, the root page's included.
+ * The path from the project to the page, as GitHub writes it, like `prose / docs / design.md`.
+ * It starts with the project's name on every page, the root's included, so the way back is
+ * always there.
  *
- * A folder's page that shows its README ends in `README.md`, the row the tree highlights there,
- * so the page needs no line of its own to say where its text is from, and its text starts at the
- * same height as every other page's. Every crumb is a link, the last one too: on a folder's page
- * the folder and its `README.md` are the same page, and one being a link while the other isn't
- * read as a difference that isn't there. The last is marked as the current page.
+ * A folder's page that shows its README ends in `README.md`, the row the tree highlights there.
+ * So the page needs no line of its own to say where its text is from. Its text then starts at
+ * the same height as every other page's.
+ *
+ * Every crumb is a link, the last one too. On a folder's page, the folder and its `README.md` are
+ * the same page. One as a link and the other as plain text read as a difference that isn't
+ * there. The last crumb is marked as the current page.
  */
 function breadcrumb(project: string, path: string, readme: boolean): string {
   const segments = path.split("/").filter(Boolean);
@@ -324,15 +331,25 @@ function breadcrumb(project: string, path: string, readme: boolean): string {
 /** @prose
  * # The page shell
  *
- * One stylesheet inline; the reading column on the left, with the breadcrumb above its text and
- * **Open in editor** at the breadcrumb's end; the file tree on the right (`rail.ts`); a bar with
- * the project's name, the docs' links (`nav.ts`), the mode switch and the tree's toggle, which is a checkbox and its label when the tree is docked and a popover button when it
- * isn't, so showing and hiding it is CSS and HTML alone; and a few lines of script: the **Prose & Code / Prose only** switch, remembered across pages and applied in
- * `<head>` so the page never flashes its code first, and each code run's header; the rail's open folders and scroll position, restored before the
- * first paint; and live reload. The server
- * tells a page when something it shows changed (`server.ts`), and it reloads, keeping its scroll
- * position. It listens only while visible, and says when it was rendered, so it catches up on
- * what changed while hidden. A built page leaves live reload out. Browser storage can be unavailable, so it's only ever tried.
+ * Every page has the same frame around its body. The stylesheet is inline. The reading column is
+ * on the left, with the breadcrumb above its text and **Open in editor** at the breadcrumb's end.
+ * The file tree is on the right ([rail.ts](rail.ts)).
+ *
+ * The bar holds the project's name, the docs' links ([nav.ts](nav.ts)), the mode switch and the
+ * tree's toggle. The toggle is a checkbox and its label when the tree is docked, and a popover
+ * button when it isn't. So showing and hiding the tree needs only CSS and HTML.
+ *
+ * A few lines of script do the rest.
+ *
+ * - The **Prose & Code / Prose only** switch is remembered across pages. It's applied in `<head>`,
+ *   so the page never flashes its code first. Each code run's header opens or closes that run.
+ * - The rail's open folders and scroll position are restored before the first paint.
+ * - Live reload. The server tells a page when something it shows has changed
+ *   ([server.ts](server.ts)), and the page reloads, keeping its scroll position. It listens only
+ *   while visible, and says when it was rendered, so it catches up on what changed while hidden.
+ *   A built page leaves live reload out.
+ *
+ * Browser storage can be unavailable, so the script only ever tries it.
  */
 export function page(options: PageOptions): string {
   const {
@@ -381,9 +398,11 @@ ${rail}
 }
 
 /** @prose
- * The section being read is marked in the contents as the page scrolls: the last heading whose
- * top has passed a line a little under the bar. Choosing one from the folded contents folds it
- * again, so the text it goes to isn't pushed down.
+ * # The section being read
+ *
+ * The contents mark the section being read as the page scrolls. That's the last heading whose top
+ * has passed a line a little under the bar. Choosing a heading from the folded contents folds
+ * them again, so the text it goes to isn't pushed down.
  */
 const TOC_SCRIPT = `
 {
@@ -412,9 +431,11 @@ const TOC_SCRIPT = `
 `;
 
 /** @prose
- * Links on the page are prerendered when the pointer rests on one (Chrome's speculation rules,
- * "moderate"), so a click in the rail or a listing shows a page that's already built. A
- * prerendered page doesn't connect for live reload until it's shown. Other browsers ignore it.
+ * # Prerendering links
+ *
+ * A link is prerendered when the pointer rests on it, with Chrome's speculation rules. So a click
+ * in the rail or a listing shows a page that's already built. A prerendered page doesn't connect
+ * for live reload until it's shown. Other browsers ignore the rules.
  */
 const SPECULATION = JSON.stringify({
   prerender: [{ where: { href_matches: "/*" }, eagerness: "moderate" }],

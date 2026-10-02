@@ -1,14 +1,14 @@
 /** @prose
  * # The docs in the bar
  *
- * The docs a repository asks to be read first, as links in the bar after the project's name, on
- * every page, so they aren't one folder among forty. It's a convention, not a site's navigation:
- * the docs are always `docs/`'s, and the only choice is which of them, in what order.
+ * The docs a repository asks to be read first, linked in the bar on every page. They aren't
+ * then one folder among forty. It's a convention, not a site's navigation. The docs are always
+ * the ones in `docs/`, and the only choice is which of them, in what order.
  *
- * `docs/README.md` chooses with a `nav` list in its metadata, by file name, in reading order:
- * `nav: [design.md, usage.md]`. With no list, every Markdown file in `docs/` is linked,
- * alphabetically. A name that isn't a file there is skipped. The label is the file's name without
- * `.md`, capitalised, rather than its title, which is often a sentence too long for the bar.
+ * `docs/README.md` makes that choice with a `nav` list in its metadata, like
+ * `nav: [design.md, usage.md]`. With no list, every Markdown file in `docs/` is linked, in
+ * alphabetical order. A name that isn't a file there is skipped. The label is the file's name,
+ * capitalised and without `.md`. A doc's title is often a sentence, too long for the bar.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -45,9 +45,11 @@ export function docsNav(root: string, files: string[]): NavItem[] {
 }
 
 /** @prose
- * The links, with the page's own doc marked current. One element serves both widths: in the bar
- * itself while it has room, and below that a popover behind a **Docs** button, as the file tree
- * is (`style.css`), so neither needs script.
+ * # The links
+ *
+ * The page's own doc is marked as current. One element serves every width. It sits in the bar
+ * while there's room. Below that, it's a popover behind a **Docs** button, like the file tree, so
+ * neither needs script.
  */
 export function renderNav(nav: NavItem[], current: string): string {
   if (nav.length === 0) return "";

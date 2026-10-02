@@ -1,12 +1,13 @@
 /** @prose
  * # Building the hierarchy
  *
- * Walks a repository into a tree of folders and files, each with a summary: a folder's from
- * its `README.md`, a Markdown file's from its first paragraph, a source file's from its file
- * prose. A source file also carries its text and its prose comments, so a renderer can lay it out as
- * one document.
+ * Walks a repository into a tree of folders and files, each with a summary. A folder's summary
+ * comes from its `README.md`, a Markdown file's from its first paragraph, and a source file's
+ * from its first prose comment.
  *
- * What a page shows is [reading](../docs/reading.md#pages); `docs/` is an ordinary folder here.
+ * A source file also carries its text and its prose comments, so a renderer can lay it out as one
+ * document. What a page shows is [reading](../docs/reading.md#pages). `docs/` is an ordinary
+ * folder here.
  */
 import { execFileSync } from "node:child_process";
 import {
@@ -58,7 +59,7 @@ const SOURCE_EXTENSIONS = new Set([
   "toml",
   "gitignore",
 ]);
-/** Past this size a file is read as text, not parsed: nobody writes prose into a generated file. */
+/** Past this size a file is read as text, not parsed, since nobody writes prose into a generated file. */
 const SOURCE_MAX_BYTES = 200_000;
 // Generated, never written by hand, so never parsed for prose: shown as text, cut short.
 const GENERATED_FILENAMES = new Set([
@@ -80,9 +81,9 @@ export function extensionOf(path: string): string {
 /** @prose
  * # Which files are read for prose
  *
- * Markdown, and source in a language `@prose` lives in, unless it's generated: a
- * lockfile by name, or anything past 200 KB. Every other file git lists still has a page, as text
- * or as a binary file (`rawToNode`).
+ * Markdown is read, and so is source in a language `@prose` lives in. A generated file isn't,
+ * which means a lockfile by name, or any file past 200 KB. Every other file git lists still has a
+ * page, as text or as a binary file (`rawToNode`).
  */
 export function isSource(root: string, relPath: string): boolean {
   const name = relPath.slice(relPath.lastIndexOf("/") + 1);
@@ -121,9 +122,11 @@ export function fileToNode(root: string, relPath: string): TreeNode {
 }
 
 /** @prose
- * Parsed files are kept by path, with the modification time and size they were read at, so a
- * folder page doesn't parse every child again on each visit: an edited file has a new time and is
- * read afresh. `fileToNode` checks the cache; the nodes it hands out are never changed.
+ * # The parse cache
+ *
+ * Parsed files are kept by path, with the modification time and size they were read at. So a
+ * folder page doesn't parse every child again on each visit. An edited file has a new time and is
+ * read afresh. `fileToNode` checks the cache, and the nodes it hands out are never changed.
  */
 const parseCache = new Map<string, { mtimeMs: number; size: number; node: TreeNode }>();
 
@@ -158,11 +161,13 @@ function readFileNode(absPath: string, relPath: string): TreeNode {
 /** @prose
  * # Every other file
  *
- * A file that isn't read for prose is shown as it is. Text, JSON and `LICENSE` and a
- * lockfile alike, is one highlighted run, cut at 1,000 lines or 100 KB, whichever comes first,
- * with how much is left said at the end. A file is binary when its first 8 KB hold a NUL byte, as
- * git decides; its page says what it is and how big, and an image up to 1 MB is shown, inline as
- * a `data:` URL, so a built site needs no copy of the file beside its page.
+ * A file that isn't read for prose is shown as it is. Text, JSON, `LICENSE` and a lockfile are
+ * each one highlighted run. A run is cut at 1,000 lines or 100 KB, whichever comes first, and the
+ * page says how much is left.
+ *
+ * A file is binary when its first 8 KB hold a NUL byte, as git decides. Its page says what it is
+ * and how big. An image up to 1 MB is shown inline, as a `data:` URL, so a built site needs no
+ * copy of the file beside its page.
  */
 export function rawToNode(root: string, relPath: string): TreeNode {
   const absPath = join(root, relPath);
@@ -240,11 +245,12 @@ export function formatSize(bytes: number): string {
 /** @prose
  * # Which files the tree holds
  *
- * Every file git would track: `git ls-files` with `--others --exclude-standard`, so an untracked
- * new file shows up before it's committed while ignored output stays out. Dotfiles, `LICENSE`,
- * lockfiles and images included: what the repository holds, not a set of extensions. Outside a
- * git repository, a plain walk stands in, leaving out dot-folders and the fixed `SKIP_DIRS`.
- * Paths are relative to the root, with `/` separators, sorted.
+ * The tree holds every file git would track. `git ls-files --others --exclude-standard` lists
+ * them, so a new file shows up before it's committed, and ignored output stays out. Dotfiles,
+ * `LICENSE`, lockfiles and images are included, since the tree is what the repository holds.
+ *
+ * Outside a git repository, a plain walk stands in. It leaves out dot-folders and the fixed
+ * `SKIP_DIRS`. Paths are relative to the root, sorted, with `/` separators.
  */
 export function projectFiles(root: string): string[] {
   const skip = (name: string) => name.startsWith(".") || SKIP_DIRS.has(name);
@@ -252,9 +258,11 @@ export function projectFiles(root: string): string[] {
 }
 
 /** @prose
- * What `.gitignore` leaves out of one folder, for the line at the end of its page,
- * at the level it's named: `node_modules/`, never its contents, so nothing ignored is walked.
- * Empty outside a git repository.
+ * # What's ignored
+ *
+ * What `.gitignore` leaves out of one folder, for the line at the end of its page. Each entry is
+ * named at the level `.gitignore` names it, like `node_modules/`, so nothing ignored is walked.
+ * It's empty outside a git repository.
  */
 export function ignoredIn(root: string, relDir: string): string[] {
   let output: string;
@@ -352,9 +360,9 @@ function indexFiles(paths: string[]): DirIndex {
 /** @prose
  * # One folder's node
  *
- * Built from `projectFiles`' list rather than from the disk. A folder's `README.md` is its
- * prose, not a child. A folder with no prose and no children is dropped rather than shown as a
- * dead end.
+ * A folder's node is built from the list `projectFiles` gives, not from the disk. Its
+ * `README.md` is its prose, not a child. A folder with no prose and no children is dropped, so it
+ * doesn't show as a dead end.
  */
 function folderToNode(root: string, relDir: string, name: string, index: DirIndex): TreeNode {
   const readme = index.files.includes("README.md")
@@ -391,11 +399,10 @@ function folderToNode(root: string, relDir: string, name: string, index: DirInde
 /** @prose
  * # One folder, one level deep
  *
- * What a folder page needs, and no more: its `README.md` as prose, then its
- * subfolders, each summarized by its own `README.md`, and its files, each summarized by its
- * first paragraph. Subfolders aren't walked and other files aren't read, so a page costs the files
- * directly in the folder, whatever the size of the repository. Returns `null` for a folder that
- * holds nothing the walk lists.
+ * What a folder page needs, and no more. That's its `README.md` as prose, its subfolders with
+ * their own READMEs' summaries, and its files with their first paragraphs. Subfolders aren't
+ * walked and other files aren't read. So a page costs only the files directly in the folder,
+ * whatever the size of the repository. A folder that holds nothing the walk lists gives `null`.
  */
 export function folderListing(root: string, files: string[], relDir: string): TreeNode | null {
   let index: DirIndex | undefined = indexFiles(files);

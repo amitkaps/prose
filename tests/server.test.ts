@@ -1,8 +1,9 @@
 /** @prose
  * # Server tests
  *
- * `prose serve` ([reading](../docs/reading.md#pages)): route segments, the `tests/fixtures/simple` pages, folder pages, the
- * breadcrumb, the table of contents, EBNF fences, path traversal refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
+ * The pages `prose .` serves ([reading](../docs/reading.md#pages)), mostly for
+ * `tests/fixtures/simple`. Also the links between comments, the table of contents and live
+ * reload. Requests go out raw, so a path like `/../x` arrives as written and must be refused.
  */
 
 import { execFileSync } from "node:child_process";
