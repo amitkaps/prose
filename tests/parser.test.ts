@@ -5,7 +5,7 @@
  * HTML, `# @prose` runs in YAML and TOML, and a `.svelte` file's parts merged in order.
  *
  * Also the first paragraph, anchors, nested blocks, and that `@note` is no longer read; the rules
- * are [writing](../docs/writing.md#prose-blocks).
+ * are [writing](../docs/writing.md#in-each-language).
  */
 
 import * as fc from "fast-check";

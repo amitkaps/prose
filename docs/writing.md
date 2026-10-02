@@ -1,134 +1,82 @@
 # Writing `@prose`
 
-A comment whose first token is `@prose` is the maintained explanation of the code that follows it. Everything else stays an ordinary code comment. This page is the whole convention: the marker, how a file divides into blocks and chunks, where writing that spans the code goes, and how to link to it. The reasons are in [design.md](design.md).
+A `@prose` comment explains the code around it, for a human, in Markdown. The first one in a file is that file's summary. Every other comment stays an ordinary comment.
 
-## Prose blocks
-
-A **prose block** is a comment whose first token is the **`@prose`** marker. The same rule applies in every language:
-
-| Language      | Prose block                         |
-| ------------- | ----------------------------------- |
-| JS, TS, CSS   | `/** @prose … */` on its own line   |
-| HTML, markup  | `<!-- @prose … -->`                 |
-| YAML, TOML, shell, Python, `.gitignore` | `# @prose …`, one `#` per line, at column 0 |
-
-```js
-/** @prose
- * # State
- *
- * The count is a single number in module scope.
- */
-```
-
-```html
-<!-- @prose
-The count lives in an `<output>`, announced to screen readers when it changes.
--->
-```
-
-- The body is everything after `@prose`, with the leading ` * ` stripped in JS, TS and CSS. A `*/` inside it would end the comment, so write `*\/`: it reads as `*/`. It is Markdown, in [markz](https://github.com/amitkaps/markz)'s dialect: the everyday GFM syntax, without setext headings, reference links or raw HTML.
-- **`@prose` starts the block on its own line, and the closing delimiter (`*/` or `-->`) sits on its own line too** — never `/** @prose text */` on one line. In JS/TS/CSS this keeps every body line gutter-prefixed with ` * `, so formatters (oxfmt) re-indent the block as JSDoc, and a body line that itself starts with `*` (a Markdown bullet) can't be mistaken for the gutter.
-- **Every other comment is a code comment**, including unmarked `/** */` JSDoc, `//`, `/* */`, and unmarked `<!-- -->`. So API docs like `/** @param x */`, `// TODO`, and tool pragmas like `<!-- svelte-ignore … -->` are never read as prose.
-- The marker is opt-in because comments already have many owners: JSDoc, Vite, Svelte, formatters, and linters. Adding a marker is the explicit step of promoting a comment to prose.
-- In JS, TS and CSS, a prose block counts at any depth when it starts its own line, with only indentation before it: at top level, or inside a class, function or rule, so a class reads method by method. Its chunk runs to the next block, as at top level, so a block inside a function splits that function's code in two. One that shares its line with code (`call(/** @prose … */ x)`) is an ordinary comment in the code.
-- TypeScript treats `@prose` as a JSDoc tag, so an editor hover shows the prose as that tag's text. It's readable, if slightly noisy.
-- YAML, TOML, shell (`.sh`, `.bash`, `.zsh`), Python and `.gitignore` have no block-comment delimiter, so a prose block there is a maximal run of `#`-prefixed lines starting with a `# @prose` line, each line's own `# ` gutter stripped. Only column 0 counts; an indented `#` comment is an ordinary comment. A shebang line is one too, as it isn't a marker.
-- In `.svelte` files, each part follows its own language's rule: `<script>` the JS/TS rule, the markup the HTML rule, `<style>` the CSS rule. The chunks from all three parts are merged in source order.
-
-**What ships.** Minifiers drop `/** @prose */` from JS and CSS (they keep only `@license`, `@preserve` and `/*!` comments), and the Svelte compiler drops markup comments. A hand-written `.html` file served as it is keeps its comments, so a `<!-- @prose -->` there is visible in the page source. Keep prose out of shipped `.html`, or strip it in the build. Sourcemaps with `sourcesContent` carry every comment too.
-
-## Blocks and chunks
-
-Within a file:
-
-1. The **first prose block** is the **file prose**.
-2. Each later prose block, together with the code that follows it up to the next prose block, is a **chunk**.
-3. A chunk whose code is empty (only whitespace before the next prose block or end of file) is **pending**: a plan item, written before its code.
-4. Code between the file prose and the first chunk (typically imports) is the **preamble**.
-5. A prose block whose first line is a Markdown heading (`# Filtering`) is just a heading in the flow. There is no separate section level. Write `#` for every block's title, as for the file's; the renderer shows later blocks' headings one level down, so the file prose's title is the page's only top-level heading.
-
-**The file is the smallest unit.** A chunk read on its own, without the rest of its file, loses the imports, the neighbouring definitions, the order things happen in. So the renderer shows a whole file as one document, each chunk's prose directly above its code, top to bottom as it was written.
-
-Example, `src/store.ts`:
+## A prose comment
 
 ```ts
 /** @prose
- * The todo store. Holds the list in memory, persists it to `localStorage`,
- * and notifies subscribers after every change.
+ * # Todo store
+ *
+ * Holds the list in memory and saves it to `localStorage` after every change.
  */
-
 import { save, load } from "./persist";
 
 /** @prose
- * # Adding and toggling
+ * # Adding
  *
- * `addTodo` appends a todo with `completed: false`. Empty text is ignored.
+ * Empty text is ignored, so the list never shows a blank row.
  */
 export function addTodo(text: string) {
   /* … */
 }
-
-/** @prose
- * `toggleTodo` flips a todo's `completed` flag by id.
- */
-export function toggleTodo(id: string) {
-  /* … */
-}
-
-/** @prose
- * # Filtering
- *
- * Todos can be filtered by status. The filter persists in the URL hash.
- */
 ```
 
-The last block is a pending chunk: a plan item with no code yet.
+That is the whole convention:
 
-## Anchors
+- **The first `@prose` in a file is its summary.** Its first paragraph is what a folder's page shows beside the file's name.
+- **Later ones explain what follows them.** Put one wherever a reader needs it. There's no fixed shape, and not every function needs one.
+- **A heading in a later comment shows one level down.** Write `#` in every comment, and the file's own title stays the page's only top-level heading.
+- **`@prose` and the closing delimiter each sit on their own line.** Never write `/** @prose text */` on one line. Formatters then re-indent the comment as they do JSDoc. A Markdown bullet that starts with `*` also can't be mistaken for the comment's gutter.
 
-Each block has an anchor, used as the fragment of its URL in the renderer (`src/store.ts#addTodo`) and in links from other prose. It's derived from content, so it names the same block after unrelated edits elsewhere in the file:
-
-1. The file prose is `file`.
-2. Otherwise, the slug of the block's heading, when it opens with one: `filtering` for the pending chunk above. The heading is what a reader sees, so it names the block before the code does.
-3. Otherwise, the first name the chunk's code declares: `addTodo`, `toggleTodo`; for a block inside a class or function, the first member or declaration below it: `metadata`. (JS and TS.)
-4. Otherwise, a positional fallback (`chunk-3`), the only kind that moves when blocks are inserted above it.
-
-A repeated anchor within a file gets a `-2`, `-3` suffix in source order.
+The renderer shows the whole file as one page, with each comment's prose in place and the code around it. A file is the smallest unit, because code shown on its own loses its imports and its neighbours.
 
 ## What to write
 
-Prose is for what the code can't say: why this exists, what it promises, what was decided and what was ruled out, what a reader would likely get wrong. The first three lines are the summary, what the file or block means. Anything longer goes below, for the reader who wants it.
+Prose is for what the code can't say. That's why the code exists, what it promises, what was decided and what was ruled out, and what a reader would likely get wrong. The first paragraph says what the file or section means, in about three lines. Anything longer goes below it, for the reader who wants it.
 
-It isn't a retelling of the code. A paragraph that says what a function does, line by line, is already in the code, will drift from it, and costs the reader attention for nothing. And it isn't a substitute for ordinary comments: `//` and JSDoc stay for the reader of one line (why this check, what this edge case is), where prose is for the reader of the file.
+Prose isn't a retelling of the code. A paragraph that walks through a function line by line is already in the code. It will drift from the code, and it costs the reader attention for nothing. Prose doesn't replace ordinary comments either. `//` and JSDoc stay for the reader of one line, like why this check exists or what this edge case is. Prose is for the reader of the file.
 
-## Folders and project
+Write it plainly. Told to be short, an agent compresses instead of cutting. It keeps every point and packs them into fewer sentences. The [agent rules](usage.md#for-agents) ask for the opposite, with one idea per sentence, about 25 words at most, and one term for each concept. They borrow these from ASD-STE100, a controlled English for technical manuals, but not its fixed dictionary. Rationale needs words like "because" and "unless", and a dictionary needs a checker.
 
-A folder's `README.md` is its prose, and the root `README.md` is the project's. These are ordinary READMEs; GitHub already renders them. The one folder to leave without is `.github/`: GitHub shows a README there instead of the root's, so what it holds is said in the workflows' own prose and in the docs.
+## Folders and docs
 
-## Writing that spans the code
+A folder's `README.md` is its prose, and the root `README.md` is the project's. These are ordinary READMEs, which GitHub already renders. Leave `.github/` without one, because GitHub would show it in place of the root's README.
 
-Some writing has no natural home in one comment or one README: what the project promises, architecture that spans files, the order of the work, lessons learned building it. The convention suggests a root `docs/` folder of Markdown files for it:
+Writing that spans files, like what the project promises or the plan, goes in Markdown files. prose suggests no names or layout for them. A `docs/` folder at the root gets one extra. The bar on every page links its docs, in the order a `nav: [design.md, usage.md]` list in `docs/README.md`'s metadata gives ([src/nav.ts](../src/nav.ts)). Without that list, the bar links every doc in the folder.
 
-```text
-docs/
-  idea.md
-  plan.md
-  lessons.md
-```
+The docs are plain Markdown linked by repo path, so a static site generator can publish them as they are. What gets published is that tool's concern.
 
-- **Keep one short promises doc.** `idea.md`, `spec.md`, whatever the project calls it: what the project promises and what it leaves out ("not in v1"). In use it was the most valuable file: decisions could be argued from it, and its non-goals stopped scope creep. It pays off because it's short enough to hold in mind.
-- **Decisions land in the prose.** A decision reached in the chat that spans files goes into the doc it changes, in the same change as the code ([the agent rules](usage.md#for-agents)). One that concerns a single spot goes into that spot's `@prose`.
-- **`docs/` is a suggestion, not a mechanism.** The renderer shows it as an ordinary folder of Markdown, and links its docs in the bar on every page: every one, or those a `nav: [design.md, usage.md]` list in `docs/README.md`'s metadata names, in that order ([src/nav.ts](../src/nav.ts)). Because it's plain Markdown linked by repo path, a static site generator can publish it as it is; what gets published, and how internal docs like `plan.md` stay off a site, is that tool's concern.
+## Links
 
-## References
-
-A reference is an ordinary relative Markdown link, so it reads and clicks the same on GitHub, in the editor's preview, in the renderer, and on a site that publishes `docs/`:
+A link is an ordinary relative Markdown link. It reads and clicks the same on GitHub, in the editor's preview, in the renderer, and on a site that publishes the docs.
 
 ```text
-src/session.ts                     a file
-src/session.ts#createSession       a block in it, by its anchor
-docs/architecture.md               a doc
-docs/architecture.md#sessions      a section of it, by heading slug
+src/session.ts                  a file
+src/session.ts#sessions         a prose comment in it, by its heading
+docs/architecture.md            a doc
+docs/architecture.md#sessions   a section of it, by its heading
 ```
 
-**State a rule once, and link to it.** When a doc or a tested file owns a rule (a grammar, a schema, a contract), a `@prose` block links to it and keeps only how and why this code does it. Restating the rule in several places means only one copy is tested, and the others drift.
+In the renderer, the `#` in the margin beside a prose comment gives its link.
+
+**State a rule once, and link to it.** When a doc or a tested file owns a rule, like a grammar, a schema or a contract, a prose comment links to it. It keeps only how and why this code follows the rule. A rule restated in several places is tested in only one of them, and the other copies drift.
+
+## In each language
+
+This is reference, for when something surprises you. The rule is the same everywhere: a comment whose first word is `@prose`.
+
+| Language                                | Prose comment                               |
+| --------------------------------------- | ------------------------------------------- |
+| JS, TS, CSS                             | `/** @prose … */` on its own line           |
+| HTML, markup                            | `<!-- @prose … -->`                         |
+| YAML, TOML, shell, Python, `.gitignore` | `# @prose …`, one `#` per line, at column 0 |
+
+- **The body is Markdown**, in [markz](https://github.com/amitkaps/markz)'s dialect. That's everyday GFM, without setext headings, reference links or raw HTML.
+- **JS, TS and CSS.** The body is everything after `@prose`, with each line's leading ` * ` stripped. A `*/` in the body would end the comment, so write `*\/`, and it shows as `*/`. A prose comment counts at any depth, inside a class, function or CSS rule, when it starts its own line. So a class can read method by method. One that shares its line with code, like `call(/** @prose … */ x)`, is an ordinary comment. TypeScript treats `@prose` as a JSDoc tag, so an editor's hover shows the prose as that tag's text.
+- **YAML, TOML, shell, Python and `.gitignore`.** These have no block comment. A prose comment is a run of `#` lines that starts with `# @prose`, with each line's `# ` stripped. Only lines at column 0 count, so an indented `#` comment is an ordinary one. So is a shebang line. Shell covers `.sh`, `.bash` and `.zsh`.
+- **Svelte.** Each part follows its own language. `<script>` follows JS or TS, the markup follows HTML, and `<style>` follows CSS. Prose from all three parts reads in source order.
+
+**Why a marker.** Comments already have many owners, like JSDoc, Vite, Svelte, formatters and linters. Every comment without the marker stays theirs, including unmarked `/** */`, `//`, `/* */` and `<!-- -->`. So `/** @param x */`, `// TODO` and `<!-- svelte-ignore … -->` are never read as prose. Adding the marker is the explicit step that makes a comment prose.
+
+**What ships.** Minifiers drop `/** @prose */` from JS and CSS, since they keep only `@license`, `@preserve` and `/*!` comments. The Svelte compiler drops markup comments. A hand-written `.html` file served as it is keeps its comments, so its `<!-- @prose -->` shows in the page source. Keep prose out of shipped `.html`, or strip it in the build. Sourcemaps with `sourcesContent` carry every comment too.

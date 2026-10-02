@@ -2,7 +2,7 @@
  * # Declared names
  *
  * The names a chunk of JS or TS declares at its top level, which a chunk's anchor is made from
- * ([writing](../docs/writing.md#anchors)): `export function addTodo` anchors as `#addTodo`.
+ * ([writing](../docs/writing.md#links)): `export function addTodo` anchors as `#addTodo`.
  *
  * They come from `oxc-parser`'s AST, not a regex: the regex versions this replaced each missed
  * the next shape a real file used (imports, then destructuring), the predictable failure of
