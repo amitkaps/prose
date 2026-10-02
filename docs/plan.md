@@ -8,7 +8,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 
 ### Since 0.3.0
 
-- **The site on Cloudflare.** A Worker builds from `main`, so a merge deploys it ([usage](usage.md#deploying-this-site)). `prose publish` was dropped, since the one site that could use it deploys without it.
+- **The site on Cloudflare.** A Worker builds from `main`, so a merge deploys it ([development](development.md#the-site)). `prose publish` was dropped, since the one site that could use it deploys without it.
 - **Reading on any screen.** A breadcrumb from the project's name, docs in the bar, folder pages in groups, a table of contents on a long page, and wider tables and code samples ([reading](reading.md#around-the-page)). A view in the URL was tried and dropped.
 - **The renderer stays.** Its pages became the user documentation for this repository and for markz, so it has earned its place ([lessons](lessons.md#what-gets-read)).
 - **The docs in plain sentences.** The [agent rules](usage.md#for-agents) ask for one idea per sentence. The docs were rewritten to follow them, and no longer teach chunks or a layout for `docs/`.
