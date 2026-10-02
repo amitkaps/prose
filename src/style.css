@@ -500,14 +500,21 @@ main > * {
   border-radius: 4px;
   padding: 0.1em 0.3em;
 }
-/* A table may grow past the text, as far as a code run does or the page allows, and scrolls past
-   that; it's a grid to scan, not lines to read, so the measure isn't for it. */
+/* A table or a code sample in the prose may grow past the text, as far as a code run does or the
+   page allows: it's a grid or code to scan, not lines to read, so the measure isn't for it. Past
+   that a table scrolls and code wraps. A short sample keeps the text's width, as a run does. */
+.prose table,
+.prose pre.shiki {
+  width: max-content;
+  max-width: min(var(--code-width), calc(100cqw - var(--docked) - 2 * var(--side)));
+}
+.prose pre.shiki {
+  min-width: 100%;
+}
 .prose table {
   border-collapse: collapse;
   display: block;
   overflow-x: auto;
-  width: max-content;
-  max-width: min(var(--code-width), calc(100cqw - var(--docked) - 2 * var(--side)));
 }
 .prose th,
 .prose td {
