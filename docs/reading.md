@@ -36,6 +36,6 @@ The text is on the left and the file tree on the right. The page grows with a wi
 - **Local pages are live.** A page reloads when a file it shows changes, and keeps its scroll position.
 - **A published site is one commit.** The build renders the files tracked at `HEAD`, as the public repository shows them. Untracked, ignored and uncommitted files never reach the site, and the build warns when there are uncommitted changes. Below the file tree, a footer names the commit, and the tag when `HEAD` has one. Both link to GitHub.
 - **Addresses stay the same.** `/src/store.ts` is `/src/store.ts` in both, so a link works in either. A static host serves each page without its `.html`, and without a redirect.
-- **Pages share one stylesheet and one script.** They're files under `/prose/`, each named by a hash of its text, so a page carries only its own HTML. The build writes a `_headers` file that asks the host to cache them for good ([assets.ts](../src/assets.ts)).
+- **Pages share one stylesheet and one script.** They're files under `/assets/`, each named by a hash of its text, so a page carries only its own HTML. The build writes a `_headers` file that asks the host to cache them for good ([assets.ts](../src/assets.ts)).
 - **A missing page stays in the site.** The build writes its own `404.html`, with the file tree, for the host to serve.
 - **The build owns its folder.** It writes into `.prose` and clears it first. So it refuses any folder it didn't make, and it never follows a link out of the commit.
