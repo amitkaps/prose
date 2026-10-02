@@ -1,13 +1,13 @@
 /** @prose
  * # Repository and footer tests
  *
- * A GitHub address from every spelling of a remote, and none from any other host; and the rail's
- * footer: Live locally, a snapshot with its commit and, only when given one, its tag; and a folder's
+ * A GitHub address from every spelling of a remote, and none from any other host; a name from any
+ * remote; and the rail's footer: Live locally, a snapshot with its commit and, only when given one, its tag; and a folder's
  * `README.md` row, first in its folder and standing for the folder's page.
  */
 import { describe, expect, it } from "vite-plus/test";
 import { railFooter, renderRail } from "../src/rail.js";
-import { githubUrl } from "../src/repo.js";
+import { githubUrl, remoteName } from "../src/repo.js";
 
 describe("githubUrl", () => {
   it("reads ssh, scp-style and https remotes, with or without .git", () => {
@@ -25,6 +25,19 @@ describe("githubUrl", () => {
   it("has none for another host", () => {
     expect(githubUrl("git@gitlab.com:amitkaps/prose.git")).toBeUndefined();
     expect(githubUrl("/some/local/path")).toBeUndefined();
+  });
+});
+
+describe("remoteName", () => {
+  it("is the last path segment of any remote, without .git", () => {
+    for (const remote of [
+      "git@github.com:amitkaps/prose.git",
+      "https://github.com/amitkaps/prose\n",
+      "git@gitlab.com:group/sub/prose.git",
+      "/some/local/prose/",
+    ]) {
+      expect(remoteName(remote)).toBe("prose");
+    }
   });
 });
 

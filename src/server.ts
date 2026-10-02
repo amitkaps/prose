@@ -8,11 +8,11 @@
  */
 import { type FSWatcher, watch } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { basename, resolve, sep } from "node:path";
+import { resolve, sep } from "node:path";
 import { escapeHtml, warmHighlighter } from "./highlight.js";
 import { binaryBody, folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
 import { renderRail, railFooter, type Snapshot } from "./rail.js";
-import { repoUrl } from "./repo.js";
+import { projectName, repoUrl } from "./repo.js";
 import {
   extensionOf,
   fileToNode,
@@ -154,7 +154,7 @@ async function respond(root: string, req: IncomingMessage, res: ServerResponse):
   }
   const site: Site = {
     root,
-    project: basename(resolve(root)),
+    project: projectName(root),
     files: projectFiles(root),
     live: true,
     repo: repoUrl(root),
