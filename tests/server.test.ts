@@ -1,8 +1,8 @@
 /** @prose
  * # Server tests
  *
- * `prose serve` ([reading](../docs/reading.md#pages)): route segments, the `tests/fixtures/simple` pages, folder pages, path traversal
- * refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
+ * `prose serve` ([reading](../docs/reading.md#pages)): route segments, the `tests/fixtures/simple` pages, folder pages, the
+ * breadcrumb, EBNF fences, path traversal refused, and live reload. Requests go out raw so a path like `/../x` arrives as written.
  */
 
 import { execFileSync } from "node:child_process";
@@ -127,6 +127,7 @@ describe("serve: folders", () => {
       "src/a.ts": "/** @prose\n * Does a.\n */\nexport const a = 1;\n",
       "src/b.ts": "export const b = 2;\n",
       "docs/plan.md": "# Plan\n\nWhat's next.\n",
+      "docs/grammar.md": "# Grammar\n\n```ebnf\ndigit ::= [0-9] | 'x'\n```\n",
     };
     for (const [path, text] of Object.entries(files)) {
       mkdirSync(join(root, path, ".."), { recursive: true });
@@ -183,6 +184,27 @@ describe("serve: folders", () => {
     expect(status).toBe(200);
     expect(body).toContain('<div class="prose"><h1');
     expect(body).toContain('data-mode="prose" aria-pressed="false" disabled');
+  });
+
+  it("starts every breadcrumb at Home, the root page's included", async () => {
+    const crumbs = (body: string) =>
+      body.slice(
+        body.indexOf('<nav class="crumbs">'),
+        body.indexOf("</nav>", body.indexOf('<nav class="crumbs">')),
+      );
+    expect(crumbs((await get(served.url, "/")).body)).toContain(
+      '<span class="home" aria-current="page" aria-label="Home">',
+    );
+    const file = crumbs((await get(served.url, "/src/a.ts")).body);
+    expect(file).toMatch(/^<nav class="crumbs"><a class="home" href="\/" aria-label="Home">/);
+    expect(file).toContain('<a href="/src/">src</a>');
+  });
+
+  it("highlights an EBNF fence: the rule's name, its terminals and character classes", async () => {
+    const { body } = await get(served.url, "/docs/grammar.md");
+    expect(body).toMatch(/--shiki-token-function[^>]*>digit</);
+    expect(body).toMatch(/--shiki-token-constant[^>]*>\s*\[0-9\]</);
+    expect(body).toMatch(/--shiki-token-string[^>]*>\s*'x'</);
   });
 
   it("redirects a folder asked for without its slash", async () => {

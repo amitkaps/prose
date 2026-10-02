@@ -32,6 +32,7 @@ pnpm run check         # format, lint and types
 pnpm run test
 pnpm run build         # the library and the command
 node dist/cli.js .     # read this repository with prose
+pnpm run preview       # build, then read it
 ```
 
 `tests/build.test.ts` and `tests/server.test.ts` run against the committed `tests/fixtures/simple`, since `prose build` reads `HEAD`. Commit a change to the fixture before testing it.

@@ -29,6 +29,7 @@
     "prepack": "pnpm run build",
     "build": "vp pack",
     "dev": "vp pack --watch",
+    "preview": "pnpm run build && node dist/cli.js .",
     "fmt": "vp fmt",
     "lint": "vp lint",
     "check": "vp check",

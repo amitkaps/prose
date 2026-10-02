@@ -55,6 +55,10 @@
     "Segoe UI",
     sans-serif;
   line-height: 1.6;
+  /* 16px up to a 1280px window, then growing to 20px at 2560px. Every size here is in rem, so the
+     whole page scales as one, as browser zoom would, and a wide screen holds more page and less
+     margin. */
+  font-size: clamp(1rem, 0.75rem + 0.3125vw, 1.25rem);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -345,7 +349,7 @@ a {
   gap: 0.25rem 1rem;
   justify-content: space-between;
   font-size: 0.9rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 2rem;
 }
 .where .editor {
   white-space: nowrap;
@@ -397,6 +401,14 @@ a {
 .crumbs {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.crumbs .home {
+  display: inline-flex;
+  vertical-align: -0.1em;
+  color: var(--muted);
+}
+.crumbs a.home:hover {
+  color: var(--link);
 }
 .crumbs .sep {
   color: var(--muted);
@@ -494,10 +506,14 @@ main > * {
   border-radius: 4px;
   padding: 0.1em 0.3em;
 }
+/* A table may grow past the text, as far as a code run does or the page allows, and scrolls past
+   that; it's a grid to scan, not lines to read, so the measure isn't for it. */
 .prose table {
   border-collapse: collapse;
   display: block;
   overflow-x: auto;
+  width: max-content;
+  max-width: min(var(--code-width), calc(100cqw - var(--docked) - 2 * var(--side)));
 }
 .prose th,
 .prose td {

@@ -203,10 +203,18 @@ export interface PageOptions {
 /** The right-hand sidebar icon: a window with its right panel marked. */
 const PANEL_ICON = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1.75" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 3v10" stroke="currentColor" stroke-width="1.5"/></svg>`;
 
-/** The path to the page, each ancestor a link; the project itself is the bar's name. */
+/** A house, for the breadcrumb's first crumb. */
+const HOME_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 7.25 8 2.75l5.5 4.5M4 6.25v7h3v-4h2v4h3v-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+
+/** The path to the page, each ancestor a link, starting from Home, which is there on every page:
+ *  the root page's breadcrumb would otherwise be empty, and the way back would vanish with it. */
 function breadcrumb(path: string): string {
   const segments = path.split("/").filter(Boolean);
-  const crumbs: string[] = [];
+  const crumbs: string[] = [
+    segments.length
+      ? `<a class="home" href="/" aria-label="Home">${HOME_ICON}</a>`
+      : `<span class="home" aria-current="page" aria-label="Home">${HOME_ICON}</span>`,
+  ];
   segments.forEach((segment, i) => {
     const last = i === segments.length - 1;
     const href = `/${segments
@@ -250,7 +258,7 @@ export function page(options: PageOptions): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <style>${STYLE}</style>
-<script>try { const r = document.documentElement.classList, s = localStorage; if (s.getItem("prose:mode") === "prose") r.add("prose-only"); } catch {}</script>
+<script>${MODE_SCRIPT}</script>
 </head>
 <body data-path="${escapeHtml(path)}"${live ? ` data-rendered="${Date.now()}"` : ""}>
 <input type="checkbox" id="dock" class="ctl" aria-label="Hide the file tree">
@@ -270,6 +278,27 @@ ${rail}
 </html>
 `;
 }
+
+/** @prose
+ * # A link that says how to open
+ *
+ * `?view=prose` or `?view=code` on a link opens the page in that mode, so a page can be shared
+ * with someone who wants only the writing. The link's mode lasts for the rest of that tab's
+ * visit, so the next click doesn't switch back, and it never replaces the reader's own choice,
+ * which comes back in a new tab. Choosing a mode on the switch ends the link's.
+ *
+ * It runs in `<head>`, before the first paint, so the page never shows the other mode first.
+ */
+const MODE_SCRIPT = `{
+	let mode = null;
+	try {
+		const view = new URLSearchParams(location.search).get("view");
+		if (view === "prose" || view === "code") sessionStorage.setItem("prose:mode", view);
+		mode = sessionStorage.getItem("prose:mode");
+	} catch {}
+	try { mode ??= localStorage.getItem("prose:mode"); } catch {}
+	if (mode === "prose") document.documentElement.classList.add("prose-only");
+}`;
 
 /** @prose
  * Links on the page are prerendered when the pointer rests on one (Chrome's speculation rules,
@@ -326,6 +355,7 @@ for (const b of document.querySelectorAll("[data-mode]")) {
 		root.classList.toggle("prose-only", proseOnly);
 		for (const run of runs) run.classList.remove("opened", "closed");
 		try { localStorage.setItem("prose:mode", proseOnly ? "prose" : "code"); } catch {}
+		try { sessionStorage.removeItem("prose:mode"); } catch {}
 		sync();
 	});
 }

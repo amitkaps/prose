@@ -2,7 +2,8 @@
  * # Syntax highlighting
  *
  * Code is highlighted on the server with shiki, with only the languages a repository here is
- * likely to hold, and in the page's own palette, so one render serves light and dark.
+ * likely to hold (and EBNF, which shiki lacks, from `ebnf.ts`), and in the page's own palette, so
+ * one render serves light and dark.
  *
  * It comes in through `shiki/core`, not the full bundle of every grammar. The theme is shiki's
  * CSS-variables theme: each token's colour is a variable, set in `style.css` for light and for
@@ -16,6 +17,7 @@
  */
 import { createCssVariablesTheme, createHighlighterCore, type HighlighterCore } from "shiki/core";
 import { createOnigurumaEngine } from "shiki/engine/oniguruma";
+import { ebnf } from "./ebnf.js";
 
 const LANGS: Record<string, string> = {
   js: "javascript",
@@ -37,6 +39,7 @@ const LANGS: Record<string, string> = {
   bash: "shellscript",
   zsh: "shellscript",
   py: "python",
+  ebnf: "ebnf",
   gitignore: "text",
   text: "text",
 };
@@ -67,6 +70,7 @@ function getHighlighter(): Promise<HighlighterCore> {
       import("shiki/langs/jsonc.mjs"),
       import("shiki/langs/shellscript.mjs"),
       import("shiki/langs/python.mjs"),
+      ebnf,
     ],
     engine: createOnigurumaEngine(import("shiki/wasm")),
   });
