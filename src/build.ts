@@ -14,6 +14,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
+import { BUILT_ASSETS } from "./assets.js";
 import { escapeHtml, warmHighlighter } from "./highlight.js";
 import { docsNav } from "./nav.js";
 import { projectName, repoUrl } from "./repo.js";
@@ -83,6 +84,16 @@ function redirectPage(location: string): string {
   const to = escapeHtml(location);
   return `<!doctype html>\n<meta charset="utf-8">\n<title>Redirecting</title>\n<link rel="canonical" href="${to}">\n<meta http-equiv="refresh" content="0; url=${to}">\n<p><a href="${to}">${to}</a></p>\n`;
 }
+
+/** @prose
+ * # Caching the shared files
+ *
+ * The stylesheet and the script are written once, under `prose/` ([assets.ts](assets.ts)).
+ * A `_headers` file tells the host to cache them for good, since a new text gets a new name.
+ * Cloudflare and Netlify read it and don't serve it. Another host serves it as a small text file,
+ * and its pages still work.
+ */
+const HEADERS = "/prose/*\n  Cache-Control: public, max-age=31536000, immutable\n";
 
 /** Every folder that holds a listed file, with its slash: `src/`, `src/lib/`. */
 function folders(files: string[]): string[] {
@@ -174,6 +185,12 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
         route.status === 301 ? redirectPage(route.location) : linkIndexPages(route.html),
       );
     }
+    for (const asset of BUILT_ASSETS) {
+      const target = join(out, asset.url);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, asset.body);
+    }
+    writeFileSync(join(out, "_headers"), HEADERS);
     writeFileSync(
       join(out, MARKER),
       "Written by prose build; the next build clears this folder.\n",

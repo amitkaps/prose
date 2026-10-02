@@ -2,18 +2,18 @@
  * # Pages as HTML
  *
  * Turns the tree's nodes into pages. A page is a folder, a Markdown file, a source file read as
- * one document, or a plain text file. Each is a complete HTML string, and only the few lines of
- * script in `page` run in the browser.
+ * one document, or a plain text file. Each is one HTML string, which links the stylesheet and
+ * script every page shares ([assets.ts](assets.ts)).
  *
  * What each page shows is [reading](../docs/reading.md#pages). Markdown goes through markz, in
  * docs and in prose comments alike, and code goes through [highlight.ts](highlight.ts).
  */
 import { html as markz } from "@amitkaps/markz";
+import { LIVE, SCRIPT, STYLE } from "./assets.js";
 import { escapeHtml, highlight, highlightFences } from "./highlight.js";
 import { type NavItem, renderNav } from "./nav.js";
 import type { ProseComment } from "./parser.js";
 import { extensionOf, type TreeNode } from "./tree.js";
-import { STYLE } from "./style.js";
 
 export async function renderMarkdown(text: string): Promise<string> {
   return text.trim() ? highlightFences(markz(text)) : "";
@@ -331,25 +331,30 @@ function breadcrumb(project: string, path: string, readme: boolean): string {
 /** @prose
  * # The page shell
  *
- * Every page has the same frame around its body. The stylesheet is inline. The reading column is
- * on the left, with the breadcrumb above its text and **Open in editor** at the breadcrumb's end.
- * The file tree is on the right ([rail.ts](rail.ts)).
+ * Every page has the same frame around its body. The reading column is on the left, with the
+ * breadcrumb above its text and **Open in editor** at the breadcrumb's end. The file tree is on
+ * the right ([rail.ts](rail.ts)).
  *
  * The bar holds the project's name, the docs' links ([nav.ts](nav.ts)), the mode switch and the
  * tree's toggle. The toggle is a checkbox and its label when the tree is docked, and a popover
  * button when it isn't. So showing and hiding the tree needs only CSS and HTML.
  *
- * A few lines of script do the rest.
+ * The stylesheet and the page's script are shared files ([assets.ts](assets.ts)), so a page
+ * carries only its own HTML. Two short scripts stay inline, because each must run before the
+ * first paint.
  *
  * - The **Prose & Code / Prose only** switch is remembered across pages. It's applied in `<head>`,
- *   so the page never flashes its code first. Each code run's header opens or closes that run.
- * - The rail's open folders and scroll position are restored before the first paint.
- * - Live reload. The server tells a page when something it shows has changed
- *   ([server.ts](server.ts)), and the page reloads, keeping its scroll position. It listens only
- *   while visible, and says when it was rendered, so it catches up on what changed while hidden.
- *   A built page leaves live reload out.
+ *   so the page never flashes its code first.
+ * - The rail's open folders and scroll position are restored straight after the rail, so they
+ *   don't jump after the first frame.
  *
- * Browser storage can be unavailable, so the script only ever tries it.
+ * The shared script opens and closes each code run, and marks the section being read. On a page
+ * `prose .` serves, a second file adds live reload. The server tells a page when something it
+ * shows has changed ([server.ts](server.ts)), and the page reloads, keeping its scroll position.
+ * It listens only while visible, and says when it was rendered, so it catches up on what changed
+ * while hidden.
+ *
+ * Browser storage can be unavailable, so the scripts only ever try it.
  */
 export function page(options: PageOptions): string {
   const {
@@ -375,8 +380,9 @@ export function page(options: PageOptions): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
-<style>${STYLE}</style>
-<script>try { const r = document.documentElement.classList, s = localStorage; if (s.getItem("prose:mode") === "prose") r.add("prose-only"); } catch {}</script>
+<link rel="stylesheet" href="${STYLE.url}">
+<script defer src="${SCRIPT.url}"></script>
+${live ? `<script defer src="${LIVE.url}"></script>\n` : ""}<script>try { const r = document.documentElement.classList, s = localStorage; if (s.getItem("prose:mode") === "prose") r.add("prose-only"); } catch {}</script>
 </head>
 <body data-path="${escapeHtml(path)}"${live ? ` data-rendered="${Date.now()}"` : ""}>
 <input type="checkbox" id="dock" class="ctl" aria-label="Hide the file tree">
@@ -390,45 +396,11 @@ ${rail}
 <script>${RAIL_SCRIPT}</script>
 </div>
 </div>
-<script>${SCRIPT}${live ? LIVE_SCRIPT : ""}</script>
 <script type="speculationrules">${SPECULATION}</script>
 </body>
 </html>
 `;
 }
-
-/** @prose
- * # The section being read
- *
- * The contents mark the section being read as the page scrolls. That's the last heading whose top
- * has passed a line a little under the bar. Choosing a heading from the folded contents folds
- * them again, so the text it goes to isn't pushed down.
- */
-const TOC_SCRIPT = `
-{
-	const links = [...document.querySelectorAll(".toc a")];
-	const idOf = (a) => decodeURIComponent(a.hash.slice(1));
-	const targets = [...new Set(links.map(idOf))].map((id) => document.getElementById(id)).filter(Boolean);
-	let frame = 0;
-	const mark = () => {
-		frame = 0;
-		const line = document.querySelector(".bar").offsetHeight + innerHeight * 0.15;
-		let current = targets[0]?.id;
-		for (const t of targets) {
-			if (t.getBoundingClientRect().top > line) break;
-			current = t.id;
-		}
-		for (const a of links) a.classList.toggle("here", idOf(a) === current);
-	};
-	if (targets.length) {
-		addEventListener("scroll", () => { frame ||= requestAnimationFrame(mark); }, { passive: true });
-		mark();
-	}
-	for (const a of document.querySelectorAll(".toc-top a")) {
-		a.addEventListener("click", () => { a.closest("details").open = false; });
-	}
-}
-`;
 
 /** @prose
  * # Prerendering links
@@ -467,63 +439,4 @@ const RAIL_SCRIPT = `
 		} catch {}
 	});
 }
-`;
-
-const SCRIPT =
-  `
-const root = document.documentElement;
-const runs = [...document.querySelectorAll(".code")];
-const isOpen = (run) =>
-	root.classList.contains("prose-only") ? run.classList.contains("opened") : !run.classList.contains("closed");
-const sync = () => {
-	const proseOnly = root.classList.contains("prose-only");
-	for (const b of document.querySelectorAll("[data-mode]")) {
-		b.setAttribute("aria-pressed", String((b.dataset.mode === "prose") === proseOnly));
-	}
-	for (const run of runs) run.querySelector(".code-head").setAttribute("aria-expanded", String(isOpen(run)));
-};
-for (const b of document.querySelectorAll("[data-mode]")) {
-	b.addEventListener("click", () => {
-		const proseOnly = b.dataset.mode === "prose";
-		root.classList.toggle("prose-only", proseOnly);
-		for (const run of runs) run.classList.remove("opened", "closed");
-		try { localStorage.setItem("prose:mode", proseOnly ? "prose" : "code"); } catch {}
-		sync();
-	});
-}
-for (const run of runs) {
-	run.querySelector(".code-head").addEventListener("click", () => {
-		run.classList.toggle(root.classList.contains("prose-only") ? "opened" : "closed");
-		sync();
-	});
-}
-sync();
-const key = "prose:scroll:" + location.pathname;
-try {
-	const y = sessionStorage.getItem(key);
-	if (y !== null) { sessionStorage.removeItem(key); scrollTo(0, Number(y)); }
-} catch {}
-` + TOC_SCRIPT;
-
-/** Live reload, on a page `prose .` serves; `key` is the scroll position `SCRIPT` restores. */
-const LIVE_SCRIPT = `
-const here = document.body.dataset.path;
-const since = document.body.dataset.rendered;
-let events = null;
-const connect = () => {
-	if (events || document.hidden || document.prerendering) return;
-	events = new EventSource("/.prose/events?path=" + encodeURIComponent(here) + "&since=" + since);
-	events.onopen = () => document.body.classList.remove("offline");
-	events.onerror = () => document.body.classList.add("offline");
-	events.onmessage = () => {
-		try { sessionStorage.setItem(key, String(scrollY)); } catch {}
-		location.reload();
-	};
-};
-const disconnect = () => { events?.close(); events = null; };
-document.addEventListener("visibilitychange", () => (document.hidden ? disconnect() : connect()));
-document.addEventListener("prerenderingchange", connect);
-addEventListener("pagehide", disconnect);
-addEventListener("pageshow", connect);
-connect();
 `;

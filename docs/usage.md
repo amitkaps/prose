@@ -61,7 +61,7 @@ In Cloudflare, create a Worker named `prose` from the repository, with these set
 - **Build command:** `pnpm install && pnpm run build && node dist/cli.js build`
 - **Deploy command:** `pnpm dlx wrangler deploy`
 
-Then set the domain on the Worker, in the dashboard. `wrangler.toml` points the Worker at `.prose`, and serves the site's `404.html` for missing addresses. It also serves `/src/store.ts` from `src/store.ts.html`. The deploy command uses `pnpm dlx`, not `npx`, because `npx` refuses to run in a repository whose `devEngines` names pnpm.
+Then set the domain on the Worker, in the dashboard. `wrangler.toml` points the Worker at `.prose`, and serves the site's `404.html` for missing addresses. It also serves `/src/store.ts` from `src/store.ts.html`. Cloudflare reads the build's `_headers` file, so readers cache the shared stylesheet and script for good. The deploy command uses `pnpm dlx`, not `npx`, because `npx` refuses to run in a repository whose `devEngines` names pnpm.
 
 Another project does the same with the published package. Its build command is `npx @amitkaps/prose build`, and its own `wrangler.toml` sets `directory = ".prose"`.
 

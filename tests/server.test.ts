@@ -8,10 +8,11 @@
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { request } from "node:http";
+import { type IncomingHttpHeaders, request } from "node:http";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
+import { LIVE, SCRIPT, STYLE } from "../src/assets.js";
 import { segments, sourceBody, tableOfContents } from "../src/render.js";
 import { serve, type Served, touches } from "../src/server.js";
 import { parseFile } from "../src/parser.js";
@@ -20,14 +21,19 @@ import { parseFile } from "../src/parser.js";
 function get(
   url: string,
   path: string,
-): Promise<{ status: number; body: string; location?: string }> {
+): Promise<{ status: number; body: string; location?: string; headers: IncomingHttpHeaders }> {
   return new Promise((done, fail) => {
     const req = request(new URL(url), { path, method: "GET" }, (res) => {
       let body = "";
       res.setEncoding("utf-8");
       res.on("data", (chunk: string) => (body += chunk));
       res.on("end", () =>
-        done({ status: res.statusCode ?? 0, body, location: res.headers.location }),
+        done({
+          status: res.statusCode ?? 0,
+          body,
+          location: res.headers.location,
+          headers: res.headers,
+        }),
       );
     });
     req.on("error", fail);
@@ -145,6 +151,18 @@ describe("serve: tests/fixtures/simple", () => {
     expect((await get(served.url, "/")).body).toMatch(
       /<span class="sep">\/<\/span><a href="\/" aria-current="page">README\.md<\/a><\/nav>/,
     );
+  });
+
+  it("links the shared files and serves them, cached for good", async () => {
+    const { body } = await get(served.url, "/");
+    for (const asset of [STYLE, SCRIPT, LIVE]) {
+      expect(body).toContain(asset.url);
+      const res = await get(served.url, asset.url);
+      expect(res.body).toBe(asset.body);
+      expect(res.headers["content-type"]).toBe(asset.type);
+      expect(res.headers["cache-control"]).toContain("immutable");
+    }
+    expect(body).not.toContain("<style>");
   });
 
   it("refuses anything the walk doesn't list, a path outside the root included", async () => {

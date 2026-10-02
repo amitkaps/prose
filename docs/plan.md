@@ -14,6 +14,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 - **The docs in plain sentences.** The [agent rules](usage.md#for-agents) ask for one idea per sentence. The docs were rewritten to follow them, and no longer teach chunks or a layout for `docs/`.
 - **A parser to match.** A file is its prose comments, each with its span. A comment's link is its heading's id, and a comment counts when it starts its own line. Chunks, sections, the preamble, pending marks and name anchors went, with `names.ts`. Shell and Python are no longer read ([writing](writing.md#in-each-language)).
 - **This repository as the example.** Every file opens with a titled `@prose`, every comment that opens a part has a heading, and the code's prose is in plain sentences. `style.css` reads in sections.
+- **Shared files for every page.** The stylesheet and the script moved out of each page, into hashed files that a host caches for good. The project page went from 42 KB to 16 KB, and the site from 3.9 MB to 2.6 MB. The scripts that run before the first paint stay inline ([reading](reading.md#local-and-published)).
 
 ### 0.3.0
 
@@ -43,6 +44,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 - [ ] **An accessibility review.** Keyboard navigation and shortcuts for the file tree, the mode switch, code runs and moving between pages. Focus order, and names for screen readers.
 - [ ] **Pictures of the page.** Once the layout is stable, a screenshot of a rendered file in the README, and a labelled image of the page in [reading](reading.md#around-the-page).
 
+- [ ] **The file tree on a large repository.** Every page carries the whole tree, so a site's size grows with the square of its file count. It's about 1 KB gzipped here. If it grows too large, the tree could become a shared file too, as long as its open folders still come back before the first paint.
 - [ ] **Layers for the stylesheet.** `style.css` follows the page in order, but its rules still lean on that order. Cascade layers (`@layer`) could make each part's precedence explicit, so a part can move or change without breaking another.
 
 ## Open questions
