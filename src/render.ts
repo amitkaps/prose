@@ -83,9 +83,7 @@ function renderListing(children: TreeNode[]): string {
 /** A folder's README, its listing, and, on a local page, one line naming what `.gitignore`
  *  leaves out of it (`ignoredIn`): no links and no counts, since there's nothing there to read. */
 export async function folderBody(node: TreeNode, ignored: string[] = []): Promise<string> {
-  const readme = node.prose
-    ? `<p class="from">From <code>README.md</code></p><div class="prose">${await renderMarkdown(node.prose)}</div>`
-    : "";
+  const readme = node.prose ? `<div class="prose">${await renderMarkdown(node.prose)}</div>` : "";
   const names = ignored.map((name) => `<code>${escapeHtml(name)}</code>`).join(" ");
   const line = ignored.length ? `<p class="ignored">Ignored here: ${names}</p>` : "";
   return `${readme}${renderListing(node.children)}${line}`;
@@ -197,37 +195,46 @@ export interface PageOptions {
   /** Served by `prose .`: the page listens for changes and says when it was rendered. A built
    *  page (`prose build`) does neither, so the same commit always gives the same bytes. */
   live: boolean;
+  /** A folder's page that shows its `README.md`, which the breadcrumb then ends in. */
+  readme?: boolean;
   /** On a built page, which snapshot it is: `v0.1.0 · 1c77293`. */
 }
 
 /** The right-hand sidebar icon: a window with its right panel marked. */
 const PANEL_ICON = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1.75" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 3v10" stroke="currentColor" stroke-width="1.5"/></svg>`;
 
-/** A house, for the breadcrumb's first crumb. */
-const HOME_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 7.25 8 2.75l5.5 4.5M4 6.25v7h3v-4h2v4h3v-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
-
-/** The path to the page, each ancestor a link, starting from Home, which is there on every page:
- *  the root page's breadcrumb would otherwise be empty, and the way back would vanish with it. */
-function breadcrumb(path: string): string {
+/** @prose
+ * # The breadcrumb
+ *
+ * The path from the project to the page, as GitHub writes it: `prose / docs / design.md`. It starts
+ * with the project's name on every page, so the way back is always there, the root page's included.
+ *
+ * A folder's page that shows its README ends in `README.md`, the row the tree highlights there,
+ * so the page needs no line of its own to say where its text is from, and its text starts at the
+ * same height as every other page's. Every crumb is a link, the last one too: on a folder's page
+ * the folder and its `README.md` are the same page, and one being a link while the other isn't
+ * read as a difference that isn't there. The last is marked as the current page.
+ */
+function breadcrumb(project: string, path: string, readme: boolean): string {
   const segments = path.split("/").filter(Boolean);
-  const crumbs: string[] = [
-    segments.length
-      ? `<a class="home" href="/" aria-label="Home">${HOME_ICON}</a>`
-      : `<span class="home" aria-current="page" aria-label="Home">${HOME_ICON}</span>`,
+  const hrefs = segments.map(
+    (_, i) =>
+      `/${segments
+        .slice(0, i + 1)
+        .map(encodeURIComponent)
+        .join("/")}${i === segments.length - 1 && !path.endsWith("/") ? "" : "/"}`,
+  );
+  const crumbs: [string, string][] = [
+    [project, "/"],
+    ...segments.map((segment, i): [string, string] => [segment, hrefs[i]!]),
   ];
-  segments.forEach((segment, i) => {
-    const last = i === segments.length - 1;
-    const href = `/${segments
-      .slice(0, i + 1)
-      .map(encodeURIComponent)
-      .join("/")}${last && !path.endsWith("/") ? "" : "/"}`;
-    crumbs.push(
-      last
-        ? `<span aria-current="page">${escapeHtml(segment)}</span>`
-        : `<a href="${escapeHtml(href)}">${escapeHtml(segment)}</a>`,
-    );
-  });
-  return crumbs.join(`<span class="sep">/</span>`);
+  if (readme) crumbs.push(["README.md", hrefs.at(-1) ?? "/"]);
+  return crumbs
+    .map(
+      ([label, href], i) =>
+        `<a href="${escapeHtml(href)}"${i === crumbs.length - 1 ? ` aria-current="page"` : ""}>${escapeHtml(label)}</a>`,
+    )
+    .join(`<span class="sep">/</span>`);
 }
 
 /** @prose
@@ -244,7 +251,7 @@ function breadcrumb(path: string): string {
  * what changed while hidden. A built page leaves live reload out. Browser storage can be unavailable, so it's only ever tried.
  */
 export function page(options: PageOptions): string {
-  const { project, path, rail, body, editorLink, hasCode, live } = options;
+  const { project, path, rail, body, editorLink, hasCode, live, readme = false } = options;
   const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
   const off = hasCode ? "" : ` disabled title="No code on this page"`;
   const mode = `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true"${off}>Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false"${off}>Prose only</button></div>`;
@@ -266,7 +273,7 @@ export function page(options: PageOptions): string {
 <header class="bar"><a class="project" href="/">${escapeHtml(project)}</a><div class="bar-mode">${mode}</div><label class="rail-toggle dock" for="dock" title="Files" aria-label="Files">${PANEL_ICON}</label><button type="button" class="rail-toggle pop" popovertarget="rail" title="Files" aria-label="Files">${PANEL_ICON}</button></header>
 <div class="layout">
 <div class="page">
-<main><div class="where"><nav class="crumbs">${breadcrumb(path)}</nav>${end}</div>${body}</main>
+<main><div class="where"><nav class="crumbs">${breadcrumb(project, path, readme)}</nav>${end}</div>${body}</main>
 </div>
 ${rail}
 <script>${RAIL_SCRIPT}</script>

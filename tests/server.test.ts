@@ -9,7 +9,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { segments } from "../src/render.js";
 import { serve, type Served, touches } from "../src/server.js";
@@ -97,12 +97,12 @@ describe("serve: tests/fixtures/simple", () => {
     expect((await get(served.url, "/index.html")).body).toContain('class="block');
   });
 
-  it("sends a folder's README.md to the folder's page, and says where its text is from", async () => {
+  it("sends a folder's README.md to the folder's page, which the breadcrumb ends in", async () => {
     const res = await get(served.url, "/README.md");
     expect(res.status).toBe(301);
     expect(res.location).toBe("/");
-    expect((await get(served.url, "/")).body).toContain(
-      '<p class="from">From <code>README.md</code></p>',
+    expect((await get(served.url, "/")).body).toMatch(
+      /<span class="sep">\/<\/span><a href="\/" aria-current="page">README\.md<\/a><\/nav>/,
     );
   });
 
@@ -186,18 +186,23 @@ describe("serve: folders", () => {
     expect(body).toContain('data-mode="prose" aria-pressed="false" disabled');
   });
 
-  it("starts every breadcrumb at Home, the root page's included", async () => {
+  it("starts every breadcrumb at the project, and ends a folder's page with its README", async () => {
     const crumbs = (body: string) =>
       body.slice(
         body.indexOf('<nav class="crumbs">'),
         body.indexOf("</nav>", body.indexOf('<nav class="crumbs">')),
       );
-    expect(crumbs((await get(served.url, "/")).body)).toContain(
-      '<span class="home" aria-current="page" aria-label="Home">',
+    const sep = '<span class="sep">/</span>';
+    const name = basename(root);
+    expect(crumbs((await get(served.url, "/")).body)).toBe(
+      `<nav class="crumbs"><a href="/">${name}</a>${sep}<a href="/" aria-current="page">README.md</a>`,
     );
-    const file = crumbs((await get(served.url, "/src/a.ts")).body);
-    expect(file).toMatch(/^<nav class="crumbs"><a class="home" href="\/" aria-label="Home">/);
-    expect(file).toContain('<a href="/src/">src</a>');
+    expect(crumbs((await get(served.url, "/src/")).body)).toBe(
+      `<nav class="crumbs"><a href="/">${name}</a>${sep}<a href="/src/">src</a>${sep}<a href="/src/" aria-current="page">README.md</a>`,
+    );
+    expect(crumbs((await get(served.url, "/src/a.ts")).body)).toBe(
+      `<nav class="crumbs"><a href="/">${name}</a>${sep}<a href="/src/">src</a>${sep}<a href="/src/a.ts" aria-current="page">a.ts</a>`,
+    );
   });
 
   it("highlights an EBNF fence: the rule's name, its terminals and character classes", async () => {

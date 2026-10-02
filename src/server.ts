@@ -92,7 +92,7 @@ export function notFoundPage(site: Site): string {
 
 export async function renderRoute(site: Site, path: string): Promise<Route> {
   const { root, project, files, live } = site;
-  const shell = (body: string, editorLink: string | null = null, hasCode = false) =>
+  const shell = (body: string, editorLink: string | null = null, hasCode = false, readme = false) =>
     page({
       project,
       path,
@@ -101,6 +101,7 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
       editorLink: live ? editorLink : null,
       hasCode,
       live,
+      readme,
     });
   const notFound = (): Route => ({
     status: 404,
@@ -114,7 +115,10 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
     if (!node) return notFound();
     // What's ignored exists only on this machine, so a built page doesn't list it.
     const ignored = live ? ignoredIn(root, path.replace(/\/$/, "")) : [];
-    return { status: 200, html: shell(await folderBody(node, ignored)) };
+    return {
+      status: 200,
+      html: shell(await folderBody(node, ignored), null, false, Boolean(node.prose)),
+    };
   }
 
   // A folder's README.md is that folder's page, so its own address goes there.

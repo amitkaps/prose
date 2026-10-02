@@ -402,20 +402,14 @@ a {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.crumbs .home {
-  display: inline-flex;
-  vertical-align: -0.1em;
-  color: var(--muted);
-}
-.crumbs a.home:hover {
-  color: var(--link);
-}
 .crumbs .sep {
   color: var(--muted);
   margin: 0 0.35rem;
 }
 .crumbs [aria-current] {
   font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
 }
 .rail-toggle {
   font: inherit;
@@ -599,11 +593,6 @@ pre.shiki .line {
   height: 1px;
   overflow: hidden;
   clip-path: inset(50%);
-}
-.from {
-  margin: 0 0 1rem;
-  color: var(--muted);
-  font-size: 0.85rem;
 }
 .code-head .lang {
   margin-left: auto;
