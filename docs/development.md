@@ -36,7 +36,8 @@ The package is one bundle with no dependencies, about 180 KB unpacked. It's read
 
 - **Bundled.** markz is inside `dist/`, so installing prose fetches one package. A fix in markz reaches prose's users with prose's next release.
 - **Not minified.** A bundler that takes prose in minifies it for its own app, and anyone reading `node_modules` can follow the code.
-- **No comments.** The build strips them, but keeps license comments and annotations like `@__PURE__` ([vite.config.ts](../vite.config.ts)). The types in `dist/*.d.ts` keep their JSDoc, so an editor still shows it on hover.
+- **No comments, but a license.** The build strips comments from the code, but keeps license comments and annotations like `@__PURE__` ([vite.config.ts](../vite.config.ts)). A `/*!` banner names the license, so it stays with the code if another build bundles prose.
+- **Types with their documentation.** `dist/index.d.ts` keeps the comment above each export, `@prose` included, so an editor shows it on hover. Nothing strips it. Each export's comment is written for that use ([writing](writing.md#in-each-language)).
 - **No sourcemaps.** They would carry every source file whole, prose included, at twice the size of the code. The source is on GitHub.
 
 CI runs [publint](https://publint.dev) on the packed tarball, fetched for the step, not installed. It checks `exports`, `files` and the types. arethetypeswrong was ruled out, because it tests old Node resolution that an ESM package for Node 24 and up doesn't support.

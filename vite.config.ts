@@ -81,7 +81,8 @@ export default defineConfig({
    * The bundler inlines every package outside `dependencies`. So markz is a dev dependency, and
    * its code ships inside `dist/`. So the package has no dependencies at all.
    *
-   * What ships is readable code, without its prose, as the page's files are. It isn't minified, so
+   * What ships is readable code, without its prose, as the page's files are. A `/*!` banner
+   * carries the license, so it stays with the code even when another build bundles prose. It isn't minified, so
    * anyone reading it in `node_modules` can follow it. Comments are stripped, but license comments
    * stay, and so do annotations like `@__PURE__`, which help a bundler that takes prose in.
    * There are no sourcemaps. They would carry every source file whole, and the source is on GitHub.
@@ -94,6 +95,7 @@ export default defineConfig({
     fixedExtension: false,
     dts: true,
     sourcemap: false,
+    banner: { js: "/*! @amitkaps/prose · MIT License · https://github.com/amitkaps/prose */" },
     outputOptions: { comments: { legal: true, annotation: true, jsdoc: false } },
     plugins: [built],
   },

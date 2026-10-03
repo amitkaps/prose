@@ -307,6 +307,7 @@ function listen(
   });
 }
 
+/** Serves a repository's pages on a local port, read-only, and reloads them as its files change. */
 export async function serve(root: string, options: ServeOptions = {}): Promise<Served> {
   const { port = 1234, host = "127.0.0.1" } = options;
   const changes = new Changes();
