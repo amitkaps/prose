@@ -8,7 +8,7 @@
  * What counts as a prose comment is [writing](../docs/writing.md#in-each-language). This file is
  * how it's read.
  */
-import { parseSync } from "oxc-parser";
+import { lexJs } from "./lexer.js";
 
 export interface ProseComment {
   /** The comment's Markdown, without its delimiters, gutter or marker. */
@@ -61,23 +61,18 @@ function startsLine(source: string, index: number): boolean {
 /** @prose
  * # Scanning JS and TS
  *
- * The comments come from `oxc-parser`, so a regex literal, a template string or a
- * comment-shaped string can't be misread as a comment. oxc is used for nothing else. A file oxc
- * can't parse at all has no prose comments.
+ * The comments come from [lexer.ts](lexer.ts), which skips strings, template literals and regex
+ * literals whole. So a comment-shaped string or a `/` in a regex can't be misread as a comment.
+ * The lexer replaced `oxc-parser`, whose native binary was too heavy for a comment list.
  */
-function scanJs(source: string, lang: "js" | "ts"): ProseComment[] {
-  let comments: ReturnType<typeof parseSync>["comments"];
-  try {
-    comments = parseSync(`file.${lang}`, source).comments;
-  } catch {
-    return [];
-  }
+function scanJs(source: string): ProseComment[] {
   const found: ProseComment[] = [];
-  for (const comment of comments) {
-    if (comment.type !== "Block" || !comment.value.startsWith("*")) continue;
-    const text = source.slice(comment.start, comment.end);
+  for (const token of lexJs(source)) {
+    if (token.kind !== "comment" || !source.startsWith("/**", token.start)) continue;
+    const text = source.slice(token.start, token.end);
+    if (!text.endsWith("*/") || text.length < 5) continue;
     const body = extractMarkedBlock(text.slice(3, -2), true);
-    if (body !== null) found.push({ body, start: comment.start, end: comment.end });
+    if (body !== null) found.push({ body, start: token.start, end: token.end });
   }
   return found;
 }
@@ -193,7 +188,7 @@ function scanSvelte(source: string): ProseComment[] {
         ? scanHtml(text)
         : part.kind === "style"
           ? scanCss(text)
-          : scanJs(text, "ts");
+          : scanJs(text);
     for (const c of inPart) {
       found.push({ body: c.body, start: c.start + part.start, end: c.end + part.start });
     }
@@ -239,7 +234,7 @@ export function parseFile(source: string, extension: string): ProseComment[] {
           ? scanHashComments(source)
           : extension === "css"
             ? scanCss(source)
-            : scanJs(source, extension === "ts" ? "ts" : "js");
+            : scanJs(source);
   return found.filter((c) => startsLine(source, c.start));
 }
 
