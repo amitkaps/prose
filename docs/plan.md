@@ -36,7 +36,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 - [ ] **One package, with nothing to install beside it.** oxc and shiki do far more than prose now asks of them, and oxc brings a native binary for each platform.
   - [x] Bundle markz into `dist/`.
   - [x] Find comments with a small lexer instead of `oxc-parser`. A test checks it against the oxc that comes with vite-plus. JSX is out, since no repository here uses it.
-  - [ ] Move the page scripts and the page's shell into their own files in `src/`. The build strips their comments with the lexer and formats them with oxfmt, so the pages read cleanly in the browser.
+  - [x] Move the page's frame, stylesheet and scripts into `src/page/`. The build strips their comments and formats them with oxfmt, so the pages read cleanly in the browser.
   - [ ] Highlight with the same lexer instead of shiki, into the palette's token colours. Compare a few pages with shiki's before it goes.
 - [ ] **Use it on base, sitez and markz.**
   - Install the latest release, and remove `prose()` from their Vite configs. Replace the snippet in their `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.

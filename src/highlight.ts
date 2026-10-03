@@ -6,7 +6,7 @@
  *
  * It loads only the languages a repository here is likely to hold, through `shiki/core`, not the
  * bundle of every grammar. EBNF, which shiki lacks, comes from [ebnf.ts](ebnf.ts). The theme is
- * shiki's CSS-variables theme, so each token's colour is a variable. `style.css` sets those for
+ * shiki's CSS-variables theme, so each token's colour is a variable. [style.css](page/style.css) sets those for
  * light and for dark, so code follows the reader's setting without a second render.
  *
  * Highlighting is most of what a page costs. A 1,300-line TypeScript file takes about 0.4 s with

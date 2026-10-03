@@ -10,6 +10,9 @@
  */
 import { html as markz } from "@amitkaps/markz";
 import { LIVE, SCRIPT, STYLE } from "./assets.js";
+import modeScript from "./page/mode.js?built";
+import shell from "./page/page.html?built";
+import railScript from "./page/rail.js?built";
 import { escapeHtml, highlight, highlightFences } from "./highlight.js";
 import { type NavItem, renderNav } from "./nav.js";
 import type { ProseComment } from "./parser.js";
@@ -374,32 +377,49 @@ export function page(options: PageOptions): string {
   const end = editorLink
     ? `<a class="editor" href="${escapeHtml(editorLink)}">Open in editor</a>`
     : "";
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(title)}</title>
-<link rel="stylesheet" href="${STYLE.url}">
-<script defer src="${SCRIPT.url}"></script>
-${live ? `<script defer src="${LIVE.url}"></script>\n` : ""}<script>try { const r = document.documentElement.classList, s = localStorage; if (s.getItem("prose:mode") === "prose") r.add("prose-only"); } catch {}</script>
-</head>
-<body data-path="${escapeHtml(path)}"${live ? ` data-rendered="${Date.now()}"` : ""}>
-<input type="checkbox" id="dock" class="ctl" aria-label="Hide the file tree">
-<div class="shell">
-<header class="bar"><a class="project" href="/">${escapeHtml(project)}</a>${renderNav(nav, path)}<div class="bar-mode">${mode}</div><label class="rail-toggle dock" for="dock" title="Files" aria-label="Files">${PANEL_ICON}</label><button type="button" class="rail-toggle pop" popovertarget="rail" title="Files" aria-label="Files">${PANEL_ICON}</button></header>
-<div class="layout">
-<div class="page">
-<main${hasCode ? ` class="has-code"` : ""}><div class="where"><nav class="crumbs">${breadcrumb(project, path, readme)}</nav>${end}</div>${tableOfContents(body)}${body}</main>
-</div>
-${rail}
-<script>${RAIL_SCRIPT}</script>
-</div>
-</div>
-<script type="speculationrules">${SPECULATION}</script>
-</body>
-</html>
-`;
+  const slots: Record<string, string> = {
+    title: escapeHtml(title),
+    style: STYLE.url,
+    script: SCRIPT.url,
+    "live-script": live ? `<script defer src="${LIVE.url}"></script>` : "",
+    "mode-script": inlineScript(modeScript),
+    path: escapeHtml(path),
+    rendered: live ? `data-rendered="${Date.now()}"` : "",
+    project: escapeHtml(project),
+    nav: renderNav(nav, path),
+    mode,
+    icon: PANEL_ICON,
+    "main-class": hasCode ? `class="has-code"` : "",
+    crumbs: breadcrumb(project, path, readme),
+    editor: end,
+    toc: tableOfContents(body),
+    body,
+    rail,
+    "rail-script": inlineScript(railScript),
+    speculation: `<script type="speculationrules">${SPECULATION}</script>`,
+  };
+  // One pass, so a slot's value is never searched for slots itself.
+  return shell.replace(
+    /( ?)\{\{([\w-]+)\}\}/g,
+    (_, space: string, name: string, at: number, text: string) => {
+      const value = slots[name];
+      if (value === undefined) throw new Error(`page.html has no value for {{${name}}}`);
+      if (!value) return "";
+      if (!value.startsWith(INLINE)) return space + value;
+      // A script's lines line up under its slot. Nothing else is indented, since a `<pre>` would
+      // show the extra spaces.
+      const indent = /^[ \t]*/.exec(text.slice(text.lastIndexOf("\n", at) + 1))![0];
+      return space + value.slice(INLINE.length).replaceAll("\n", `\n${indent}`);
+    },
+  );
+}
+
+/** Marks a slot value as an inline script, so `page` indents it. */
+const INLINE = "\0inline";
+
+function inlineScript(code: string): string {
+  const body = code.trimEnd().replaceAll("\n", "\n  ");
+  return `${INLINE}<script>\n  ${body}\n</script>`;
 }
 
 /** @prose
@@ -412,31 +432,3 @@ ${rail}
 const SPECULATION = JSON.stringify({
   prerender: [{ where: { href_matches: "/*" }, eagerness: "moderate" }],
 });
-
-/** Runs straight after the rail, before the page paints, so its folders and scroll are back in
- *  place on the first frame instead of jumping after it. */
-const RAIL_SCRIPT = `
-{
-	const rail = document.querySelector(".rail");
-	try {
-		const saved = JSON.parse(sessionStorage.getItem("prose:rail") || "null");
-		if (saved) {
-			for (const d of rail.querySelectorAll("details[data-folder]")) {
-				if (saved.open.includes(d.dataset.folder)) d.open = true;
-			}
-			rail.scrollTop = saved.scroll;
-		}
-	} catch {}
-	const current = rail.querySelector("[aria-current]");
-	if (current) {
-		const r = current.getBoundingClientRect();
-		if (r.top < 0 || r.bottom > innerHeight) current.scrollIntoView({ block: "center" });
-	}
-	addEventListener("pagehide", () => {
-		try {
-			const open = [...rail.querySelectorAll("details[data-folder][open]")].map((d) => d.dataset.folder);
-			sessionStorage.setItem("prose:rail", JSON.stringify({ open, scroll: rail.scrollTop }));
-		} catch {}
-	});
-}
-`;
