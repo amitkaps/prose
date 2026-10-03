@@ -43,7 +43,7 @@ describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
     expect(bodies(`/** @prose\n * Intro.\n* a bullet\n */\n`, "js")).toEqual(["Intro.\na bullet"]);
   });
 
-  it("isn't fooled by regex literals or division, since oxc finds the comments", () => {
+  it("isn't fooled by regex literals or division", () => {
     for (const line of ["const RE = /`/g;", "const ratio = a / b;", "const RE = /[a/b]/g;"]) {
       expect(bodies(`${line}\n/** @prose After. */\nconst c = 1;`, "js")).toEqual(["After."]);
     }

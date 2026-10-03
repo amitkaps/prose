@@ -36,7 +36,6 @@
     "test": "vp test --run"
   },
   "dependencies": {
-    "oxc-parser": "^0.152.0",
     "shiki": "^4.4.3"
   },
   "devDependencies": {
