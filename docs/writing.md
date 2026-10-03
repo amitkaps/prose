@@ -76,7 +76,7 @@ This is reference, for when something surprises you. The rule is the same everyw
 - **The body is Markdown**, in [markz](https://github.com/amitkaps/markz)'s dialect. That's everyday GFM, without setext headings, reference links or raw HTML.
 - **JS, TS and CSS.** The body is everything after `@prose`, with each line's leading ` * ` stripped. A `*/` in the body would end the comment, so write `*\/`, and it shows as `*/`. TypeScript treats `@prose` as a JSDoc tag, so an editor's hover shows the prose as that tag's text.
 - **YAML, TOML and `.gitignore`.** These have no block comment. A prose comment is a run of `#` lines that starts with `# @prose`, with each line's `# ` stripped. It ends at the first line that isn't a comment, or at the next `# @prose`.
-- **Not shell or Python.** Neither is used in the projects prose reads, and Python's docstrings and indentation would need rules nobody tests. Their files show as highlighted text.
+- **Not shell or Python.** Neither is used in the projects prose reads, and Python's docstrings and indentation would need rules nobody tests. A shell file shows as highlighted text, and a Python file as plain text.
 - **Svelte.** Each part follows its own language. `<script>` follows JS or TS, the markup follows HTML, and `<style>` follows CSS. Prose from all three parts reads in source order.
 
 **Why a marker.** Comments already have many owners, like JSDoc, Vite, Svelte, formatters and linters. Every comment without the marker stays theirs, including unmarked `/** */`, `//`, `/* */` and `<!-- -->`. So `/** @param x */`, `// TODO` and `<!-- svelte-ignore … -->` are never read as prose. Adding the marker is the explicit step that makes a comment prose.

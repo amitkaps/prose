@@ -14,6 +14,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 - **The docs in plain sentences.** The [agent rules](usage.md#for-agents) ask for one idea per sentence. The docs were rewritten to follow them, and no longer teach chunks or a layout for `docs/`.
 - **A parser to match.** A file is its prose comments, each with its span. A comment's link is its heading's id, and a comment counts when it starts its own line. Chunks, sections, the preamble, pending marks and name anchors went, with `names.ts`. Shell and Python are no longer read ([writing](writing.md#in-each-language)).
 - **This repository as the example.** Every file opens with a titled `@prose`, every comment that opens a part has a heading, and the code's prose is in plain sentences. `style.css` reads in sections.
+- **One package, with nothing beside it.** markz is bundled into `dist/`. A small lexer replaced `oxc-parser` and finds the same comments, and small tokenizers replaced shiki and colour code as it did ([lessons](lessons.md#rendering)). The page's frame, stylesheet and scripts are files in `src/page/`, stripped of comments and formatted at build. prose has no dependencies.
 - **Shared files for every page.** The stylesheet and the script moved out of each page, into hashed files that a host caches for good. The project page went from 42 KB to 16 KB, and the site from 3.9 MB to 2.6 MB. The scripts that run before the first paint stay inline ([reading](reading.md#local-and-published)).
 
 ### 0.3.0
@@ -33,11 +34,6 @@ The `@prose` convention and the read-only renderer work. This repository is read
 
 ## Next, in order
 
-- [ ] **One package, with nothing to install beside it.** oxc and shiki do far more than prose now asks of them, and oxc brings a native binary for each platform.
-  - [x] Bundle markz into `dist/`.
-  - [x] Find comments with a small lexer instead of `oxc-parser`. A test checks it against the oxc that comes with vite-plus. JSX is out, since no repository here uses it.
-  - [x] Move the page's frame, stylesheet and scripts into `src/page/`. The build strips their comments and formats them with oxfmt, so the pages read cleanly in the browser.
-  - [ ] Highlight with the same lexer instead of shiki, into the palette's token colours. Compare a few pages with shiki's before it goes.
 - [ ] **Use it on base, sitez and markz.**
   - Install the latest release, and remove `prose()` from their Vite configs. Replace the snippet in their `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.
   - Move `prose/` to `docs/` in sitez and markz, with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website, so that moves to `site/` first, with its root scripts, workspace, package name and CI paths.

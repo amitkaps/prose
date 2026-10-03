@@ -14,8 +14,8 @@
  * Colours, widths and the type size are set once, here. The dark palette redefines the same
  * names. Every size is in rem, so the whole page scales as one, as browser zoom would.
  *
- * Code takes its colours from the same tokens. Shiki's CSS-variables theme names each token's
- * colour, like `--shiki-token-keyword`, and the palette sets them in the page's warm ink.
+ * Code takes its colours from the same tokens. Each kind of token has one, like `--code-keyword`,
+ * in the page's warm ink ([highlight.ts](../highlight.ts)).
  */
 :root {
   color-scheme: light dark;
@@ -35,20 +35,14 @@
   /* 100 columns of code (oxfmt's print width), plus a gutter and padding, in the code font. */
   --code-width: 60rem;
   --gutter-ink: color-mix(in srgb, var(--muted) 70%, var(--panel));
-  --shiki-foreground: #2f2c27;
-  --shiki-background: var(--panel);
-  --shiki-token-comment: #8c8577;
-  --shiki-token-keyword: #9c4221;
-  --shiki-token-string: #4d7030;
-  --shiki-token-string-expression: #4d7030;
-  --shiki-token-function: #25589c;
-  --shiki-token-constant: #7d4c98;
-  --shiki-token-parameter: #2f2c27;
-  --shiki-token-punctuation: #6f695e;
-  --shiki-token-link: #25589c;
-  --shiki-token-inserted: #4d7030;
-  --shiki-token-deleted: #9c4221;
-  --shiki-token-changed: #9a6700;
+  --code-ink: #2f2c27;
+  --code-comment: #8c8577;
+  --code-keyword: #9c4221;
+  --code-string: #4d7030;
+  --code-function: #25589c;
+  --code-constant: #7d4c98;
+  --code-punctuation: #6f695e;
+  --code-link: #25589c;
   font-family:
     system-ui,
     -apple-system,
@@ -70,19 +64,14 @@
     --link: #e6a57c;
     --selection: color-mix(in srgb, #e3b341 26%, transparent);
     --accent: #e3b341;
-    --shiki-foreground: #e6e3dd;
-    --shiki-token-comment: #8f887c;
-    --shiki-token-keyword: #e0976b;
-    --shiki-token-string: #a8c282;
-    --shiki-token-string-expression: #a8c282;
-    --shiki-token-function: #8fb7e6;
-    --shiki-token-constant: #c9a2dc;
-    --shiki-token-parameter: #e6e3dd;
-    --shiki-token-punctuation: #a39c90;
-    --shiki-token-link: #8fb7e6;
-    --shiki-token-inserted: #a8c282;
-    --shiki-token-deleted: #e0976b;
-    --shiki-token-changed: #e3b341;
+    --code-ink: #e6e3dd;
+    --code-comment: #8f887c;
+    --code-keyword: #e0976b;
+    --code-string: #a8c282;
+    --code-function: #8fb7e6;
+    --code-constant: #c9a2dc;
+    --code-punctuation: #a39c90;
+    --code-link: #8fb7e6;
   }
 }
 /** @prose
@@ -691,11 +680,11 @@ main > * {
  * that, a table scrolls and code wraps. A short sample keeps the text's width, as a run does.
  */
 .prose table,
-.prose pre.shiki {
+.prose pre.highlighted {
   width: max-content;
   max-width: min(var(--wide), calc(100cqw - var(--docked) - 2 * var(--side)));
 }
-.prose pre.shiki {
+.prose pre.highlighted {
   min-width: 100%;
 }
 .prose table {
@@ -722,7 +711,9 @@ main > * {
  * hanging indent instead of scrolling, and tabs are two columns. The file's line numbers sit in a
  * gutter that isn't copied with the code.
  */
-pre.shiki {
+pre.highlighted {
+  color: var(--code-ink);
+  background: var(--panel);
   margin: 0.75rem 0;
   padding: 0.75rem 1rem;
   border-radius: 8px;
@@ -730,11 +721,11 @@ pre.shiki {
   line-height: 1.5;
   tab-size: 2;
 }
-pre.shiki code {
+pre.highlighted code {
   display: block;
   white-space: normal;
 }
-pre.shiki .line {
+pre.highlighted .line {
   display: block;
   min-height: 1lh;
   white-space: pre-wrap;
@@ -742,25 +733,53 @@ pre.shiki .line {
   padding-left: 2ch;
   text-indent: -2ch;
 }
+pre.highlighted .comment {
+  color: var(--code-comment);
+}
+pre.highlighted .keyword {
+  color: var(--code-keyword);
+}
+pre.highlighted .string {
+  color: var(--code-string);
+}
+pre.highlighted .function {
+  color: var(--code-function);
+}
+pre.highlighted .constant {
+  color: var(--code-constant);
+}
+pre.highlighted .punctuation {
+  color: var(--code-punctuation);
+}
+pre.highlighted .link {
+  color: var(--code-link);
+  text-decoration: underline;
+}
+pre.highlighted .strong {
+  font-weight: 600;
+}
+pre.highlighted .emphasis {
+  font-style: italic;
+}
 .code {
   margin: 0.5rem 0 1.25rem;
   border-radius: 8px;
   overflow: hidden;
-  background: var(--shiki-background);
+  background: var(--panel);
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.85rem;
   max-width: calc(100ch + var(--gutter) + 5ch + 2rem);
 }
-.code pre.shiki {
+.code pre.highlighted {
   margin: 0;
   border-radius: 0;
   font-size: 1em;
 }
-.code pre.shiki .line {
+.code pre.highlighted .line {
   position: relative;
   padding-left: calc(var(--gutter) + 5ch);
 }
-.code pre.shiki .line::before {
+.code pre.highlighted .line::before {
   counter-increment: line;
   content: counter(line);
   position: absolute;
