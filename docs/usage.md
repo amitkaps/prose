@@ -66,12 +66,12 @@ Copy this into the project's `CLAUDE.md` or `AGENTS.md`:
 - Every source file opens with a `@prose` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`, except `.github/`, where GitHub would show it in place of the root's.
 - Every prose comment, README and doc begins with a short first paragraph, its summary for the human, in about three lines. It says what the file or section means, not what its code does. Detail goes below it. When a change alters a file's role, rewrite that paragraph in the same change.
 - Write plain sentences. Each one holds one idea, in about 25 words at most, in the active voice with a named subject. If a point doesn't fit, give it its own sentence or cut it. Don't join ideas with semicolons or colons, and keep parentheses for links and examples. Use one term for each concept, the one the docs already use.
-- Prose goes in `@prose` comments, in markz's Markdown. Ordinary comments stay for code-level notes.
-- Prose says what the code can't: why it exists, what it promises, what was decided and what was ruled out. It doesn't retell what reading the code shows, and it doesn't replace ordinary comments.
-- A library ships the comment above each export in its types, as that export's documentation. So give every export a comment, even one line, and put a section's prose above the declaration it describes.
-- Keep prose current in the same change as the code. Rewrite it where it has drifted, and don't append. A change that only tunes code (same behaviour, same stated costs) needn't touch prose.
+- Prose goes in `@prose` comments, written in [markz's Markdown](https://markz.amitkaps.com/docs/syntax.md). Write `_emphasis_`, never `*emphasis*`, and no raw HTML. Ordinary comments stay for code-level notes.
+- Prose says what the code can't. That's why it exists, what it promises, what was decided and what was ruled out. It doesn't retell what reading the code shows, and it doesn't replace ordinary comments.
+- A library ships the comment above each export in its types, as that export's documentation. So give every export a comment, and a one-line JSDoc is enough. Put a section's prose above the declaration it describes.
+- Keep prose current in the same change as the code. Rewrite it where it has drifted, and don't append. A change that only tunes code, with the same behaviour and the same stated costs, needn't touch prose.
 - State a rule once. If a doc or a tested file owns it, link to it by repo path and keep only how and why this code does it.
 - Decisions made in the chat go into the prose in the same change. One that spans files goes into the doc it changes, and one about a single spot goes into the `@prose` there. Write docs for a reader who wasn't in the chat, since they may be published as they are. When something is ruled out, write down that it's out and why, so it isn't rebuilt.
 - If the project keeps a plan, keep it current, with what's done in one line each and what's next in order.
-- To find your way, `grep -rn -A4 "@prose" src` is the map, and `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet.
+- To find your way, `grep -rn -A4 "@prose" src` is the map, and `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet. Add an `--include` for each other language the project writes.
 ```
