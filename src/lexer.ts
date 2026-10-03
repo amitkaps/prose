@@ -7,7 +7,7 @@
  *
  * A comment is only found reliably if everything that could hide one is skipped whole. That
  * means strings, template literals with their `${…}` parts, and regex literals. A tokenizer that
- * got regexes wrong once lost every comment after a `/\`/g` ([lessons](../docs/lessons.md#the-parser-and-scanner)).
+ * got regexes wrong once lost every comment after a `` /`/g `` ([lessons](../docs/lessons.md#the-parser-and-scanner)).
  * So `tests/lexer.test.ts` checks this one against oxc's parser, on every JS and TS file in the
  * repository.
  *
