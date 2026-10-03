@@ -1,2 +1,7 @@
+# @prose
+# # pnpm's settings
+#
+# pnpm holds back a version for a while after it's published. markz is ours, so a new release of
+# it can come in straight away. Drop the entry once that wait has passed.
 minimumReleaseAgeExclude:
   - "@amitkaps/markz@0.2.0"
