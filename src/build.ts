@@ -135,6 +135,7 @@ function prepareOut(root: string, out: string, warnings: string[]): void {
   mkdirSync(out, { recursive: true });
 }
 
+/** Writes the pages of a repository's last commit as a static site. */
 export async function build(dir: string, options: BuildOptions = {}): Promise<Built> {
   const root = resolve(dir);
   if (tryGit(root, ["rev-parse", "--is-inside-work-tree"]) !== "true") {
