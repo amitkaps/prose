@@ -10,7 +10,8 @@
  */
 
 import { describe, expect, it } from "vite-plus/test";
-import { highlight, highlightFences, langFor } from "../src/highlight.js";
+import { parse } from "@amitkaps/markz";
+import { highlight, langFor, markdownHtml } from "../src/highlight.js";
 
 function unescape(text: string): string {
   return text
@@ -683,9 +684,37 @@ describe("highlight: the HTML", () => {
   });
 });
 
-describe("highlightFences", () => {
-  it("swaps markz's escaped fence for highlighted code", () => {
-    const html = '<pre><code class="language-ts">let a = &quot;x&quot;;\n</code></pre>';
-    expect(highlightFences(html)).toContain('<span class="string">&quot;x&quot;</span>');
+describe("markdownHtml", () => {
+  const doc = [
+    "```ts",
+    'let a = "x";',
+    "```",
+    "",
+    "- item",
+    "",
+    "  ```css",
+    "  a {}",
+    "  ```",
+    "",
+    "```=html",
+    "<pre><code>raw</code></pre>",
+    "```",
+    "",
+    "$$",
+    "x^2",
+    "$$",
+    "",
+  ].join("\n");
+  const out = markdownHtml(parse(doc));
+
+  it("highlights each fence, wherever it sits", () => {
+    expect(out).toContain('<span class="string">&quot;x&quot;</span>');
+    expect(out).toContain('<span class="string">a</span> {}');
+    expect(out.match(/<pre class="highlighted">/g)).toHaveLength(2);
+  });
+
+  it("leaves raw HTML and display math as markz wrote them", () => {
+    expect(out).toContain("<pre><code>raw</code></pre>");
+    expect(out).toContain('<pre><code class="language-math math-display">x^2');
   });
 });
