@@ -18,7 +18,7 @@ import { type NavItem, renderNav } from "./nav.js";
 import type { ProseComment } from "./parser.js";
 import { extensionOf, type TreeNode } from "./tree.js";
 
-export async function renderMarkdown(text: string): Promise<string> {
+export function renderMarkdown(text: string): string {
   return text.trim() ? highlightFences(markz(text)) : "";
 }
 
@@ -121,21 +121,21 @@ function renderListing(children: TreeNode[]): string {
 
 /** A folder's README, its listing, and, on a local page, one line naming what `.gitignore`
  *  leaves out of it (`ignoredIn`): no links and no counts, since there's nothing there to read. */
-export async function folderBody(node: TreeNode, ignored: string[] = []): Promise<string> {
-  const readme = node.prose ? `<div class="prose">${await renderMarkdown(node.prose)}</div>` : "";
+export function folderBody(node: TreeNode, ignored: string[] = []): string {
+  const readme = node.prose ? `<div class="prose">${renderMarkdown(node.prose)}</div>` : "";
   const names = ignored.map((name) => `<code>${escapeHtml(name)}</code>`).join(" ");
   const line = ignored.length ? `<p class="ignored">Ignored here: ${names}</p>` : "";
   return `${readme}${renderListing(node.children)}${line}`;
 }
 
-export async function markdownBody(node: TreeNode): Promise<string> {
-  return `<div class="prose">${await renderMarkdown(node.prose ?? "")}</div>`;
+export function markdownBody(node: TreeNode): string {
+  return `<div class="prose">${renderMarkdown(node.prose ?? "")}</div>`;
 }
 
 /** A file that isn't read for prose: one run, and what was cut from its end (`rawToNode`). */
-export async function rawBody(node: TreeNode): Promise<string> {
+export function rawBody(node: TreeNode): string {
   const more = node.more ? `<p class="more">… ${escapeHtml(node.more)}</p>` : "";
-  return NO_PROSE + (await codeRun(node.code ?? "", extensionOf(node.path) || "text", 1)) + more;
+  return NO_PROSE + codeRun(node.code ?? "", extensionOf(node.path) || "text", 1) + more;
 }
 
 /** A binary file: what it is and how big, and an image shown. */
@@ -161,12 +161,12 @@ const NO_PROSE = `<p class="no-prose">No prose in this file.</p>`;
  * carries on from there, in a gutter as wide as the largest number. A file with no prose is one
  * run with the same header, and folds like any other.
  */
-async function codeRun(text: string, lang: string, startLine: number): Promise<string> {
+function codeRun(text: string, lang: string, startLine: number): string {
   const count = text.split("\n").length;
   const last = startLine + count - 1;
   const lines = `${count} line${count === 1 ? "" : "s"} · ${startLine}–${last}`;
   const head = `<button type="button" class="code-head" aria-expanded="true"><span class="chevron" aria-hidden="true"></span><span>${lines}</span><span class="lang"><span class="sep"> · </span>${escapeHtml(lang)}</span></button>`;
-  return `<div class="code" style="counter-reset: line ${startLine - 1}; --gutter: ${String(last).length}ch">${head}${await highlight(text, lang)}</div>`;
+  return `<div class="code" style="counter-reset: line ${startLine - 1}; --gutter: ${String(last).length}ch">${head}${highlight(text, lang)}</div>`;
 }
 
 /** @prose
@@ -183,19 +183,19 @@ async function codeRun(text: string, lang: string, startLine: number): Promise<s
  * unique in source order. The `#` beside that heading links to it. A later comment without a
  * heading has no link, and neither does the first, which is the page itself.
  */
-export async function sourceBody(node: TreeNode): Promise<string> {
+export function sourceBody(node: TreeNode): string {
   const comments = node.comments ?? [];
   const lang = extensionOf(node.path) || "text";
-  if (comments.length === 0) return NO_PROSE + (await codeRun(node.source ?? "", lang, 1));
+  if (comments.length === 0) return NO_PROSE + codeRun(node.source ?? "", lang, 1);
   const used = new Set<string>();
   let first = true;
   const parts: string[] = [];
   for (const segment of segments(node.source ?? "", comments)) {
     if (segment.kind === "code") {
-      parts.push(await codeRun(segment.text, lang, segment.line));
+      parts.push(codeRun(segment.text, lang, segment.line));
       continue;
     }
-    const rendered = await renderMarkdown(segment.comment.body);
+    const rendered = renderMarkdown(segment.comment.body);
     const prose = uniqueIds(first ? rendered : demote(rendered), used);
     parts.push(
       `<section class="block"><div class="prose">${first ? prose : withAnchor(prose)}</div></section>`,

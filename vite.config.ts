@@ -79,8 +79,7 @@ export default defineConfig({
    * `src/index.ts` and `src/cli.ts` become `dist/*.js`, with their types.
    *
    * The bundler inlines every package outside `dependencies`. So markz is a dev dependency, and
-   * its code ships inside `dist/`. The aim is a package with no dependencies at all
-   * ([plan](docs/plan.md#next-in-order)).
+   * its code ships inside `dist/`. So the package has no dependencies at all.
    */
   pack: {
     entry: ["src/index.ts", "src/cli.ts"],

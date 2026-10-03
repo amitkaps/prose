@@ -1,85 +1,55 @@
 /** @prose
  * # Syntax highlighting
  *
- * Code is highlighted on the server with shiki, in the page's own palette. One render serves
- * both light and dark.
+ * Code is highlighted on the server, in the page's own palette. One render serves both light and
+ * dark, since each token carries a class, like `keyword`, and the stylesheet sets its colour for
+ * either.
  *
- * It loads only the languages a repository here is likely to hold, through `shiki/core`, not the
- * bundle of every grammar. EBNF, which shiki lacks, comes from [ebnf.ts](ebnf.ts). The theme is
- * shiki's CSS-variables theme, so each token's colour is a variable. [style.css](page/style.css) sets those for
- * light and for dark, so code follows the reader's setting without a second render.
- *
- * Highlighting is most of what a page costs. A 1,300-line TypeScript file takes about 0.4 s with
- * the WASM regex engine, and 1.1 s with the JavaScript one. So it uses the WASM engine. It also
- * caches each highlighted run by its text. After an edit, only the code that changed is
- * highlighted again. A key made of the text can never serve a stale result.
+ * Each language has its own small tokenizer in [languages/](languages/), for the languages a
+ * repository here is likely to hold. They replaced shiki, whose grammars and regex engine came to
+ * about 18 MB installed. A page is now quick enough to highlight that nothing is cached. An
+ * unknown language is plain text.
  */
-import { createCssVariablesTheme, createHighlighterCore, type HighlighterCore } from "shiki/core";
-import { createOnigurumaEngine } from "shiki/engine/oniguruma";
-import { ebnf } from "./ebnf.js";
+import { css } from "./languages/css.js";
+import { ebnf } from "./languages/ebnf.js";
+import { js, json } from "./languages/js.js";
+import { markdown } from "./languages/markdown.js";
+import { markup } from "./languages/markup.js";
+import type { Colour, Span } from "./languages/scan.js";
+import { gitignore, toml, yaml } from "./languages/config.js";
+import { shell } from "./languages/shell.js";
 
-const LANGS: Record<string, string> = {
-  js: "javascript",
-  mjs: "javascript",
-  cjs: "javascript",
-  ts: "typescript",
-  mts: "typescript",
-  cts: "typescript",
-  css: "css",
-  html: "html",
-  svelte: "svelte",
-  md: "markdown",
-  yaml: "yaml",
-  yml: "yaml",
-  toml: "toml",
-  json: "json",
-  jsonc: "jsonc",
-  sh: "shellscript",
-  bash: "shellscript",
-  zsh: "shellscript",
-  py: "python",
-  ebnf: "ebnf",
-  gitignore: "text",
-  text: "text",
+const LANGUAGES: Record<string, (code: string) => Span[]> = {
+  js,
+  css: (code) => css(code),
+  html: (code) => markup(code),
+  svelte: (code) => markup(code, true),
+  md: (code) => markdown(code, spansFor),
+  yaml,
+  toml,
+  json,
+  sh: shell,
+  ebnf,
+  gitignore,
 };
 
-const THEME = createCssVariablesTheme({
-  name: "prose-code",
-  variablePrefix: "--shiki-",
-  fontStyle: true,
-});
-
-let highlighter: Promise<HighlighterCore> | null = null;
-const cache = new Map<string, string>();
-const CACHE_SIZE = 2000;
-
-function getHighlighter(): Promise<HighlighterCore> {
-  highlighter ??= createHighlighterCore({
-    themes: [THEME],
-    langs: [
-      import("shiki/langs/javascript.mjs"),
-      import("shiki/langs/typescript.mjs"),
-      import("shiki/langs/css.mjs"),
-      import("shiki/langs/html.mjs"),
-      import("shiki/langs/svelte.mjs"),
-      import("shiki/langs/markdown.mjs"),
-      import("shiki/langs/yaml.mjs"),
-      import("shiki/langs/toml.mjs"),
-      import("shiki/langs/json.mjs"),
-      import("shiki/langs/jsonc.mjs"),
-      import("shiki/langs/shellscript.mjs"),
-      import("shiki/langs/python.mjs"),
-      ebnf,
-    ],
-    engine: createOnigurumaEngine(import("shiki/wasm")),
-  });
-  return highlighter;
-}
-
-/** Creates the highlighter ahead of the first page that needs it. */
-export async function warmHighlighter(): Promise<void> {
-  await getHighlighter().catch(() => {});
-}
+/** Each extension or fence name, and the language it's read as. */
+const ALIASES: Record<string, string> = {
+  javascript: "js",
+  mjs: "js",
+  cjs: "js",
+  ts: "js",
+  typescript: "js",
+  mts: "js",
+  cts: "js",
+  markdown: "md",
+  yml: "yaml",
+  jsonc: "json",
+  bash: "sh",
+  zsh: "sh",
+  shell: "sh",
+  shellscript: "sh",
+};
 
 export function escapeHtml(text: string): string {
   return text
@@ -89,29 +59,60 @@ export function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** The shiki language for a file extension or a fence's info string; unknown ones are plain text. */
+/** The language for a file extension or a fence's info string. Unknown ones are plain text. */
 export function langFor(name: string): string {
-  return LANGS[name.toLowerCase()] ?? "text";
+  const lower = name.toLowerCase();
+  const lang = ALIASES[lower] ?? lower;
+  return LANGUAGES[lang] ? lang : "text";
 }
 
-/** Highlights `code` as `lang` (an extension or a shiki name). Falls back to escaped plain text if
- *  shiki fails, so a grammar problem costs colour, not the page. */
-export async function highlight(code: string, lang: string): Promise<string> {
-  const name = LANGS[lang] ? LANGS[lang]! : lang;
-  const key = `${name}\0${code}`;
-  const cached = cache.get(key);
-  if (cached !== undefined) return cached;
+function spansFor(code: string, lang: string): Span[] {
+  const tokenize = LANGUAGES[langFor(lang)];
+  if (!tokenize) return [];
+  // A tokenizer's mistake costs colour, not the page.
   try {
-    const h = await getHighlighter();
-    const known = h.getLoadedLanguages().includes(name) ? name : "text";
-    const html = h.codeToHtml(code, { lang: known, theme: "prose-code" });
-    if (cache.size >= CACHE_SIZE) cache.delete(cache.keys().next().value!);
-    cache.set(key, html);
-    return html;
+    return tokenize(code);
   } catch {
-    const lines = code.split("\n").map((line) => `<span class="line">${escapeHtml(line)}</span>`);
-    return `<pre class="shiki"><code>${lines.join("\n")}</code></pre>`;
+    return [];
   }
+}
+
+/** @prose
+ * # Lines
+ *
+ * Each line is its own `<span class="line">`, which the stylesheet numbers and wraps. So a token
+ * that spans lines, like a block comment, is closed at each line's end and opened again on the
+ * next. Spans arrive in any order, and one that overlaps an earlier one is dropped.
+ */
+function render(code: string, spans: Span[]): string {
+  const lines: string[] = [];
+  let line = "";
+  const emit = (text: string, colour: Colour | null): void => {
+    text.split("\n").forEach((piece, i) => {
+      if (i > 0) {
+        lines.push(line);
+        line = "";
+      }
+      if (piece)
+        line += colour ? `<span class="${colour}">${escapeHtml(piece)}</span>` : escapeHtml(piece);
+    });
+  };
+  let at = 0;
+  for (const span of spans.toSorted((a, b) => a.start - b.start)) {
+    if (span.start < at || span.end <= span.start) continue;
+    if (span.start > at) emit(code.slice(at, span.start), null);
+    emit(code.slice(span.start, span.end), span.colour);
+    at = span.end;
+  }
+  emit(code.slice(at), null);
+  lines.push(line);
+  return lines.map((l) => `<span class="line">${l}</span>`).join("\n");
+}
+
+/** Highlights `code` as `lang`, an extension or a fence name. */
+export function highlight(code: string, lang: string): string {
+  const text = code.replace(/\r\n/g, "\n");
+  return `<pre class="highlighted"><code>${render(text, spansFor(text, lang))}</code></pre>`;
 }
 
 const FENCE_RE = /<pre><code(?: class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g;
@@ -128,15 +129,11 @@ function unescapeHtml(text: string): string {
 /** @prose
  * # Code samples in Markdown
  *
- * markz renders a fence as escaped `<pre><code class="language-…">`. Each one is swapped for
- * shiki's output, so a code sample in a doc looks like the code on a source page.
+ * markz renders a fence as escaped `<pre><code class="language-…">`. Each one is swapped for the
+ * highlighted code, so a code sample in a doc looks like the code on a source page.
  */
-export async function highlightFences(html: string): Promise<string> {
-  const matches = [...html.matchAll(FENCE_RE)];
-  if (matches.length === 0) return html;
-  const rendered = await Promise.all(
-    matches.map((m) => highlight(unescapeHtml(m[2]!).replace(/\n$/, ""), langFor(m[1] ?? "text"))),
+export function highlightFences(html: string): string {
+  return html.replace(FENCE_RE, (_, lang: string | undefined, code: string) =>
+    highlight(unescapeHtml(code).replace(/\n$/, ""), lang ?? "text"),
   );
-  let i = 0;
-  return html.replace(FENCE_RE, () => rendered[i++]!);
 }

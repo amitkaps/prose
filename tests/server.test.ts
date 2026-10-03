@@ -66,7 +66,7 @@ describe("sourceBody", () => {
       "/** @prose\n * No heading.\n */\nconst c = 1;",
     ].join("\n");
     const comments = parseFile(source, "ts");
-    const body = await sourceBody({
+    const body = sourceBody({
       name: "s.ts",
       kind: "file",
       path: "s.ts",
@@ -272,9 +272,9 @@ describe("serve: folders", () => {
 
   it("highlights an EBNF fence: the rule's name, its terminals and character classes", async () => {
     const { body } = await get(served.url, "/docs/grammar.md");
-    expect(body).toMatch(/--shiki-token-function[^>]*>digit</);
-    expect(body).toMatch(/--shiki-token-constant[^>]*>\s*\[0-9\]</);
-    expect(body).toMatch(/--shiki-token-string[^>]*>\s*'x'</);
+    expect(body).toContain('<span class="function">digit</span>');
+    expect(body).toContain('<span class="constant">[0-9]</span>');
+    expect(body).toContain(`<span class="string">'x'</span>`);
   });
 
   it("redirects a folder asked for without its slash", async () => {

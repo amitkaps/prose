@@ -9,7 +9,7 @@ import { type FSWatcher, watch } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { resolve, sep } from "node:path";
 import { LIVE, SCRIPT, STYLE } from "./assets.js";
-import { escapeHtml, warmHighlighter } from "./highlight.js";
+import { escapeHtml } from "./highlight.js";
 import { binaryBody, folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
 import { docsNav, type NavItem } from "./nav.js";
 import { renderRail, railFooter, type Snapshot } from "./rail.js";
@@ -97,7 +97,7 @@ export function notFoundPage(site: Site): string {
   });
 }
 
-export async function renderRoute(site: Site, path: string): Promise<Route> {
+export function renderRoute(site: Site, path: string): Route {
   const { root, project, files, live } = site;
   const shell = (body: string, editorLink: string | null = null, hasCode = false, readme = false) =>
     page({
@@ -125,7 +125,7 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
     const ignored = live ? ignoredIn(root, path.replace(/\/$/, "")) : [];
     return {
       status: 200,
-      html: shell(await folderBody(node, ignored), null, false, Boolean(node.prose)),
+      html: shell(folderBody(node, ignored), null, false, Boolean(node.prose)),
     };
   }
 
@@ -138,17 +138,17 @@ export async function renderRoute(site: Site, path: string): Promise<Route> {
   if (files.includes(path)) {
     const editorLink = `vscode://file${resolve(root, path).split(sep).join("/")}`;
     if (extensionOf(path) === "md") {
-      return { status: 200, html: shell(await markdownBody(fileToNode(root, path)), editorLink) };
+      return { status: 200, html: shell(markdownBody(fileToNode(root, path)), editorLink) };
     }
     if (isSource(root, path)) {
       return {
         status: 200,
-        html: shell(await sourceBody(fileToNode(root, path)), editorLink, true),
+        html: shell(sourceBody(fileToNode(root, path)), editorLink, true),
       };
     }
     const node = rawToNode(root, path);
     if (node.kind === "binary") return { status: 200, html: shell(binaryBody(node), editorLink) };
-    return { status: 200, html: shell(await rawBody(node), editorLink, true) };
+    return { status: 200, html: shell(rawBody(node), editorLink, true) };
   }
 
   if (folderListing(root, files, path)) {
@@ -185,7 +185,7 @@ async function respond(root: string, req: IncomingMessage, res: ServerResponse):
     repo: repoUrl(root),
     nav: docsNav(root, files),
   };
-  const route = await renderRoute(site, path);
+  const route = renderRoute(site, path);
   if (route.status === 301) {
     res.writeHead(301, { location: route.location });
     res.end();
@@ -310,8 +310,6 @@ function listen(
 export async function serve(root: string, options: ServeOptions = {}): Promise<Served> {
   const { port = 1234, host = "127.0.0.1" } = options;
   const changes = new Changes();
-  // Start the highlighter now, so the first source page doesn't wait for it.
-  void warmHighlighter();
   const server = createServer((req, res) => {
     if (req.method !== "GET" && req.method !== "HEAD") return send(res, 405, "Read-only");
     if (req.url?.split("?")[0] === EVENTS_PATH) return listenForChanges(req, res, changes);

@@ -15,7 +15,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { BUILT_ASSETS } from "./assets.js";
-import { escapeHtml, warmHighlighter } from "./highlight.js";
+import { escapeHtml } from "./highlight.js";
 import { docsNav } from "./nav.js";
 import { projectName, repoUrl } from "./repo.js";
 import { notFoundPage, renderRoute, type Site } from "./server.js";
@@ -153,7 +153,6 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
   const out = resolve(root, options.out ?? ".prose");
   prepareOut(root, out, warnings);
 
-  void warmHighlighter();
   // `git archive` from a subfolder exports that subfolder, so `prose build tests/fixtures/simple` works.
   const snapshot = mkdtempSync(join(tmpdir(), "prose-build-"));
   try {
@@ -176,7 +175,7 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
     // Written first, so a source file named `404` keeps its page.
     writeFileSync(join(out, "404.html"), notFoundPage(site));
     for (const path of paths) {
-      const route = await renderRoute(site, path);
+      const route = renderRoute(site, path);
       if (route.status === 404) continue;
       const target = join(out, pageFile(path));
       mkdirSync(dirname(target), { recursive: true });

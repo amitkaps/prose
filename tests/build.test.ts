@@ -222,8 +222,8 @@ describe("build: a repository", () => {
     const site: Site = { root, project: "demo", files: projectFiles(root), live: true, nav: [] };
     const main = (html: string) =>
       html.slice(html.indexOf("</div>", html.indexOf("<main")), html.indexOf("</main>"));
-    const live = await renderRoute(site, "src/a.ts");
-    const built = await renderRoute(
+    const live = renderRoute(site, "src/a.ts");
+    const built = renderRoute(
       { ...site, live: false, snapshot: { commit: "abc1234" } },
       "src/a.ts",
     );
@@ -238,8 +238,8 @@ describe("build: a repository", () => {
     writeFileSync(join(root, ".gitignore"), ".prose/\n.env\n");
     try {
       const site: Site = { root, project: "demo", files: projectFiles(root), live: true, nav: [] };
-      const live = await renderRoute(site, "");
-      const built = await renderRoute({ ...site, live: false }, "");
+      const live = renderRoute(site, "");
+      const built = renderRoute({ ...site, live: false }, "");
       if (live.status !== 200 || built.status !== 200) throw new Error("expected pages");
       expect(live.html).toContain('<p class="ignored">Ignored here: <code>.env</code>');
       expect(built.html).not.toContain("Ignored here");

@@ -6,7 +6,7 @@ How to work on prose itself: build it, test it, release it and deploy its site. 
 
 `package.json` says what the repository needs. `devEngines` names the Node and pnpm to develop with, and `engines` names the Node range the published command runs on. mise reads the Node version from `devEngines`, with its `idiomatic_version_file_enable_tools` setting on for `node`, so there's no `mise.toml`. `packageManager` repeats the exact pnpm version for CI's `pnpm/action-setup`.
 
-prose aims to install as one package. markz is a dev dependency, so the build bundles it into `dist/`, and any other code it needs is bundled the same way.
+prose installs as one package, with no dependencies. markz is a dev dependency, so the build bundles it into `dist/`. Anything else it needs is written here, or bundled the same way.
 
 prose supports the current Node and the previous LTS, which today are 26 and 24. So `engines` and `devEngines` say `>=24`, `@types/node` follows the older one, and CI runs the tests on both.
 
