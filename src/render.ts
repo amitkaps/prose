@@ -8,18 +8,18 @@
  * What each page shows is [reading](../docs/reading.md#pages). Markdown goes through markz, in
  * docs and in prose comments alike, and code goes through [highlight.ts](highlight.ts).
  */
-import { html as markz } from "@amitkaps/markz";
+import { html as markz, parse } from "@amitkaps/markz";
 import { LIVE, SCRIPT, STYLE } from "./assets.js";
 import modeScript from "./page/mode.js?built";
 import shell from "./page/page.html?built";
 import railScript from "./page/rail.js?built";
-import { escapeHtml, highlight, highlightFences } from "./highlight.js";
+import { escapeHtml, highlight, markdownHtml } from "./highlight.js";
 import { type NavItem, renderNav } from "./nav.js";
 import type { ProseComment } from "./parser.js";
 import { extensionOf, type TreeNode } from "./tree.js";
 
 export function renderMarkdown(text: string): string {
-  return text.trim() ? highlightFences(markz(text)) : "";
+  return text.trim() ? markdownHtml(parse(text)) : "";
 }
 
 /** A summary as inline HTML: its first paragraph rendered, without the wrapping `<p>`. */

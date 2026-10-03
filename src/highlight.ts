@@ -10,6 +10,7 @@
  * about 18 MB installed. A page is now quick enough to highlight that nothing is cached. An
  * unknown language is plain text.
  */
+import { type Document, html, walk } from "@amitkaps/markz";
 import { css } from "./languages/css.js";
 import { ebnf } from "./languages/ebnf.js";
 import { js, json } from "./languages/js.js";
@@ -115,25 +116,34 @@ export function highlight(code: string, lang: string): string {
   return `<pre class="highlighted"><code>${render(text, spansFor(text, lang))}</code></pre>`;
 }
 
-const FENCE_RE = /<pre><code(?: class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g;
-
-function unescapeHtml(text: string): string {
-  return text
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, "&");
-}
-
 /** @prose
  * # Code samples in Markdown
  *
- * markz renders a fence as escaped `<pre><code class="language-…">`. Each one is swapped for the
- * highlighted code, so a code sample in a doc looks like the code on a source page.
+ * A code sample in a doc is highlighted like the code on a source page. markz writes each fence
+ * as escaped `<pre><code class="language-…">`, and that's swapped for the highlighted code.
+ *
+ * The code and its language come from markz's parse, not from reading the HTML back. From a
+ * fence's node, the exact text markz wrote for it is known, so it's found by that text, in source
+ * order. Nothing is unescaped or guessed. A raw `=html` block or display math also writes
+ * `<pre><code>`, and neither can be mistaken for a fence. Matching every `<pre><code>` in the HTML
+ * was ruled out for that reason.
  */
-export function highlightFences(html: string): string {
-  return html.replace(FENCE_RE, (_, lang: string | undefined, code: string) =>
-    highlight(unescapeHtml(code).replace(/\n$/, ""), lang ?? "text"),
-  );
+export function markdownHtml(doc: Document): string {
+  let out = html(doc);
+  let at = 0;
+  walk(doc, {
+    enter(node) {
+      if (doc.type(node) !== "code") return true;
+      const { lang, value } = doc.data(node, "code");
+      const attr = lang ? ` class="language-${escapeHtml(lang)}"` : "";
+      const written = `<pre><code${attr}>${escapeHtml(value)}</code></pre>`;
+      const found = out.indexOf(written, at);
+      if (found === -1) return false;
+      const highlighted = highlight(value.replace(/\n$/, ""), lang ?? "text");
+      out = out.slice(0, found) + highlighted + out.slice(found + written.length);
+      at = found + highlighted.length;
+      return false;
+    },
+  });
+  return out;
 }
