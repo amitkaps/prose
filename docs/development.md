@@ -27,8 +27,19 @@ The build and server tests run against the committed [`tests/fixtures/simple`](.
 
 There are two, in [`.github/workflows/`](../.github/workflows/), and each file's own prose says what it does.
 
-- **`ci.yml`** runs the format, lint and type checks, the tests and the build. It runs on every pull request and every push to `main`. Branch protection requires the check by its name, `ci`.
+- **`ci.yml`** runs the format, lint and type checks, the tests and the build, then checks the package with publint. It runs on every pull request and every push to `main`. Branch protection requires the check by its name, `ci`.
 - **`release.yml`** runs on a `v*` tag. It checks that the tag matches `package.json`, runs the checks and tests, and builds. Then it stages the version on npm and attaches `amitkaps-prose-<version>.tgz` to a GitHub Release.
+
+## What ships
+
+The package is one bundle with no dependencies, about 180 KB unpacked. It's readable code without its prose, the same choice the page's own files follow.
+
+- **Bundled.** markz is inside `dist/`, so installing prose fetches one package. A fix in markz reaches prose's users with prose's next release.
+- **Not minified.** A bundler that takes prose in minifies it for its own app, and anyone reading `node_modules` can follow the code.
+- **No comments.** The build strips them, but keeps license comments and annotations like `@__PURE__` ([vite.config.ts](../vite.config.ts)). The types in `dist/*.d.ts` keep their JSDoc, so an editor still shows it on hover.
+- **No sourcemaps.** They would carry every source file whole, prose included, at twice the size of the code. The source is on GitHub.
+
+CI runs [publint](https://publint.dev) on the packed tarball, fetched for the step, not installed. It checks `exports`, `files` and the types. arethetypeswrong was ruled out, because it tests old Node resolution that an ESM package for Node 24 and up doesn't support.
 
 ## Release
 
