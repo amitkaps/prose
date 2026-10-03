@@ -32,6 +32,10 @@ export default defineConfig({
    *
    * Builds the library and the command for Node, where the parser and the renderer run.
    * `src/index.ts` and `src/cli.ts` become `dist/*.js`, with their types.
+   *
+   * The bundler inlines every package outside `dependencies`. So markz is a dev dependency, and
+   * its code ships inside `dist/`. The aim is a package with no dependencies at all
+   * ([plan](docs/plan.md#next-in-order)).
    */
   pack: {
     entry: ["src/index.ts", "src/cli.ts"],
