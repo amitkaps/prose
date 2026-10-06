@@ -8,6 +8,7 @@
  * when it runs from the root.
  */
 import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { defineConfig } from "vite-plus";
 import { format } from "vite-plus/fmt";
 import { lexJs } from "./src/lexer.js";
@@ -45,12 +46,20 @@ function stripComments(file: string, text: string): string {
   return out + text.slice(at);
 }
 
+// Vite's CSS handling claims any id with `.css` before its end or a `?`, and empties it in the
+// tests. So a built file's id ends in `.built` instead.
+const BUILT = "\0built:";
+
 const built = {
   name: "built",
   enforce: "pre" as const,
+  resolveId(id: string, importer?: string) {
+    if (!id.endsWith("?built") || !importer) return null;
+    return BUILT + resolve(dirname(importer), id.slice(0, -"?built".length)) + ".built";
+  },
   async load(id: string) {
-    if (!id.endsWith("?built")) return null;
-    const file = id.slice(0, -"?built".length);
+    if (!id.startsWith(BUILT)) return null;
+    const file = id.slice(BUILT.length, -".built".length);
     const { code, errors } = await format(file, stripComments(file, readFileSync(file, "utf8")));
     if (errors.length) throw new Error(`${file}: ${JSON.stringify(errors)}`);
     return `export default ${JSON.stringify(code)};`;
