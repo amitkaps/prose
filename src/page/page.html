@@ -27,6 +27,8 @@ slot inside a `<script>` as code.
     {{live-script}} {{mode-script}}
   </head>
   <body data-path="{{path}}" {{rendered}}>
+    <!-- A capital, since markz's heading ids never have one, so the id can't take a heading's. -->
+    <a class="skip" href="#Text">Skip to the text</a>
     <div class="shell">
       <header class="bar">
         <a class="project" href="/">{{project}}</a>{{nav}}
@@ -45,7 +47,7 @@ slot inside a `<script>` as code.
       </header>
       <div class="layout">
         <div class="page">
-          <main {{main-class}}>
+          <main id="Text" {{main-class}}>
             <div class="where">
               <nav class="crumbs">{{crumbs}}</nav>
               {{editor}}

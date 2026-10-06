@@ -158,6 +158,10 @@ const NO_PROSE = `<p class="no-prose">No prose in this file.</p>`;
  * where the code is and how much. Clicking it opens or closes that one run, until the mode
  * changes.
  *
+ * A screen reader hears the header as a button named "Code, 24 lines · 11–34 · ts". The word
+ * _Code_ is there for it alone, since the panel says so by its look. It comes first, so the name
+ * still holds the visible text, as WCAG asks of a control with a visible label.
+ *
  * Line numbers are the file's own. The run knows the line it starts on, and a CSS counter
  * carries on from there, in a gutter as wide as the largest number. A file with no prose is one
  * run with the same header, and folds like any other.
@@ -166,7 +170,7 @@ function codeRun(text: string, lang: string, startLine: number): string {
   const count = text.split("\n").length;
   const last = startLine + count - 1;
   const lines = `${count} line${count === 1 ? "" : "s"} · ${startLine}–${last}`;
-  const head = `<button type="button" class="code-head" aria-expanded="true"><span class="chevron" aria-hidden="true"></span><span>${lines}</span><span class="lang"><span class="sep"> · </span>${escapeHtml(lang)}</span></button>`;
+  const head = `<button type="button" class="code-head" aria-expanded="true"><span class="chevron" aria-hidden="true"></span><span><span class="unseen">Code, </span>${lines}</span><span class="lang"><span class="sep"> · </span>${escapeHtml(lang)}</span></button>`;
   return `<div class="code" style="counter-reset: line ${startLine - 1}; --gutter: ${String(last).length}ch">${head}${highlight(text, lang)}</div>`;
 }
 
@@ -289,7 +293,8 @@ export interface PageOptions {
   readme?: boolean;
   /** The docs linked in the bar (`nav.ts`). */
   nav?: NavItem[];
-  /** On a built page, which snapshot it is: `v0.1.0 · 1c77293`. */
+  /** The page's heading when its text has none. The file's or folder's name by default. */
+  heading?: string;
 }
 
 /** The right-hand sidebar icon: a window with its right panel marked. */
@@ -361,17 +366,8 @@ function breadcrumb(project: string, path: string, readme: boolean): string {
  * Browser storage can be unavailable, so the scripts only ever try it.
  */
 export function page(options: PageOptions): string {
-  const {
-    project,
-    path,
-    rail,
-    body,
-    editorLink,
-    hasCode,
-    live,
-    readme = false,
-    nav = [],
-  } = options;
+  const { project, path, rail, editorLink, hasCode, live, readme = false, nav = [] } = options;
+  const body = withHeading(options.body, options.heading ?? pageName(project, path));
   const hue = accentHue(project);
   const off = hasCode ? "" : ` disabled title="No code on this page"`;
   const mode = `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true"${off}>Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false"${off}>Prose only</button></div>`;
@@ -428,7 +424,6 @@ export function page(options: PageOptions): string {
  */
 function pageTitle(project: string, path: string, body: string): string {
   if (!path) return escapeHtml(project);
-  const name = path.replace(/\/$/, "").split("/").at(-1)!;
   // The heading is already HTML, so only its tags and its anchor are taken out.
   const heading = path.endsWith(".md")
     ? /<h1\b[^>]*>([\s\S]*?)<\/h1>/
@@ -437,8 +432,29 @@ function pageTitle(project: string, path: string, body: string): string {
         .replace(/<[^>]+>/g, "")
         .trim()
     : "";
-  const label = heading || escapeHtml(path.endsWith("/") ? `${name}/` : name);
-  return `${label} | ${escapeHtml(project)}`;
+  return `${heading || escapeHtml(pageName(project, path))} | ${escapeHtml(project)}`;
+}
+
+/** A page's name: the file's, the folder's with its slash, or the project's at the root. */
+function pageName(project: string, path: string): string {
+  if (!path) return project;
+  const name = path.replace(/\/$/, "").split("/").at(-1)!;
+  return path.endsWith("/") ? `${name}/` : name;
+}
+
+/** @prose
+ * ## A title on every page
+ *
+ * Every page has one `h1`, so a screen reader's list of headings starts with what the page is. A
+ * page whose text has none gets its name as a visible one. That's a file with no prose or no
+ * heading, like `package.json`, a folder without a README, like `.github/`, and the 404 page.
+ *
+ * It's shown, not hidden for screen readers alone. A page that says what it is helps every
+ * reader, and a source page already opens with its title when its prose has one.
+ */
+function withHeading(body: string, name: string): string {
+  if (/<h1\b/.test(body)) return body;
+  return `<div class="prose"><h1>${escapeHtml(name)}</h1></div>${body}`;
 }
 
 /** Marks a slot value as an inline script, so `page` indents it. */

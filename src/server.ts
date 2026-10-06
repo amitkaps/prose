@@ -77,10 +77,13 @@ export type Route = { status: 200 | 404; html: string } | { status: 301; locatio
  *
  * A static host serves `404.html`, at the site's root, for any address the site doesn't have.
  * So a missing page still shows the file tree, not the host's own page. It's served at whatever
- * address was missing, so it can't name that address. Its links are absolute, so they work from
+ * address was missing, so it can't name that address. Its title is _Page not found_, as is a
+ * missing page's under `prose .`. Its links are absolute, so they work from
  * any address. GitHub Pages also serves it for everything under `.github/`, which it never
  * publishes.
  */
+const NOT_FOUND = "Page not found";
+
 const footerOf = (site: Site) =>
   railFooter({ live: site.live, snapshot: site.snapshot, repo: site.repo });
 
@@ -90,6 +93,7 @@ export function notFoundPage(site: Site): string {
     path: "",
     rail: renderRail(site.files, "", site.project, footerOf(site)),
     body: `<p class="missing">Nothing at this address in this repository.</p>`,
+    heading: NOT_FOUND,
     editorLink: null,
     hasCode: false,
     live: site.live,
@@ -99,12 +103,19 @@ export function notFoundPage(site: Site): string {
 
 export function renderRoute(site: Site, path: string): Route {
   const { root, project, files, live } = site;
-  const shell = (body: string, editorLink: string | null = null, hasCode = false, readme = false) =>
+  const shell = (
+    body: string,
+    editorLink: string | null = null,
+    hasCode = false,
+    readme = false,
+    heading?: string,
+  ) =>
     page({
       project,
       path,
       rail: renderRail(files, path, project, footerOf(site)),
       body,
+      heading,
       editorLink: live ? editorLink : null,
       hasCode,
       live,
@@ -115,6 +126,10 @@ export function renderRoute(site: Site, path: string): Route {
     status: 404,
     html: shell(
       `<p class="missing">Nothing at <code>${escapeHtml(path)}</code> in this repository.</p>`,
+      null,
+      false,
+      false,
+      NOT_FOUND,
     ),
   });
 
