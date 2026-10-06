@@ -40,9 +40,9 @@ The `@prose` convention and the read-only renderer work. This repository is read
   - [x] What axe finds that needs no design choice. Contrast in code, the dock's checkbox inside the bar, the language label hidden from screen readers, contrast themes, and a bar that fits 320px.
   - [x] Folders in the tree open and close, and only files are pages. A folder's README row already leads to its page. A folder without a README is reached from the breadcrumb and the folder above. A chevron button beside a folder link was ruled out, since it puts two controls in every row and needs script.
   - [x] A title on every page, a skip link to the text, and a spoken name for each code run's header. A page whose text has no `h1` shows its name as one, and the 404 page says _Page not found_.
-  - [ ] Labels for a task list's checkboxes, in markz.
   - [ ] A pass by hand, with a keyboard and with VoiceOver, on each kind of page.
   - A reason a reader can hear on the disabled switch is ruled out. A disabled button is out of the tab order, and on a page with no code there's nothing to switch, so saying why would be noise on every doc.
+  - Labels for a task list's checkboxes are ruled out. markz writes them as GFM and GitHub do, disabled and read just before the item's text, and the audit accepts it ([tests/axe.ts](../tests/axe.ts)).
   - Keyboard shortcuts are ruled out. Single keys clash with a screen reader's, and Tab, links and the browser cover every action. So is the ARIA tree pattern, since the rail is navigation, a list of links.
 - [ ] **Use it on base, sitez and markz.**
   - Install the latest release, and remove `prose()` from their Vite configs. Replace the snippet in their `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.

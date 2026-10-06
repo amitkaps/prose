@@ -5,9 +5,10 @@
  * width. It prints each rule that fails, with where, and exits non-zero if any does. Run it with
  * `pnpm run axe` before a release ([development](../docs/development.md#release)).
  *
- * It isn't a `.test.ts` file, so `pnpm run test` and CI leave it out, since CI has no browser. It drives the Chrome installed on the machine, so
- * nothing is downloaded. The site is built from `HEAD` by the renderer in `dist/`, so it checks
- * the current stylesheet and HTML on the committed pages.
+ * It isn't a `.test.ts` file, so `pnpm run test` and CI leave it out, since CI has no browser. It
+ * drives the Chrome installed on the machine, so nothing is downloaded. The site is built from
+ * `HEAD` by the renderer in `dist/`, so it checks the current stylesheet and HTML on the committed
+ * pages.
  *
  * axe checks what a machine can, like contrast, names and roles. A keyboard and screen reader
  * pass is still done by hand.
@@ -23,6 +24,19 @@ const SCHEMES = ["light", "dark"] as const;
 const WIDTHS = [1280, 390];
 const TAGS = ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa", "best-practice"];
 const PARALLEL = 8;
+
+/** @prose
+ * # What's accepted
+ *
+ * A task list's checkbox has no label, and axe's `label` rule flags it. markz writes it as GFM
+ * and GitHub do, unlabelled and disabled. It's skipped by Tab, and a screen reader reads the
+ * item's text right after it. A label like _Done_ would repeat the state without naming the task,
+ * and one naming the task would need ids that can clash with headings. So the finding is accepted,
+ * and only these checkboxes are left out of that one rule. Any other missing label still fails.
+ */
+const ACCEPTED: Record<string, string> = {
+  label: ':is(li, li > p) > input[type="checkbox"][disabled]',
+};
 
 interface Violation {
   id: string;
@@ -72,10 +86,29 @@ async function audit(page: Page, { path, scheme, width }: (typeof jobs)[number])
   await page.goto(`http://site${path}`);
   await page.addScriptTag({ content: axe });
   const violations = await page.evaluate(
-    async (tags) =>
+    async ({ tags, accepted }) => {
+      // The page's own document. This file is typed without the DOM, as Node code.
+      const { document } = globalThis as unknown as {
+        document: {
+          querySelector(selector: string): { matches(selector: string): boolean } | null;
+        };
+      };
       // @ts-expect-error: axe is the script just added to the page.
-      ((await axe.run(document, { runOnly: tags })) as { violations: Violation[] }).violations,
-    TAGS,
+      const { violations } = (await axe.run(document, { runOnly: tags })) as {
+        violations: Violation[];
+      };
+      return violations
+        .map((violation) => ({
+          ...violation,
+          nodes: violation.nodes.filter(
+            ({ target }) =>
+              !accepted[violation.id] ||
+              !document.querySelector(target.join(" "))?.matches(accepted[violation.id]!),
+          ),
+        }))
+        .filter(({ nodes }) => nodes.length);
+    },
+    { tags: TAGS, accepted: ACCEPTED },
   );
   for (const violation of violations) {
     const entry = found.get(violation.id) ?? { violation, where: new Set(), count: 0 };
