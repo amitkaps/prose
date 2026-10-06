@@ -167,8 +167,8 @@ importers:
   .:
     devDependencies:
       '@amitkaps/markz':
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.3.0
+        version: 0.3.0
       '@types/node':
         specifier: ^24.0.0
         version: 24.19.0
@@ -187,8 +187,8 @@ importers:
 
 packages:
 
-  '@amitkaps/markz@0.2.0':
-    resolution: {integrity: sha512-guOqm9IPO8US79VRswxu5zpkbR8y6G9pb77AO45fXbfgRYC6HBa/LZZOXr0PpIuvqKG1xPhZI6ZYsApGBfN5wQ==}
+  '@amitkaps/markz@0.3.0':
+    resolution: {integrity: sha512-jfD3RjMV+kHCyvTAs9dcVX6ZTq+6ICMbr5jLmkAbdsJfEH2yjaTslzELf7IVZ6DpaxF9KgQq0GhgXKHTry1neA==}
     engines: {node: '>=24'}
 
   '@babel/code-frame@7.29.7':
@@ -1624,7 +1624,7 @@ packages:
 
 snapshots:
 
-  '@amitkaps/markz@0.2.0': {}
+  '@amitkaps/markz@0.3.0': {}
 
   '@babel/code-frame@7.29.7':
     dependencies:
