@@ -10,5 +10,6 @@ One test file for each source file that has logic, run with `pnpm run test`. The
 - [repo.test.ts](repo.test.ts): the project's name and GitHub address, and the rail's footer and README rows.
 - [nav.test.ts](nav.test.ts): the docs linked in the bar.
 - [style.test.ts](style.test.ts): every rule in the stylesheet sits in a layer.
+- [accent.test.ts](accent.test.ts): a project's colour and tab icon, and the browser's bar in the paper's colour.
 
 Commit a change to the fixture before running them, since a build exports `HEAD`.

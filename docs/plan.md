@@ -17,6 +17,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 - **One package, with nothing beside it.** markz is bundled into `dist/`. A small lexer replaced `oxc-parser` and finds the same comments, and small tokenizers replaced shiki and colour code as it did ([lessons](lessons.md#rendering)). The page's frame, stylesheet and scripts are files in `src/page/`, stripped of comments and formatted at build. prose has no dependencies, and ships without comments or sourcemaps, at 180 KB unpacked instead of 655 KB ([development](development.md#what-ships)).
 - **Shared files for every page.** The stylesheet and the script moved out of each page, into hashed files that a host caches for good. The project page went from 42 KB to 16 KB, and the site from 3.9 MB to 2.6 MB. The scripts that run before the first paint stay inline ([reading](reading.md#local-and-published)).
 - **A stylesheet in layers.** `style.css` is in three cascade layers, tokens, base and components, and each component nests its parts with `&`. Fonts, chevrons and motion are tokens, and buttons and popovers start bare. A test keeps every rule in a layer. Each step was checked against every element's computed style, at six widths and in each of the page's states.
+- **A design pass.** Colours are in OKLCH, with softer ink and paper in both modes. Five type sizes, two radii and one focus ring replace the ad hoc values. The breadcrumb is quieter, with more room around it. Each project gets an accent from its name, a tab icon in it, and tabs titled by the page ([reading](reading.md#around-the-page)).
 
 ### 0.3.0
 
@@ -47,7 +48,6 @@ The `@prose` convention and the read-only renderer work. This repository is read
 - [ ] **Pictures of the page.** Once the layout is stable, a screenshot of a rendered file in the README, and a labelled image of the page in [reading](reading.md#around-the-page).
 
 - [ ] **The file tree on a large repository.** Every page carries the whole tree, so a site's size grows with the square of its file count. It's about 1 KB gzipped here. If it grows too large, the tree could become a shared file too, as long as its open folders still come back before the first paint.
-- [ ] **A design pass on the stylesheet.** The live dot, the shadows and the backdrop have fixed colours, so dark mode can't adjust them. Radii are in px, though every other size is in rem. Nine font sizes could become a scale of four or five. Each one changes the look, so check it by eye.
 
 ## Open questions
 

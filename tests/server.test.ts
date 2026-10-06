@@ -270,6 +270,16 @@ describe("serve: folders", () => {
     );
   });
 
+  it("titles a tab by a doc's heading, a file's name or a folder's, then the project", async () => {
+    const title = async (path: string) =>
+      /<title>(.*)<\/title>/.exec((await get(served.url, path)).body)?.[1];
+    const name = basename(root);
+    expect(await title("/")).toBe(name);
+    expect(await title("/src/")).toBe(`src/ · ${name}`);
+    expect(await title("/src/a.ts")).toBe(`a.ts · ${name}`);
+    expect(await title("/docs/plan.md")).toBe(`Plan · ${name}`);
+  });
+
   it("highlights an EBNF fence: the rule's name, its terminals and character classes", async () => {
     const { body } = await get(served.url, "/docs/grammar.md");
     expect(body).toContain('<span class="function">digit</span>');
