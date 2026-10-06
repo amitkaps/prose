@@ -174,14 +174,14 @@ function scanHtml(source: string): ProseComment[] {
 }
 
 /** @prose
- * # Scanning `.svelte` files
+ * # Scanning `.html` and `.svelte` files
  *
- * Each part follows its own language's rule. The `<script>` and `<style>` bodies are read as TS
+ * Both split into parts the same way, by regex, so a `<script>` inside a `<template>` is found too. Each part follows its own language's rule. The `<script>` and `<style>` bodies are read as TS
  * and CSS, everything else as HTML, and the comments merge back in source order.
  */
-function scanSvelte(source: string): ProseComment[] {
+function scanParts(source: string): ProseComment[] {
   const found: ProseComment[] = [];
-  for (const part of svelteParts(source)) {
+  for (const part of markupParts(source)) {
     const text = source.slice(part.start, part.end);
     const inPart =
       part.kind === "markup"
@@ -196,9 +196,9 @@ function scanSvelte(source: string): ProseComment[] {
   return found.sort((a, b) => a.start - b.start);
 }
 
-/** A `.svelte` file's parts in order: each `<script>` and `<style>` body, and the markup between
+/** A markup file's parts in order: each `<script>` and `<style>` body, and the markup between
  *  them (tags included in the markup, which is scanned as HTML). */
-function svelteParts(
+function markupParts(
   source: string,
 ): { kind: "script" | "style" | "markup"; start: number; end: number }[] {
   const parts: { kind: "script" | "style" | "markup"; start: number; end: number }[] = [];
@@ -226,15 +226,13 @@ function svelteParts(
  */
 export function parseFile(source: string, extension: string): ProseComment[] {
   const found =
-    extension === "html"
-      ? scanHtml(source)
-      : extension === "svelte"
-        ? scanSvelte(source)
-        : HASH_EXTENSIONS.has(extension)
-          ? scanHashComments(source)
-          : extension === "css"
-            ? scanCss(source)
-            : scanJs(source);
+    extension === "html" || extension === "svelte"
+      ? scanParts(source)
+      : HASH_EXTENSIONS.has(extension)
+        ? scanHashComments(source)
+        : extension === "css"
+          ? scanCss(source)
+          : scanJs(source);
   return found.filter((c) => startsLine(source, c.start));
 }
 

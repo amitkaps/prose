@@ -114,6 +114,30 @@ describe("parseFile: .svelte (script/style as TS/CSS, markup as HTML)", () => {
   });
 });
 
+describe("parseFile: .html reads its script and style parts too", () => {
+  it("finds prose in a template's script and in a style", () => {
+    const source = [
+      "<!-- @prose Element. -->",
+      "<template>",
+      "<script>",
+      "/** @prose Why the helper. */",
+      "const x = 1;",
+      "</script>",
+      "</template>",
+      "<style>",
+      "/** @prose Why the selector. */",
+      "h1 { color: red; }",
+      "</style>",
+      "",
+    ].join("\n");
+    expect(parseFile(source, "html").map((c) => c.body)).toEqual([
+      "Element.",
+      "Why the helper.",
+      "Why the selector.",
+    ]);
+  });
+});
+
 describe("a comment counts when it starts its own line, at any depth", () => {
   it("reads a class method by method", () => {
     const ts = [
