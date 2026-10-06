@@ -16,7 +16,8 @@
  * beat the base, so an element's default can't win over a part of the page.
  *
  * Every rule is in a layer, since a rule outside any layer would beat all three. Only
- * `@property` and `@view-transition` stay outside, because they're global.
+ * `@property` and `@view-transition` stay outside, because they're global. A test checks this
+ * ([style.test.ts](../../tests/style.test.ts)).
  *
  * Inside a layer, a component nests its parts and its media queries with `&`. A rule nests only
  * under a single selector. Under a list, `&` becomes `:is()`, which takes the highest
@@ -27,8 +28,10 @@
 /** @prose
  * # Tokens
  *
- * Colours, widths and the type size are set once, here. The dark palette redefines the same
- * names. Every size is in rem, so the whole page scales as one, as browser zoom would.
+ * Colours, widths, fonts, the type size, the chevrons and the motion are set once, here. The
+ * dark palette redefines the same names. Every size is in rem, so the whole page scales as one,
+ * as browser zoom would. A reader who asks for less motion gets none, since every duration
+ * becomes zero.
  *
  * Code takes its colours from the same tokens. Each kind of token has one, like `--code-keyword`,
  * in the page's warm ink ([highlight.ts](../highlight.ts)).
@@ -60,11 +63,15 @@
     --code-constant: #7d4c98;
     --code-punctuation: #6f695e;
     --code-link: #25589c;
-    font-family:
-      system-ui,
-      -apple-system,
-      "Segoe UI",
-      sans-serif;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    /* The chevron that turns as a folder or a code run opens, and the Docs menu's, which points down. */
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E");
+    --chevron-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E");
+    /* How long the tree takes to dock or slide in, and a chevron to turn. */
+    --slide: 0.2s;
+    --turn: 0.1s;
+    font-family: var(--sans);
     line-height: 1.6;
     /* 16px up to a 1280px window, then growing to 20px at 2560px. Every size here is in rem, so the
      whole page scales as one, as browser zoom would, and a wide screen holds more page and less
@@ -91,6 +98,12 @@
       --code-link: #8fb7e6;
     }
   }
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --slide: 0s;
+      --turn: 0s;
+    }
+  }
 }
 /** @prose
  * # Moving between pages
@@ -115,6 +128,10 @@
  * # The base
  *
  * Box sizing, the page's paper and ink, links, selection and the code font.
+ *
+ * Buttons and popovers start bare. A button takes the page's type with no box, and a popover
+ * keeps the browser's placement without its border, padding or colours. So a component sets only
+ * its own look, and doesn't first undo the browser's.
  */
 @layer base {
   * {
@@ -135,7 +152,22 @@
   }
   code,
   pre {
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-family: var(--mono);
+  }
+  /* Buttons take the page's type and nothing else, so a component sets only its own look. */
+  button {
+    font: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  /* A popover keeps the browser's place and size, but none of its box or colours. */
+  [popover] {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
   }
 }
 /** @prose
@@ -155,7 +187,7 @@
     container-type: inline-size;
     --docked: var(--rail);
     --side: clamp(2rem, calc((100cqw - var(--docked) - var(--measure)) / 2), var(--lead));
-    transition: --docked 0.2s ease;
+    transition: --docked var(--slide) ease;
   }
   .layout {
     display: grid;
@@ -270,9 +302,8 @@
         height: var(--twisty);
         background: currentColor;
         opacity: 0.4;
-        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E")
-          center / 80% no-repeat;
-        transition: transform 0.1s;
+        mask: var(--chevron) center / 80% no-repeat;
+        transition: transform var(--turn);
       }
     }
     & details[open] > summary::before {
@@ -300,7 +331,7 @@
     --docked: 0rem;
     & .rail {
       visibility: hidden;
-      transition: visibility 0s 0.2s;
+      transition: visibility 0s var(--slide);
     }
   }
   .shell {
@@ -310,11 +341,6 @@
   }
   .rail {
     min-width: var(--rail);
-    margin: 0;
-    border-top: 0;
-    border-right: 0;
-    border-bottom: 0;
-    color: inherit;
     &::backdrop {
       background: rgb(0 0 0 / 0);
     }
@@ -337,9 +363,9 @@
       box-shadow: 0 0 2rem rgb(0 0 0 / 0.25);
       transform: translateX(100%);
       transition:
-        transform 0.2s ease,
-        display 0.2s allow-discrete,
-        overlay 0.2s allow-discrete;
+        transform var(--slide) ease,
+        display var(--slide) allow-discrete,
+        overlay var(--slide) allow-discrete;
       .layout &:not(:popover-open) {
         display: none;
       }
@@ -352,9 +378,9 @@
       }
       &::backdrop {
         transition:
-          background 0.2s ease,
-          display 0.2s allow-discrete,
-          overlay 0.2s allow-discrete;
+          background var(--slide) ease,
+          display var(--slide) allow-discrete,
+          overlay var(--slide) allow-discrete;
       }
       &:popover-open::backdrop {
         background: rgb(0 0 0 / 0.25);
@@ -389,13 +415,6 @@
   #dock:focus-visible ~ .shell .bar .dock,
   .rail-toggle:focus-visible {
     outline: 2px solid var(--accent);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .shell,
-    .rail,
-    .rail::backdrop {
-      transition: none;
-    }
   }
 }
 /** @prose
@@ -443,20 +462,15 @@
     display: none;
     @media (max-width: 62rem) {
       display: inline-flex;
-      font: inherit;
       color: var(--ink);
-      background: none;
-      border: 0;
       padding: 0.3rem 0.4rem;
-      cursor: pointer;
       &::after {
         content: "";
         width: 0.7em;
         margin-left: 0.3em;
         background: currentColor;
         opacity: 0.5;
-        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E")
-          center / contain no-repeat;
+        mask: var(--chevron-down) center / contain no-repeat;
       }
     }
   }
@@ -467,10 +481,6 @@
       position: static;
       inset: auto;
       margin: 0 0 0 1rem;
-      padding: 0;
-      border: 0;
-      background: none;
-      color: inherit;
       overflow: visible;
       min-width: 0;
     }
@@ -490,7 +500,6 @@
       &:popover-open {
         position: fixed;
         inset: var(--bar) auto auto var(--side);
-        margin: 0;
         display: flex;
         flex-direction: column;
         min-width: 12rem;
@@ -514,7 +523,8 @@
  * ## On a phone
  *
  * On a phone, the name, **Docs**, the switch and the tree's icon share 390px. Tighter gaps and
- * buttons keep them on one line. The switch's own buttons tighten in [Around the text](#around-the-text).
+ * buttons keep them on one line. The switch's buttons tighten with the rest of their rule, in
+ * [Around the text](#around-the-text).
  */
 @layer components {
   @media (max-width: 30rem) {
@@ -573,7 +583,7 @@
       }
     }
     & .snapshot {
-      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-family: var(--mono);
     }
     & .repo {
       display: inline-flex;
@@ -618,14 +628,10 @@
     border: 1px solid var(--rule);
     border-radius: 7px;
     & button {
-      font: inherit;
       font-size: 0.85rem;
       color: var(--muted);
-      background: none;
-      border: 0;
       border-radius: 5px;
       padding: 0.15rem 0.7rem;
-      cursor: pointer;
       white-space: nowrap;
       @media (max-width: 30rem) {
         padding: 0.15rem 0.45rem;
@@ -816,7 +822,7 @@
     border-radius: 8px;
     overflow: hidden;
     background: var(--panel);
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-family: var(--mono);
     font-size: 0.85rem;
     max-width: calc(100ch + var(--gutter) + 5ch + 2rem);
     & pre.highlighted {
@@ -845,13 +851,9 @@
     width: 100%;
     align-items: center;
     gap: 0.6rem;
-    font: inherit;
     color: var(--gutter-ink);
-    background: none;
-    border: 0;
     border-bottom: 1px solid var(--rule);
     padding: 0.45rem 1rem;
-    cursor: pointer;
     text-align: left;
     &:hover {
       color: var(--ink);
@@ -872,9 +874,8 @@
       flex: none;
       background: currentColor;
       transform: rotate(90deg);
-      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E")
-        center / contain no-repeat;
-      transition: transform 0.1s;
+      mask: var(--chevron) center / contain no-repeat;
+      transition: transform var(--turn);
     }
   }
   /* A run is folded when it's closed in the code view, or not opened in the prose view. */
@@ -958,7 +959,7 @@
   .listing li > a,
   .group .names a {
     font-weight: 600;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-family: var(--mono);
     font-size: 0.92rem;
   }
   .group .names {
