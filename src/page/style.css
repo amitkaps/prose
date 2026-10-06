@@ -734,7 +734,9 @@
   main {
     position: relative;
     margin: 0;
-    padding: 2rem var(--side) 4rem;
+    /* The space above the breadcrumb, which the contents beside the page start at too. */
+    --top: 2rem;
+    padding: var(--top) var(--side) 4rem;
     /* How far a table or code sample may widen; the text's width while the contents are beside it
        on a doc, so they don't run under it. */
     --wide: var(--code-width);
@@ -1074,6 +1076,9 @@
  * The table of contents folds under the breadcrumb. Where there's room, it's a column beside the
  * page instead. On a doc it sits past the text, and on a source file past the code. The room
  * depends on whether the tree is docked, so each width is given twice.
+ *
+ * Beside the page, its label lines up with the breadcrumb. It starts at the same `--top` and has
+ * the same line box, so the two stay level as either changes.
  */
 @layer components {
   .prose :is(h2, h3, h4) {
@@ -1128,14 +1133,16 @@
     line-height: var(--leading-snug);
     & > div {
       position: sticky;
-      top: calc(var(--bar) + 1.5rem);
-      max-height: calc(100vh - var(--bar) - 3rem);
+      top: calc(var(--bar) + var(--top));
+      max-height: calc(100vh - var(--bar) - 2 * var(--top));
       overflow-y: auto;
     }
     & p {
       margin: 0 0 0.5rem;
       color: var(--muted);
       font-size: var(--text-xs);
+      /* The breadcrumb's line box, so the two centre on one line. */
+      line-height: calc(var(--text-s) * var(--leading));
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
