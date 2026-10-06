@@ -12,4 +12,6 @@ One test file for each source file that has logic, run with `pnpm run test`. The
 - [style.test.ts](style.test.ts): every rule in the stylesheet sits in a layer.
 - [accent.test.ts](accent.test.ts): a project's colour and tab icon, and the browser's bar in the paper's colour.
 
+[axe.ts](axe.ts) is the accessibility audit. It needs Chrome, so it runs by hand as `pnpm run axe` before a release, not with the rest.
+
 Commit a change to the fixture before running them, since a build exports `HEAD`.

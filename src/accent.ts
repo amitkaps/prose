@@ -34,7 +34,7 @@ export function accentHue(project: string): number {
 }
 
 /** @prose
- * ## The tab's icon
+ * # The tab's icon
  *
  * A rounded square in the accent, with the project's first letter or digit as a capital. It's an
  * SVG data URI, so it needs no file and no request. Its colours follow the reader's scheme, as the
