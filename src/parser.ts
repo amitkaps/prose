@@ -178,6 +178,9 @@ function scanHtml(source: string): ProseComment[] {
  *
  * Both split into parts the same way, by regex, so a `<script>` inside a `<template>` is found too. Each part follows its own language's rule. The `<script>` and `<style>` bodies are read as TS
  * and CSS, everything else as HTML, and the comments merge back in source order.
+ *
+ * An HTML comment is skipped as a whole while the parts are found. So prose that mentions a
+ * `<script>` tag stays prose, and doesn't open a script that swallows the comment's end.
  */
 function scanParts(source: string): ProseComment[] {
   const found: ProseComment[] = [];
@@ -202,10 +205,11 @@ function markupParts(
   source: string,
 ): { kind: "script" | "style" | "markup"; start: number; end: number }[] {
   const parts: { kind: "script" | "style" | "markup"; start: number; end: number }[] = [];
-  const tagRe = /<(script|style)\b[^>]*>([\s\S]*?)<\/\1>/g;
+  const tagRe = /<!--[\s\S]*?-->|<(script|style)\b[^>]*>([\s\S]*?)<\/\1>/g;
   let last = 0;
   let match: RegExpExecArray | null;
   while ((match = tagRe.exec(source))) {
+    if (!match[1]) continue;
     const [full, tagName, inner] = match as unknown as [string, string, string];
     const inside = match.index + full.indexOf(inner);
     parts.push({ kind: "markup", start: last, end: match.index });
