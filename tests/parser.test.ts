@@ -136,6 +136,24 @@ describe("parseFile: .html reads its script and style parts too", () => {
       "Why the selector.",
     ]);
   });
+
+  it("reads a <script> mentioned in a comment as the comment's text", () => {
+    const source = [
+      "<!-- @prose",
+      "A slot can hold `<script>` tags.",
+      "-->",
+      "<p>x</p>",
+      "<script>",
+      "/** @prose Why the script. */",
+      "go();",
+      "</script>",
+      "",
+    ].join("\n");
+    expect(parseFile(source, "html").map((c) => c.body)).toEqual([
+      "A slot can hold `<script>` tags.",
+      "Why the script.",
+    ]);
+  });
 });
 
 describe("a comment counts when it starts its own line, at any depth", () => {
