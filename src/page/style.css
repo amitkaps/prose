@@ -76,9 +76,9 @@
     --lead: 7rem;
     /* 100 columns of code (oxfmt's print width), plus a gutter and padding, in the code font. */
     --code-width: 60rem;
-    --gutter-ink: color-mix(in oklch, var(--muted) 70%, var(--panel));
+    --gutter-ink: var(--muted);
     --code-ink: var(--ink);
-    --code-comment: oklch(0.6 0.02 85);
+    --code-comment: oklch(0.52 0.02 85);
     --code-keyword: oklch(0.49 0.13 40);
     --code-string: oklch(0.5 0.1 133);
     --code-function: oklch(0.46 0.12 257);
@@ -367,6 +367,10 @@
  * a checkbox's label, folds it away. Below 62rem, it's a popover of the same width under the bar.
  * A popover gives Esc, a click outside and focus return without script.
  *
+ * The checkbox sits in the bar beside its label, and the page reads its state with `:has()`. So it
+ * stays inside the bar's landmark, and the label shows its focus. Below 62rem, where the popover's
+ * button takes over, the checkbox is out of the tab order.
+ *
  * Opening and closing both animate. The docked column's width changes, and the popover slides in
  * over a backdrop. `@starting-style` lets it animate from `display: none`.
  */
@@ -375,8 +379,11 @@
     position: absolute;
     opacity: 0;
     pointer-events: none;
+    @media (max-width: 62rem) {
+      display: none;
+    }
   }
-  #dock:checked ~ .shell {
+  .shell:has(#dock:checked) {
     --docked: 0rem;
     & .rail {
       visibility: hidden;
@@ -462,7 +469,7 @@
     }
   }
   /* The checkbox is hidden, so its label shows its focus. */
-  #dock:focus-visible ~ .shell .bar .dock {
+  .bar:has(#dock:focus-visible) .dock {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
@@ -580,6 +587,9 @@
  * On a phone, the name, **Docs**, the switch and the tree's icon share 390px. Tighter gaps and
  * buttons keep them on one line. The switch's buttons tighten with the rest of their rule, in
  * [Around the text](#around-the-text).
+ *
+ * Below 22rem the name leaves the bar, since the breadcrumb just below starts with the same link.
+ * That's how the page fits 320px, a 1280px screen at 400% zoom, without scrolling sideways.
  */
 @layer components {
   @media (max-width: 30rem) {
@@ -596,6 +606,11 @@
       --side: 1rem;
     }
     .docs-toggle::after {
+      display: none;
+    }
+  }
+  @media (max-width: 22rem) {
+    .bar .project {
       display: none;
     }
   }
@@ -877,7 +892,8 @@
     /* A sample's language, in the corner. The text wraps around it, so a long first line doesn't
        run under it. */
     &[data-lang]::before {
-      content: attr(data-lang);
+      /* Shown, but not read out before the code. */
+      content: attr(data-lang) / "";
       float: right;
       margin-left: 1rem;
       color: var(--muted);
@@ -1176,7 +1192,7 @@
     }
   }
   @container (min-width: 68rem) {
-    #dock:checked ~ .shell main:not(.has-code) {
+    .shell:has(#dock:checked) main:not(.has-code) {
       --wide: var(--measure);
       & .toc-side {
         display: block;
@@ -1191,11 +1207,11 @@
       --wide: var(--measure);
     }
     main:not(.has-code) .toc-side,
-    #dock:checked ~ .shell main .toc-side {
+    .shell:has(#dock:checked) main .toc-side {
       display: block;
     }
     main:not(.has-code) .toc-top,
-    #dock:checked ~ .shell main .toc-top {
+    .shell:has(#dock:checked) main .toc-top {
       display: none;
     }
   }
@@ -1207,6 +1223,34 @@
       & .toc-top {
         display: none;
       }
+    }
+  }
+}
+/** @prose
+ * # Forced colours
+ *
+ * In a contrast theme, like Windows', the browser replaces every colour with a few of its own,
+ * and drops shadows and background colours. Anything the page marks only that way would vanish.
+ *
+ * So the chevrons, which are a mask over a background, keep the text's colour. The current file,
+ * the switch's choice and the section being read get an outline or a border in `Highlight`.
+ */
+@layer components {
+  @media (forced-colors: active) {
+    .rail summary::before,
+    .code-head .chevron,
+    .docs-toggle::after {
+      forced-color-adjust: none;
+      background: CanvasText;
+    }
+    .rail [aria-current],
+    :root:not(.prose-only) .mode [data-mode="code"],
+    .prose-only .mode [data-mode="prose"] {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
+    .toc-side a.here {
+      border-left-color: Highlight;
     }
   }
 }
