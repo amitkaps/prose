@@ -34,7 +34,7 @@ There are two, in [`.github/workflows/`](../.github/workflows/), and each file's
 
 ## What ships
 
-The package is one bundle with no dependencies, about 180 KB unpacked. It's readable code without its prose, the same choice the page's own files follow.
+The package is one bundle with no dependencies, about 200 KB unpacked. It's readable code without its prose, the same choice the page's own files follow.
 
 - **Bundled.** markz is inside `dist/`, so installing prose fetches one package. A fix in markz reaches prose's users with prose's next release.
 - **Not minified.** A bundler that takes prose in minifies it for its own app, and anyone reading `node_modules` can follow the code.
@@ -51,7 +51,7 @@ Run `pnpm run axe` and `pnpm run keyboard` first, and fix what they find. The au
 Bump `version` in `package.json` and merge to `main`. Then tag the release and push the tag.
 
 ```sh
-git tag v0.3.0 && git push origin v0.3.0
+git tag v0.4.0 && git push origin v0.4.0
 ```
 
 The `release` workflow does the rest. The site needs no step of its own, because Cloudflare builds it from `main` ([the site](#the-site)).

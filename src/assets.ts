@@ -14,7 +14,7 @@
  * ([render.ts](render.ts)), because each must run before the first paint.
  *
  * The build strips their comments and formats them, but doesn't minify them. Gzip already brings
- * the stylesheet to about 7 KB, and unminified it stays readable in the browser's tools.
+ * the stylesheet to about 5 KB, and unminified it stays readable in the browser's tools.
  */
 import { createHash } from "node:crypto";
 import liveScript from "./page/live.js?built";
