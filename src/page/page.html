@@ -9,11 +9,19 @@ inline script fills a slot of its own, `<script>` tags included, since formattin
 slot inside a `<script>` as code.
 -->
 <!doctype html>
-<html lang="en">
+<html lang="en" {{accent}}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- The browser's own bar takes the paper's colour, as style.css sets it. -->
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="oklch(0.975 0.006 85)"
+    />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="oklch(0.215 0.006 70)" />
     <title>{{title}}</title>
+    <link rel="icon" href="{{favicon}}" />
     <link rel="stylesheet" href="{{style}}" />
     <script defer src="{{script}}"></script>
     {{live-script}} {{mode-script}}

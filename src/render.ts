@@ -9,6 +9,7 @@
  * docs and in prose comments alike, and code goes through [highlight.ts](highlight.ts).
  */
 import { html as markz, parse } from "@amitkaps/markz";
+import { accentHue, favicon } from "./accent.js";
 import { LIVE, SCRIPT, STYLE } from "./assets.js";
 import modeScript from "./page/mode.js?built";
 import shell from "./page/page.html?built";
@@ -371,14 +372,16 @@ export function page(options: PageOptions): string {
     readme = false,
     nav = [],
   } = options;
-  const title = path ? `${path.replace(/\/$/, "").split("/").at(-1)} · ${project}` : project;
+  const hue = accentHue(project);
   const off = hasCode ? "" : ` disabled title="No code on this page"`;
   const mode = `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true"${off}>Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false"${off}>Prose only</button></div>`;
   const end = editorLink
     ? `<a class="editor" href="${escapeHtml(editorLink)}">Open in editor</a>`
     : "";
   const slots: Record<string, string> = {
-    title: escapeHtml(title),
+    accent: `style="--accent-h: ${hue}"`,
+    title: pageTitle(project, path, body),
+    favicon: escapeHtml(favicon(project, hue)),
     style: STYLE.url,
     script: SCRIPT.url,
     "live-script": live ? `<script defer src="${LIVE.url}"></script>` : "",
@@ -412,6 +415,28 @@ export function page(options: PageOptions): string {
       return space + value.slice(INLINE.length).replaceAll("\n", `\n${indent}`);
     },
   );
+}
+
+/** @prose
+ * ## The tab's title
+ *
+ * The page's name, then the project's, like `store.ts · prose`. A doc goes by its title, since
+ * that's what its reader knows it by. A source file goes by its name, which is how a tab is found
+ * among files. A folder keeps its trailing slash, so `src/` and a file called `src` differ.
+ */
+function pageTitle(project: string, path: string, body: string): string {
+  if (!path) return escapeHtml(project);
+  const name = path.replace(/\/$/, "").split("/").at(-1)!;
+  // The heading is already HTML, so only its tags and its anchor are taken out.
+  const heading = path.endsWith(".md")
+    ? /<h1\b[^>]*>([\s\S]*?)<\/h1>/
+        .exec(body)?.[1]
+        ?.replace(/<a class="anchor"[^>]*>#<\/a>/, "")
+        .replace(/<[^>]+>/g, "")
+        .trim()
+    : "";
+  const label = heading || escapeHtml(path.endsWith("/") ? `${name}/` : name);
+  return `${label} · ${escapeHtml(project)}`;
 }
 
 /** Marks a slot value as an inline script, so `page` indents it. */
