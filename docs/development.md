@@ -20,6 +20,7 @@ pnpm run build         # the library and the command (vp pack)
 node dist/cli.js .     # read this repository with prose
 pnpm run preview       # build, then read it
 pnpm run axe           # the accessibility audit, in Chrome
+pnpm run keyboard      # the keyboard check, in Chrome
 ```
 
 The build and server tests run against the committed [`tests/fixtures/simple`](../tests/fixtures/simple/), because `prose build` reads `HEAD`. Commit a change to the fixture before testing it.
@@ -45,7 +46,7 @@ CI runs [publint](https://publint.dev) on the packed tarball, fetched for the st
 
 ## Release
 
-Run `pnpm run axe` first, and fix what it finds ([tests/axe.ts](../tests/axe.ts)). It runs axe on every page of this site, in both colour schemes, at a desktop and a phone width. It needs Chrome on the machine, so it isn't in CI yet. Running it in the release workflow could come later.
+Run `pnpm run axe` and `pnpm run keyboard` first, and fix what they find. The audit runs axe on every page of this site, in both colour schemes, at a desktop and a phone width ([tests/axe.ts](../tests/axe.ts)). The keyboard check reads a page of each kind with Tab, Enter, Space and Esc ([tests/keyboard.ts](../tests/keyboard.ts)). Both need Chrome on the machine, so they aren't in CI yet. Running them in the release workflow could come later.
 
 Bump `version` in `package.json` and merge to `main`. Then tag the release and push the tag.
 

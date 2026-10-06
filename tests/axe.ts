@@ -6,19 +6,15 @@
  * `pnpm run axe` before a release ([development](../docs/development.md#release)).
  *
  * It isn't a `.test.ts` file, so `pnpm run test` and CI leave it out, since CI has no browser. It
- * drives the Chrome installed on the machine, so nothing is downloaded. The site is built from
- * `HEAD` by the renderer in `dist/`, so it checks the current stylesheet and HTML on the committed
- * pages.
+ * checks the committed pages, built and served as [site.ts](site.ts) says.
  *
- * axe checks what a machine can, like contrast, names and roles. A keyboard and screen reader
- * pass is still done by hand.
+ * axe checks what a machine can see in a page, like contrast, names and roles. What a keyboard
+ * can do is [keyboard.ts](keyboard.ts).
  */
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
-import { chromium, type Page } from "playwright-core";
+import type { Page } from "playwright-core";
+import { openSite } from "./site.ts";
 
 const SCHEMES = ["light", "dark"] as const;
 const WIDTHS = [1280, 390];
@@ -45,38 +41,11 @@ interface Violation {
   nodes: { target: string[] }[];
 }
 
-/** Every page in the site, as the path a reader would ask for. A redirect, like a folder's
- *  `README.md` to the folder, isn't a page, and its target is audited anyway. */
-function pages(dir: string, root = dir): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) return name === "assets" ? [] : pages(path, root);
-    if (!name.endsWith(".html") || name === "404.html") return [];
-    if (readFileSync(path, "utf8").includes('http-equiv="refresh"')) return [];
-    return [
-      "/" +
-        relative(root, path)
-          .replace(/(^|\/)index\.html$/, "$1")
-          .replace(/\.html$/, ""),
-    ];
-  });
-}
-
-/** The site's file for a request, as a static host would find it. */
-function fileFor(site: string, pathname: string): string | undefined {
-  const base = join(site, decodeURIComponent(pathname));
-  return [base, `${base}.html`, join(base, "index.html")].find(
-    (file) => existsSync(file) && statSync(file).isFile(),
-  );
-}
-
-const site = mkdtempSync(join(tmpdir(), "prose-axe-"));
-execFileSync("node", ["dist/cli.js", "build", ".", "--out", site], { stdio: "ignore" });
+const site = await openSite();
 const axe = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
-const browser = await chromium.launch({ channel: "chrome" });
 
 const found = new Map<string, { violation: Violation; where: Set<string>; count: number }>();
-const jobs = pages(site).flatMap((path) =>
+const jobs = site.pages.flatMap((path) =>
   SCHEMES.flatMap((scheme) => WIDTHS.map((width) => ({ path, scheme, width }))),
 );
 
@@ -87,12 +56,6 @@ async function audit(page: Page, { path, scheme, width }: (typeof jobs)[number])
   await page.addScriptTag({ content: axe });
   const violations = await page.evaluate(
     async ({ tags, accepted }) => {
-      // The page's own document. This file is typed without the DOM, as Node code.
-      const { document } = globalThis as unknown as {
-        document: {
-          querySelector(selector: string): { matches(selector: string): boolean } | null;
-        };
-      };
       // @ts-expect-error: axe is the script just added to the page.
       const { violations } = (await axe.run(document, { runOnly: tags })) as {
         violations: Violation[];
@@ -120,16 +83,11 @@ async function audit(page: Page, { path, scheme, width }: (typeof jobs)[number])
 
 await Promise.all(
   Array.from({ length: PARALLEL }, async () => {
-    const page = await browser.newPage();
-    await page.route("http://site/**", (route) => {
-      const file = fileFor(site, new URL(route.request().url()).pathname);
-      return file ? route.fulfill({ path: file }) : route.fulfill({ status: 404 });
-    });
+    const page = await site.newPage();
     for (let job = jobs.shift(); job; job = jobs.shift()) await audit(page, job);
   }),
 );
-await browser.close();
-rmSync(site, { recursive: true, force: true });
+await site.close();
 
 for (const { violation, where, count } of found.values()) {
   const first = violation.nodes[0]?.target.join(" ");
