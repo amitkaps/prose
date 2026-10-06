@@ -282,6 +282,25 @@ describe("serve: folders", () => {
     expect(await title("/docs/plan.md")).toBe(`Plan | ${name}`);
   });
 
+  it("gives every page one h1, its name when its text has none, and the 404 page its own", async () => {
+    const h1s = async (path: string) =>
+      [...(await get(served.url, path)).body.matchAll(/<h1\b[^>]*>(.*?)<\/h1>/g)].map((m) => m[1]);
+    expect(await h1s("/src/b.ts")).toEqual(["b.ts"]);
+    expect(await h1s("/src/a.ts")).toEqual(["a.ts"]);
+    expect(await h1s("/docs/")).toEqual(["docs/"]);
+    expect(await h1s("/docs/plan.md")).toEqual(["Plan"]);
+    expect(await h1s("/nope.ts")).toEqual(["Page not found"]);
+  });
+
+  it("starts with a link past the bar to the text, and names each code run's header as code", async () => {
+    const { body } = await get(served.url, "/src/b.ts");
+    expect(body.indexOf('<a class="skip" href="#Text">')).toBeLessThan(body.indexOf('class="bar"'));
+    expect(body).toContain('<main id="Text" class="has-code">');
+    expect(body).toMatch(
+      /class="code-head"[^>]*>.*?<span><span class="unseen">Code, <\/span>\d+ lines? · /,
+    );
+  });
+
   it("highlights an EBNF fence: the rule's name, its terminals and character classes", async () => {
     const { body } = await get(served.url, "/docs/grammar.md");
     expect(body).toContain('<span class="function">digit</span>');
