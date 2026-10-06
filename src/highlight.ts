@@ -127,6 +127,11 @@ export function highlight(code: string, lang: string): string {
  * order. Nothing is unescaped or guessed. A raw `=html` block or display math also writes
  * `<pre><code>`, and neither can be mistaken for a fence. Matching every `<pre><code>` in the HTML
  * was ruled out for that reason.
+ *
+ * A sample keeps its fence's language, as the author wrote it, in `data-lang`. The stylesheet shows
+ * it in the corner, so it isn't copied with the code. A fence without one shows nothing, not
+ * "text". A sample has no header, unlike a run of a file's code. It has no lines of a file to
+ * number and nothing to fold, so a header would make it look like part of a file.
  */
 export function markdownHtml(doc: Document): string {
   let out = html(doc);
@@ -139,7 +144,13 @@ export function markdownHtml(doc: Document): string {
       const written = `<pre><code${attr}>${escapeHtml(value)}</code></pre>`;
       const found = out.indexOf(written, at);
       if (found === -1) return false;
-      const highlighted = highlight(value.replace(/\n$/, ""), lang ?? "text");
+      const code = highlight(value.replace(/\n$/, ""), lang ?? "text");
+      const highlighted = lang
+        ? code.replace(
+            `<pre class="highlighted">`,
+            `<pre class="highlighted" data-lang="${escapeHtml(lang)}">`,
+          )
+        : code;
       out = out.slice(0, found) + highlighted + out.slice(found + written.length);
       at = found + highlighted.length;
       return false;

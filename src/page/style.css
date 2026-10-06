@@ -472,6 +472,9 @@
  *
  * The bar stays at the top of the page. It holds the project's name, the docs' links, the mode
  * switch and the tree's icon.
+ *
+ * The name is one size up from the rest of the bar, so it leads without crowding the title. The
+ * project's icon is only on the tab ([accent.ts](../accent.ts)), so the bar stays text.
  */
 @layer components {
   .bar {
@@ -489,8 +492,10 @@
     font-size: var(--text-s);
     & .project {
       color: var(--ink);
+      font-size: var(--text-m);
       font-weight: 600;
       text-decoration: none;
+      white-space: nowrap;
     }
   }
   .page {
@@ -868,6 +873,18 @@
     }
     & .punctuation {
       color: var(--code-punctuation);
+    }
+    /* A sample's language, in the corner. The text wraps around it, so a long first line doesn't
+       run under it. */
+    &[data-lang]::before {
+      content: attr(data-lang);
+      float: right;
+      margin-left: 1rem;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: var(--text-xs);
+      /* A code line's height, so the label centres on the first line. */
+      line-height: calc(var(--text-s) * var(--leading-snug));
     }
     & .link {
       color: var(--code-link);

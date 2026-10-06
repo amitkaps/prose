@@ -420,9 +420,11 @@ export function page(options: PageOptions): string {
 /** @prose
  * ## The tab's title
  *
- * The page's name, then the project's, like `store.ts · prose`. A doc goes by its title, since
+ * The page's name, then the project's, like `store.ts | prose`. A doc goes by its title, since
  * that's what its reader knows it by. A source file goes by its name, which is how a tab is found
  * among files. A folder keeps its trailing slash, so `src/` and a file called `src` differ.
+ *
+ * A pipe separates the two. A middle dot was tried, and it's too faint to see in a narrow tab.
  */
 function pageTitle(project: string, path: string, body: string): string {
   if (!path) return escapeHtml(project);
@@ -436,7 +438,7 @@ function pageTitle(project: string, path: string, body: string): string {
         .trim()
     : "";
   const label = heading || escapeHtml(path.endsWith("/") ? `${name}/` : name);
-  return `${label} · ${escapeHtml(project)}`;
+  return `${label} | ${escapeHtml(project)}`;
 }
 
 /** Marks a slot value as an inline script, so `page` indents it. */

@@ -710,7 +710,12 @@ describe("markdownHtml", () => {
   it("highlights each fence, wherever it sits", () => {
     expect(out).toContain('<span class="string">&quot;x&quot;</span>');
     expect(out).toContain('<span class="string">a</span> {}');
-    expect(out.match(/<pre class="highlighted">/g)).toHaveLength(2);
+    expect(out.match(/<pre class="highlighted" data-lang="/g)).toHaveLength(2);
+  });
+
+  it("names a fence's language as written, and none for a fence without one", () => {
+    expect(out).toContain('<pre class="highlighted" data-lang="ts">');
+    expect(markdownHtml(parse("```\nplain\n```\n"))).toContain('<pre class="highlighted"><code>');
   });
 
   it("leaves raw HTML and display math as markz wrote them", () => {
