@@ -275,9 +275,9 @@ describe("serve: folders", () => {
       /<title>(.*)<\/title>/.exec((await get(served.url, path)).body)?.[1];
     const name = basename(root);
     expect(await title("/")).toBe(name);
-    expect(await title("/src/")).toBe(`src/ · ${name}`);
-    expect(await title("/src/a.ts")).toBe(`a.ts · ${name}`);
-    expect(await title("/docs/plan.md")).toBe(`Plan · ${name}`);
+    expect(await title("/src/")).toBe(`src/ | ${name}`);
+    expect(await title("/src/a.ts")).toBe(`a.ts | ${name}`);
+    expect(await title("/docs/plan.md")).toBe(`Plan | ${name}`);
   });
 
   it("highlights an EBNF fence: the rule's name, its terminals and character classes", async () => {
