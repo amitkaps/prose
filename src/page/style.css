@@ -28,42 +28,74 @@
 /** @prose
  * # Tokens
  *
- * Colours, widths, fonts, the type size, the chevrons and the motion are set once, here. The
- * dark palette redefines the same names. Every size is in rem, so the whole page scales as one,
- * as browser zoom would. A reader who asks for less motion gets none, since every duration
- * becomes zero.
+ * Colours, widths, fonts, the type scale, the radii, the chevrons and the motion are set once,
+ * here. The dark palette redefines the same names. Every size is in rem, so the whole page scales
+ * as one, as browser zoom would. A reader who asks for less motion gets none, since every
+ * duration becomes zero.
+ *
+ * ## Colour
+ *
+ * Every colour is in OKLCH, where equal lightness looks equally light whatever the hue. The
+ * neutrals are one warm hue at a few lightness steps. Dark mode flips the steps and keeps the hues.
+ * Ink and paper stop short of black and white, at about 13:1 in light and 11:1 in dark. Higher
+ * contrast glares on a long read, and lower would fail readers who need it.
+ *
+ * The accent marks links, focus and the reader's place. Its lightness and chroma are fixed, and
+ * only its hue, `--accent-h`, varies. So every hue reads the same and passes AA in both modes.
+ * Each project gets its own hue from its name ([accent.ts](../accent.ts)), and the page sets it
+ * on `<html>`.
  *
  * Code takes its colours from the same tokens. Each kind of token has one, like `--code-keyword`,
- * in the page's warm ink ([highlight.ts](../highlight.ts)).
+ * in the page's warm ink ([highlight.ts](../highlight.ts)). They don't follow the accent, so a
+ * project's colour never changes how its code reads.
+ *
+ * ## Type
+ *
+ * Five sizes. `--text-s` is for the bar, the rail and code, `--text-xs` for labels, and the
+ * other three for the text and its headings. Three line heights go with them. `font-size-adjust`
+ * gives code the text's x-height, whatever the two fonts are, so code needs no size of its own.
  */
 @layer tokens {
   :root {
     color-scheme: light dark;
-    --ink: #1f2328;
-    --muted: #59636e;
-    --paper: #fdfcfa;
-    --panel: #f4f2ee;
-    --rule: #e3e0da;
-    --link: #9c4221;
-    --selection: color-mix(in srgb, #c47a2c 28%, transparent);
-    --accent: #9a6700;
+    --accent-h: 75;
+    --ink: oklch(0.29 0.012 70);
+    --muted: oklch(0.52 0.012 70);
+    --paper: oklch(0.975 0.006 85);
+    --panel: oklch(0.95 0.007 85);
+    --rule: oklch(0.9 0.009 85);
+    --accent: oklch(0.5 0.13 var(--accent-h));
+    --link: var(--accent);
+    --selection: oklch(0.75 0.13 var(--accent-h) / 0.3);
+    --live: oklch(0.63 0.16 148);
+    --shade: oklch(0.2 0.01 70 / 0.2);
     --measure: 44rem;
     --rail: 16rem;
-    --bar: 3.25rem;
+    --bar: 3.5rem;
     /* The most room left of the text; the page's own width, not the window's, decides how much. */
     --lead: 7rem;
     /* 100 columns of code (oxfmt's print width), plus a gutter and padding, in the code font. */
     --code-width: 60rem;
-    --gutter-ink: color-mix(in srgb, var(--muted) 70%, var(--panel));
-    --code-ink: #2f2c27;
-    --code-comment: #8c8577;
-    --code-keyword: #9c4221;
-    --code-string: #4d7030;
-    --code-function: #25589c;
-    --code-constant: #7d4c98;
-    --code-punctuation: #6f695e;
-    --code-link: #25589c;
-    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --gutter-ink: color-mix(in oklch, var(--muted) 70%, var(--panel));
+    --code-ink: var(--ink);
+    --code-comment: oklch(0.6 0.02 85);
+    --code-keyword: oklch(0.49 0.13 40);
+    --code-string: oklch(0.5 0.1 133);
+    --code-function: oklch(0.46 0.12 257);
+    --code-constant: oklch(0.5 0.13 312);
+    --code-punctuation: oklch(0.52 0.018 83);
+    --code-link: var(--code-function);
+    --text-xs: 0.75rem;
+    --text-s: 0.875rem;
+    --text-m: 1rem;
+    --text-l: 1.25rem;
+    --text-xl: 1.75rem;
+    --leading-tight: 1.25;
+    --leading-snug: 1.4;
+    --leading: 1.6;
+    --radius: 0.5rem;
+    --radius-s: 0.25rem;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     /* The chevron that turns as a folder or a code run opens, and the Docs menu's, which points down. */
     --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E");
@@ -72,7 +104,8 @@
     --slide: 0.2s;
     --turn: 0.1s;
     font-family: var(--sans);
-    line-height: 1.6;
+    font-size-adjust: ex-height from-font;
+    line-height: var(--leading);
     /* 16px up to a 1280px window, then growing to 20px at 2560px. Every size here is in rem, so the
      whole page scales as one, as browser zoom would, and a wide screen holds more page and less
      margin. */
@@ -80,22 +113,21 @@
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --ink: #e6e3dd;
-      --muted: #9d978c;
-      --paper: #1a1917;
-      --panel: #23221f;
-      --rule: #34322e;
-      --link: #e6a57c;
-      --selection: color-mix(in srgb, #e3b341 26%, transparent);
-      --accent: #e3b341;
-      --code-ink: #e6e3dd;
-      --code-comment: #8f887c;
-      --code-keyword: #e0976b;
-      --code-string: #a8c282;
-      --code-function: #8fb7e6;
-      --code-constant: #c9a2dc;
-      --code-punctuation: #a39c90;
-      --code-link: #8fb7e6;
+      --ink: oklch(0.86 0.012 80);
+      --muted: oklch(0.68 0.012 75);
+      --paper: oklch(0.215 0.006 70);
+      --panel: oklch(0.25 0.006 70);
+      --rule: oklch(0.32 0.008 75);
+      --accent: oklch(0.78 0.1 var(--accent-h));
+      --selection: oklch(0.6 0.1 var(--accent-h) / 0.35);
+      --live: oklch(0.7 0.15 148);
+      --shade: oklch(0 0 0 / 0.45);
+      --code-comment: oklch(0.63 0.019 81);
+      --code-keyword: oklch(0.74 0.106 52);
+      --code-string: oklch(0.78 0.09 126);
+      --code-function: oklch(0.77 0.08 253);
+      --code-constant: oklch(0.77 0.09 314);
+      --code-punctuation: oklch(0.7 0.019 81);
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -127,7 +159,10 @@
 /** @prose
  * # The base
  *
- * Box sizing, the page's paper and ink, links, selection and the code font.
+ * Box sizing, the page's paper and ink, links, selection, focus and the code font.
+ *
+ * Anything focused from the keyboard gets the same ring in the accent. Scrollbars take the page's
+ * colours, so the rail's doesn't show the platform's grey on the warm panel.
  *
  * Buttons and popovers start bare. A button takes the page's type with no box, and a popover
  * keeps the browser's placement without its border, padding or colours. So a component sets only
@@ -136,6 +171,13 @@
 @layer base {
   * {
     box-sizing: border-box;
+  }
+  :root {
+    scrollbar-color: color-mix(in oklch, var(--muted) 45%, transparent) transparent;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
   body {
     margin: 0;
@@ -205,8 +247,8 @@
     flex-direction: column;
     border-left: 1px solid var(--rule);
     background: var(--panel);
-    font-size: 0.82rem;
-    line-height: 1.35;
+    font-size: var(--text-s);
+    line-height: var(--leading-snug);
     view-transition-name: rail;
     --edge: 0.9rem;
     --step: 0.75rem;
@@ -220,6 +262,9 @@
  * Rows span the rail's full width, so a highlight does too. Each row indents itself by its depth.
  * A folder's chevron sits under the start of its parent's name. A file leaves the chevron's slot
  * empty, so names at one level line up. The top-level chevrons line up with the project's name.
+ *
+ * The current file has a mark in the accent at its left edge, so it differs from a hovered row.
+ * A row's focus ring sits inside it, since the rail clips anything outside.
  */
 @layer components {
   .rail {
@@ -256,7 +301,11 @@
     }
     & [aria-current] {
       background: var(--rule);
+      box-shadow: inset 2px 0 var(--accent);
       font-weight: 600;
+    }
+    & :focus-visible {
+      outline-offset: -2px;
     }
     & summary {
       cursor: pointer;
@@ -342,7 +391,7 @@
   .rail {
     min-width: var(--rail);
     &::backdrop {
-      background: rgb(0 0 0 / 0);
+      background: transparent;
     }
     /* A popover left open while the window grows stays in the top layer, so it's pinned where the
        docked tree sits. */
@@ -360,7 +409,7 @@
       height: auto;
       width: min(var(--rail), 85vw);
       min-width: 0;
-      box-shadow: 0 0 2rem rgb(0 0 0 / 0.25);
+      box-shadow: 0 0 2rem var(--shade);
       transform: translateX(100%);
       transition:
         transform var(--slide) ease,
@@ -383,9 +432,9 @@
           overlay var(--slide) allow-discrete;
       }
       &:popover-open::backdrop {
-        background: rgb(0 0 0 / 0.25);
+        background: var(--shade);
         @starting-style {
-          background: rgb(0 0 0 / 0);
+          background: transparent;
         }
       }
     }
@@ -395,7 +444,7 @@
     color: var(--ink);
     background: var(--panel);
     border: 1px solid var(--rule);
-    border-radius: 6px;
+    border-radius: var(--radius);
     padding: 0.3rem 0.45rem;
     cursor: pointer;
     line-height: 0;
@@ -412,9 +461,10 @@
       }
     }
   }
-  #dock:focus-visible ~ .shell .bar .dock,
-  .rail-toggle:focus-visible {
+  /* The checkbox is hidden, so its label shows its focus. */
+  #dock:focus-visible ~ .shell .bar .dock {
     outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 }
 /** @prose
@@ -436,7 +486,7 @@
     padding: 0 1rem 0 var(--side);
     background: var(--paper);
     border-bottom: 1px solid var(--rule);
-    font-size: 0.9rem;
+    font-size: var(--text-s);
     & .project {
       color: var(--ink);
       font-weight: 600;
@@ -507,8 +557,8 @@
         background: var(--paper);
         color: var(--ink);
         border: 1px solid var(--rule);
-        border-radius: 8px;
-        box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.15);
+        border-radius: var(--radius);
+        box-shadow: 0 0.5rem 1.5rem var(--shade);
         & a {
           padding: 0.4rem 1rem;
         }
@@ -550,6 +600,10 @@
  *
  * The breadcrumb and **Open in editor** above the text, the rail's footer, and the controls in
  * the bar.
+ *
+ * The breadcrumb is small and muted, so it reads as the page's header, not as the start of its
+ * text. More space falls below it than above, which sets the bar, the breadcrumb and the title
+ * apart as three steps.
  */
 @layer components {
   .where {
@@ -557,8 +611,17 @@
     flex-wrap: wrap;
     gap: 0.25rem 1rem;
     justify-content: space-between;
-    font-size: 0.9rem;
-    margin-bottom: 2rem;
+    font-size: var(--text-s);
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+    & a {
+      color: inherit;
+      text-decoration: none;
+      &:hover {
+        color: var(--ink);
+        text-decoration: underline;
+      }
+    }
     & .editor {
       white-space: nowrap;
     }
@@ -575,7 +638,7 @@
     background: var(--panel);
     border-top: 1px solid var(--rule);
     color: var(--muted);
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
     & a {
       color: inherit;
       &:hover {
@@ -600,7 +663,7 @@
       width: 0.5rem;
       height: 0.5rem;
       border-radius: 50%;
-      background: #2da44e;
+      background: var(--live);
       .offline & {
         background: var(--muted);
         opacity: 0.5;
@@ -617,7 +680,6 @@
     & [aria-current] {
       font-weight: 600;
       color: var(--ink);
-      text-decoration: none;
     }
   }
   .mode {
@@ -626,11 +688,11 @@
     gap: 2px;
     background: var(--panel);
     border: 1px solid var(--rule);
-    border-radius: 7px;
+    border-radius: var(--radius);
     & button {
-      font-size: 0.85rem;
       color: var(--muted);
-      border-radius: 5px;
+      /* The switch's radius less its border and padding, so the corners nest. */
+      border-radius: calc(var(--radius) - 3px);
       padding: 0.15rem 0.7rem;
       white-space: nowrap;
       @media (max-width: 30rem) {
@@ -672,7 +734,7 @@
   main {
     position: relative;
     margin: 0;
-    padding: 1.5rem var(--side) 4rem;
+    padding: 2rem var(--side) 4rem;
     /* How far a table or code sample may widen; the text's width while the contents are beside it
        on a doc, so they don't run under it. */
     --wide: var(--code-width);
@@ -698,27 +760,26 @@
     & h1,
     & h2,
     & h3 {
-      line-height: 1.25;
+      line-height: var(--leading-tight);
       text-wrap: balance;
     }
     & h1 {
-      font-size: 1.75rem;
+      font-size: var(--text-xl);
     }
     & h2 {
-      font-size: 1.35rem;
+      font-size: var(--text-l);
       margin-top: 2rem;
     }
     & h3 {
-      font-size: 1.1rem;
+      font-size: var(--text-m);
     }
     & p,
     & li {
       text-wrap: pretty;
     }
     & :not(pre) > code {
-      font-size: 0.88em;
       background: var(--panel);
-      border-radius: 4px;
+      border-radius: var(--radius-s);
       padding: 0.1em 0.3em;
     }
   }
@@ -772,9 +833,9 @@
     background: var(--panel);
     margin: 0.75rem 0;
     padding: 0.75rem 1rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    line-height: 1.5;
+    border-radius: var(--radius);
+    font-size: var(--text-s);
+    line-height: var(--leading-snug);
     tab-size: 2;
     & code {
       display: block;
@@ -819,11 +880,11 @@
   }
   .code {
     margin: 0.5rem 0 1.25rem;
-    border-radius: 8px;
+    border-radius: var(--radius);
     overflow: hidden;
     background: var(--panel);
     font-family: var(--mono);
-    font-size: 0.85rem;
+    font-size: var(--text-s);
     max-width: calc(100ch + var(--gutter) + 5ch + 2rem);
     & pre.highlighted {
       margin: 0;
@@ -935,7 +996,7 @@
   .group-label {
     margin: 0 0 0.4rem;
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -953,14 +1014,14 @@
     & p {
       margin: 0.1rem 0 0;
       color: var(--muted);
-      font-size: 0.92rem;
+      font-size: var(--text-s);
     }
   }
   .listing li > a,
   .group .names a {
     font-weight: 600;
     font-family: var(--mono);
-    font-size: 0.92rem;
+    font-size: var(--text-s);
   }
   .group .names {
     margin: 0;
@@ -985,7 +1046,7 @@
   }
   .ignored {
     color: var(--muted);
-    font-size: 0.85rem;
+    font-size: var(--text-s);
     margin: 1rem 0;
     opacity: 0.75;
     & code {
@@ -1038,8 +1099,8 @@
     }
   }
   .toc-top {
-    margin: -1rem 0 1.5rem;
-    font-size: 0.9rem;
+    margin: -1.5rem 0 1.5rem;
+    font-size: var(--text-s);
     & summary {
       cursor: pointer;
       color: var(--muted);
@@ -1063,8 +1124,8 @@
     inset-block: 0;
     left: calc(var(--side) + var(--toc-after) + 3rem);
     width: 13rem;
-    font-size: 0.82rem;
-    line-height: 1.35;
+    font-size: var(--text-s);
+    line-height: var(--leading-snug);
     & > div {
       position: sticky;
       top: calc(var(--bar) + 1.5rem);
@@ -1074,7 +1135,7 @@
     & p {
       margin: 0 0 0.5rem;
       color: var(--muted);
-      font-size: 0.72rem;
+      font-size: var(--text-xs);
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
