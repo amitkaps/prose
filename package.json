@@ -34,7 +34,8 @@
     "lint": "vp lint",
     "check": "vp check",
     "test": "vp test --run",
-    "axe": "pnpm run build && node tests/axe.ts"
+    "axe": "pnpm run build && node tests/axe.ts",
+    "keyboard": "pnpm run build && node tests/keyboard.ts"
   },
   "devDependencies": {
     "@amitkaps/markz": "^0.2.0",

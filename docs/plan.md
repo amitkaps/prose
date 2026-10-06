@@ -18,6 +18,10 @@ The `@prose` convention and the read-only renderer work. This repository is read
 - **Shared files for every page.** The stylesheet and the script moved out of each page, into hashed files that a host caches for good. The project page went from 42 KB to 16 KB, and the site from 3.9 MB to 2.6 MB. The scripts that run before the first paint stay inline ([reading](reading.md#local-and-published)).
 - **A stylesheet in layers.** `style.css` is in three cascade layers, tokens, base and components, and each component nests its parts with `&`. Fonts, chevrons and motion are tokens, and buttons and popovers start bare. A test keeps every rule in a layer. Each step was checked against every element's computed style, at six widths and in each of the page's states.
 - **A design pass.** Colours are in OKLCH, with softer ink and paper in both modes. Five type sizes, two radii and one focus ring replace the ad hoc values. The breadcrumb is quieter, with more room around it. Each project gets an accent from its name, a tab icon in it, and tabs titled by the page ([reading](reading.md#around-the-page)).
+- **An accessibility review.** `pnpm run axe` audits every page and `pnpm run keyboard` reads a page of each kind by keyboard, both before a release ([development](development.md#release)). Folders in the tree open and close, and only files are pages. Every page has a title, there's a skip link to the text, and a code run's header is named as code. Ruled out:
+  - A reason a reader can hear on the disabled switch. A disabled button is out of the tab order, and saying why would be noise on every doc.
+  - Labels for a task list's checkboxes. markz writes them as GFM does, and the audit accepts it ([tests/axe.ts](../tests/axe.ts)).
+  - Keyboard shortcuts, since single keys clash with a screen reader's. And the ARIA tree pattern, since the rail is navigation, a list of links.
 
 ### 0.3.0
 
@@ -36,14 +40,6 @@ The `@prose` convention and the read-only renderer work. This repository is read
 
 ## Next, in order
 
-- [ ] **An accessibility review.** `pnpm run axe` audits every page ([development](development.md#release)).
-  - [x] What axe finds that needs no design choice. Contrast in code, the dock's checkbox inside the bar, the language label hidden from screen readers, contrast themes, and a bar that fits 320px.
-  - [x] Folders in the tree open and close, and only files are pages. A folder's README row already leads to its page. A folder without a README is reached from the breadcrumb and the folder above. A chevron button beside a folder link was ruled out, since it puts two controls in every row and needs script.
-  - [x] A title on every page, a skip link to the text, and a spoken name for each code run's header. A page whose text has no `h1` shows its name as one, and the 404 page says _Page not found_.
-  - [ ] A pass by hand, with a keyboard and with VoiceOver, on each kind of page.
-  - A reason a reader can hear on the disabled switch is ruled out. A disabled button is out of the tab order, and on a page with no code there's nothing to switch, so saying why would be noise on every doc.
-  - Labels for a task list's checkboxes are ruled out. markz writes them as GFM and GitHub do, disabled and read just before the item's text, and the audit accepts it ([tests/axe.ts](../tests/axe.ts)).
-  - Keyboard shortcuts are ruled out. Single keys clash with a screen reader's, and Tab, links and the browser cover every action. So is the ARIA tree pattern, since the rail is navigation, a list of links.
 - [ ] **Use it on base, sitez and markz.**
   - Install the latest release, and remove `prose()` from their Vite configs. Replace the snippet in their `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.
   - Move `prose/` to `docs/` in sitez and markz, with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website, so that moves to `site/` first, with its root scripts, workspace, package name and CI paths.
@@ -51,6 +47,8 @@ The `@prose` convention and the read-only renderer work. This repository is read
   - Check each one in a browser, installed as any outside project would. Every kind of page renders, links between prose and code resolve, and the page reloads on save. Unmarked comments, like JSDoc, `//` and `svelte-ignore`, don't show as prose. Look at typography, folded code and a phone's width. base is SvelteKit, with `.svelte` files that use all three parts.
 
 ## Later
+
+- [ ] **A pass with VoiceOver.** One page of each kind, the tree, the switch, a code run, and the live dot when the server stops. The checks so far are what a machine can do.
 
 - [ ] **Pictures of the page.** Once the layout is stable, a screenshot of a rendered file in the README, and a labelled image of the page in [reading](reading.md#around-the-page).
 
