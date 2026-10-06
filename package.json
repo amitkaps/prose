@@ -1,7 +1,7 @@
 {
   "name": "@amitkaps/prose",
   "version": "0.3.0",
-  "description": "A convention for writing human-oriented meaning into source code (@prose), and a read-only renderer that opens a repository as a Markdown-first document.",
+  "description": "prose — the why, beside the code.",
   "homepage": "https://prose.amitkaps.com",
   "license": "MIT",
   "repository": {
