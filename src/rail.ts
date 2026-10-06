@@ -8,6 +8,15 @@
  * HTML. Each folder is a `<details>`, open when the current page is inside it, so the tree works
  * without script. The page's script remembers which folders a reader opened, and where the rail
  * was scrolled ([render.ts](render.ts)).
+ *
+ * Folders open and close, and only files are pages, as in an editor. A folder's row is its
+ * `<summary>` and nothing else, so a keyboard or a screen reader meets one control per row. Its
+ * `README.md` row leads to the folder's page. A folder without a README is reached from the
+ * breadcrumb and from the folder above. On its own page, its row is still marked as the current one.
+ *
+ * Two things were ruled out. A link inside the `<summary>` put a control inside a control, which
+ * screen readers announce badly. A chevron button beside a folder link would need script, and
+ * two controls on every row.
  */
 import { escapeHtml } from "./highlight.js";
 
@@ -56,7 +65,7 @@ function renderDir(dir: Dir, prefix: string, current: string, depth: number): st
     rows.push(
       `<li><details data-folder="${escapeHtml(path)}"${open ? " open" : ""}><summary style="--depth: ${depth}"${
         here && !sub.files.includes("README.md") ? ` aria-current="page"` : ""
-      }><a href="${escapeHtml(href(path, true))}">${escapeHtml(name)}</a></summary><ul style="--depth: ${depth}">${renderDir(sub, path, current, depth + 1)}</ul></details></li>`,
+      }>${escapeHtml(name)}</summary><ul style="--depth: ${depth}">${renderDir(sub, path, current, depth + 1)}</ul></details></li>`,
     );
   }
   // A folder's `README.md` is its page, so its row goes to the folder and is first in it.

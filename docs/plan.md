@@ -38,7 +38,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 
 - [ ] **An accessibility review.** `pnpm run axe` audits every page ([development](development.md#release)).
   - [x] What axe finds that needs no design choice. Contrast in code, the dock's checkbox inside the bar, the language label hidden from screen readers, contrast themes, and a bar that fits 320px.
-  - [ ] Folders in the tree open and close, and only files are pages. A folder's README row already leads to its page. A folder without a README is reached from the breadcrumb and the folder above. A chevron button beside a folder link was ruled out, since it puts two controls in every row and needs script.
+  - [x] Folders in the tree open and close, and only files are pages. A folder's README row already leads to its page. A folder without a README is reached from the breadcrumb and the folder above. A chevron button beside a folder link was ruled out, since it puts two controls in every row and needs script.
   - [ ] A skip link to the text, a spoken name for each code run's header, a reason a reader can hear on the disabled switch, and labels for a task list's checkboxes (markz).
   - [ ] A title on every page. A folder without a README, the 404 page, and a file whose prose has no heading have no `h1`. So does `src/page/page.html`, though its prose opens with one.
   - [ ] A pass by hand, with a keyboard and with VoiceOver, on each kind of page.
