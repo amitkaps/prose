@@ -1,4 +1,4 @@
-# prose
+# Prose
 
 Coding agents change code faster than a person can read it, so the human's model of the design drifts. Prose keeps that model readable. The agent writes the explanation next to the code it explains, and a read-only renderer shows the repository as a document. This repository is read that way at [prose.amitkaps.com](https://prose.amitkaps.com).
 
