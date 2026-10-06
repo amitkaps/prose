@@ -310,10 +310,7 @@
     & summary {
       cursor: pointer;
       list-style: none;
-      & a {
-        flex: 1;
-        font-weight: 500;
-      }
+      font-weight: 500;
     }
   }
 }

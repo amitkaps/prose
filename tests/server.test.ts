@@ -234,6 +234,8 @@ describe("serve: folders", () => {
     expect(rail.indexOf('data-folder="src"')).toBeLessThan(rail.indexOf('href="/app.ts"'));
     expect(rail).toContain('<details data-folder="src" open>');
     expect(rail).toContain('<details data-folder="docs">');
+    // A folder's row opens and closes it, and holds no link of its own.
+    expect(rail).toContain('<summary style="--depth: 0">src</summary>');
     expect(rail).toContain(
       '<a class="file" style="--depth: 1" href="/src/a.ts" aria-current="page">a.ts</a>',
     );
