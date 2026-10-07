@@ -1,6 +1,8 @@
 # Prose
 
-Coding agents change code faster than a person can read it, so the human's model of the design drifts. Prose keeps that model readable. The agent writes the explanation next to the code it explains, and a read-only renderer shows the repository as a document. This repository is read that way at [prose.amitkaps.com](https://prose.amitkaps.com).
+Keep your mental model while agents write the code. Prose puts the why beside the code. The agent writes the explanation next to the code it explains, and a read-only renderer shows the repository as a document.
+
+[prose.amitkaps.com](https://prose.amitkaps.com) is this repository, read with prose. Open [src/parser.ts](https://prose.amitkaps.com/src/parser.ts) to see a source file as one document, with its prose in order and the code between.
 
 ## Where to go
 
