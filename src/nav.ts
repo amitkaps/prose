@@ -7,8 +7,14 @@
  *
  * `docs/README.md` makes that choice with a `nav` list in its metadata, like
  * `nav: [design.md, usage.md]`. With no list, every Markdown file in `docs/` is linked, in
- * alphabetical order. A name that isn't a file there is skipped. The label is the file's name,
- * capitalised and without `.md`. A doc's title is often a sentence, too long for the bar.
+ * alphabetical order. A name that isn't a file there is skipped, and `prose build` warns about it,
+ * so a misspelt name doesn't drop out of the bar unnoticed. The local server doesn't, since it
+ * reads the list on every request. The label is the file's name, capitalised and without `.md`.
+ * A doc's title is often a sentence, too long for the bar.
+ *
+ * A site path like `/quality`, for a page the deploy writes beside the site, was ruled out. prose
+ * can't check that it exists, and it would be a dead link locally and in any other build. A
+ * project that wants one in the bar can commit a short doc that links to it.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -26,8 +32,9 @@ function label(name: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/** The docs to link for a repository whose files (the walk's list) are under `root`. */
-export function docsNav(root: string, files: string[]): NavItem[] {
+/** The docs to link for a repository whose files (the walk's list) are under `root`. Each `nav`
+ * name that isn't a doc is added to `warnings`, when given. */
+export function docsNav(root: string, files: string[], warnings?: string[]): NavItem[] {
   const docs = files
     .filter((path) => /^docs\/[^/]+\.md$/.test(path) && path !== "docs/README.md")
     .sort();
@@ -41,6 +48,13 @@ export function docsNav(root: string, files: string[]): NavItem[] {
     }
   }
   const paths = chosen ? chosen.filter((path) => docs.includes(path)) : docs;
+  for (const path of chosen ?? []) {
+    if (docs.includes(path)) continue;
+    const name = path.slice("docs/".length);
+    warnings?.push(
+      `docs/README.md's nav lists ${name}, which isn't a doc in docs/, so the bar skips it`,
+    );
+  }
   return paths.map((path) => ({ path, label: label(path.slice("docs/".length)) }));
 }
 
