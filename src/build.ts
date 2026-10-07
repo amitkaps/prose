@@ -170,7 +170,7 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
       live: false,
       snapshot: { commit, tag },
       repo: repoUrl(root),
-      nav: docsNav(snapshot, files),
+      nav: docsNav(snapshot, files, warnings),
     };
     const paths = ["", ...folders(files), ...files];
     // Written first, so a source file named `404` keeps its page.

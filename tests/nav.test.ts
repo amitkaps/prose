@@ -2,7 +2,7 @@
  * # Docs nav tests
  *
  * The docs linked in the bar. A `nav` list in `docs/README.md` sets their order, and without one
- * every doc is linked in alphabetical order. Names that aren't files are skipped.
+ * every doc is linked in alphabetical order. Names that aren't docs are skipped, with a warning.
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -22,11 +22,16 @@ function repo(readme: string | null): string[] {
 }
 
 describe("docsNav", () => {
-  it("follows the nav list in docs/README.md, skipping a name that isn't a doc", () => {
-    const files = repo("---\nnav: [usage.md, missing.md, design.md]\n---\n# Docs\n");
-    expect(docsNav(root, files)).toEqual([
+  it("follows the nav list in docs/README.md, skipping and warning about a name that isn't a doc", () => {
+    const files = repo("---\nnav: [usage.md, missing.md, design.md, /quality]\n---\n# Docs\n");
+    const warnings: string[] = [];
+    expect(docsNav(root, files, warnings)).toEqual([
       { path: "docs/usage.md", label: "Usage" },
       { path: "docs/design.md", label: "Design" },
+    ]);
+    expect(warnings).toEqual([
+      "docs/README.md's nav lists missing.md, which isn't a doc in docs/, so the bar skips it",
+      "docs/README.md's nav lists /quality, which isn't a doc in docs/, so the bar skips it",
     ]);
   });
 
