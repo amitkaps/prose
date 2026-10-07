@@ -4,16 +4,18 @@
  * One config for formatting, linting, tests and the build, all run through `vp`. There's no app
  * to build. The one plugin prepares the files the browser gets, for the build and the tests alike.
  *
- * The fixtures in `tests/fixtures/` keep their own style. So `ignored` keeps `vp` out of them
- * when it runs from the root.
+ * Formatting and linting cover every file git tracks, the docs and READMEs included. Both
+ * already skip what `.gitignore` lists, and oxfmt skips lockfiles.
+ *
+ * The one exception is `tests/fixtures/`. A fixture stands in for another project, with tabs and
+ * single quotes, and a test checks that its code shows as written. Lint passes there today, but
+ * skips it too, so a fixture can hold whatever code a test needs.
  */
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { defineConfig } from "vite-plus";
 import { format } from "vite-plus/fmt";
 import { lexJs } from "./src/lexer.js";
-
-const ignored = ["dist/**", "tests/fixtures/**", "docs/**", "README.md", "pnpm-lock.yaml"];
 
 /** @prose
  * # The browser's files
@@ -71,14 +73,14 @@ export default defineConfig({
 
   // oxfmt's defaults, as the editor has them.
   fmt: {
-    ignorePatterns: ignored,
+    ignorePatterns: ["tests/fixtures/**"],
   },
 
   lint: {
     plugins: ["typescript", "unicorn", "import"],
     categories: { correctness: "error" },
     options: { typeAware: true, typeCheck: true },
-    ignorePatterns: ignored,
+    ignorePatterns: ["tests/fixtures/**"],
   },
 
   /** @prose

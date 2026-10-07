@@ -144,6 +144,14 @@ describe("serve: tests/fixtures/simple", () => {
     expect((await get(served.url, "/index.html")).body).toContain('class="block');
   });
 
+  // The fixture keeps another project's style, tabs and single quotes, so the formatter skips it.
+  it("shows code as its file has it, tabs and quotes untouched", async () => {
+    const js = (await get(served.url, "/main.js")).body;
+    expect(js).toContain('<span class="line">\t<span class="constant">output</span>.value');
+    expect(js).toContain(`<span class="string">'#count'</span>`);
+    expect((await get(served.url, "/style.css")).body).toContain('<span class="line">\t--bg');
+  });
+
   it("sends a folder's README.md to the folder's page, which the breadcrumb ends in", async () => {
     const res = await get(served.url, "/README.md");
     expect(res.status).toBe(301);
