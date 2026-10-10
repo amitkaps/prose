@@ -30,7 +30,7 @@ The build and server tests run against the committed [`tests/fixtures/simple`](.
 There are two, in [`.github/workflows/`](../.github/workflows/), and each file's own prose says what it does.
 
 - **`ci.yml`** runs `verify`: the format, lint and type checks, the tests, the build with publint, then the site. It runs on every pull request and every push to `main`. Branch protection requires the check by its name, `ci`.
-- **`release.yml`** runs on a `v*` tag. It checks that the tag matches `package.json`, runs `verify` and packs the tarball. Then it stages the version on npm and attaches the tarball to a GitHub Release. It's the same file in every package, copied from ship.
+- **`release.yml`** runs when a merge changes `package.json`'s version. It runs `verify` and packs the tarball. Then it stages the version on npm, tags the commit `vX.Y.Z` and attaches the tarball to a GitHub Release. It's the same file in every package, copied from ship.
 
 ## What ships
 
@@ -48,13 +48,13 @@ The package is one bundle with no dependencies, about 200 KB unpacked. It's read
 
 Run `pnpm run axe` and `pnpm run keyboard` first, and fix what they find. The audit runs axe on every page of this site, in both colour schemes, at a desktop and a phone width ([tests/axe.ts](../tests/axe.ts)). The keyboard check reads a page of each kind with Tab, Enter, Space and Esc ([tests/keyboard.ts](../tests/keyboard.ts)). Both need Chrome on the machine, so they aren't in CI yet. Running them in the release workflow could come later.
 
-prose releases the way every package does, as [ship's standard](https://github.com/amitkaps/ship/blob/main/docs/standard.md#releases) sets out. Open a pull request that bumps `version`, from a branch named `release-X.Y.Z`, titled `vX.Y.Z` and labelled `internal`. Its description, down to the first `---` line, goes above the release's generated notes. Once it's merged, tag that commit and push the tag.
+prose releases the way every package does, as [ship's standard](https://github.com/amitkaps/ship/blob/main/docs/standard.md#releases) sets out. From ship, open the pull request that bumps `version`. Its description goes above the release's generated notes.
 
 ```sh
-git switch main && git pull && git tag v0.5.0 && git push origin v0.5.0
+pnpm release prose 0.5.0 --notes "What changed for users …"
 ```
 
-The `release` workflow does the rest. The notes are generated from the pull requests' labels (`.github/release.yml`), so there's no changelog file to keep. The site needs no step of its own, because Cloudflare builds it from `main` ([the site](#the-site)).
+Merging it is the release, and the `release` workflow does the rest. The notes are generated from the pull requests' labels (`.github/release.yml`), so there's no changelog file to keep. The site needs no step of its own, because Cloudflare builds it from `main` ([the site](#the-site)).
 
 ### Publishing to npm
 
