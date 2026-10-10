@@ -17,8 +17,7 @@ pnpm install
 pnpm run check         # format, lint and types
 pnpm run test
 pnpm run build         # the library and the command (vp pack)
-pnpm run prose         # read this repository with prose
-pnpm run preview       # build, then read it
+pnpm run prose         # read this repository with the command build wrote
 pnpm run axe           # the accessibility audit, in Chrome
 pnpm run keyboard      # the keyboard check, in Chrome
 ```

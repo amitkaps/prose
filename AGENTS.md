@@ -32,8 +32,7 @@ pnpm install
 pnpm run check         # format, lint and types
 pnpm run test
 pnpm run build         # the library and the command
-pnpm run prose         # read this repository with prose
-pnpm run preview       # build, then read it
+pnpm run prose         # read this repository with the command build wrote
 ```
 
 `tests/build.test.ts` and `tests/server.test.ts` run against the committed `tests/fixtures/simple`, since `prose build` reads `HEAD`. Commit a change to the fixture before testing it.
