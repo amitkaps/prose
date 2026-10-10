@@ -60,7 +60,7 @@ The build also writes a `_headers` file, which Cloudflare and Netlify read. It c
 
 ## For agents
 
-Copy this into the project's `CLAUDE.md` or `AGENTS.md`:
+Link to this section from the project's `AGENTS.md` or `CLAUDE.md`, so it follows the rules as they change. Or copy them in:
 
 ```markdown
 - Every source file opens with a `@prose` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`, except `.github/`, where GitHub would show it in place of the root's.
