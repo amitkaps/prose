@@ -170,7 +170,7 @@ importers:
   .:
     devDependencies:
       '@amitkaps/markz':
-        specifier: 0.4.1
+        specifier: ^0.4.1
         version: 0.4.1
       '@types/node':
         specifier: ^26.6.4
