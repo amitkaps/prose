@@ -84,4 +84,4 @@ In Cloudflare, create a Worker named `prose` from the repository, with these set
 
 The two commands are the same in every project, and `package.json` says what they run. `verify` runs the checks, the tests and the build, then reads the repository into `.prose`. It stops on a failing check, so a merge that breaks one doesn't deploy. `ship` runs `wrangler deploy` on what `verify` built. It's `ship` and not `deploy` because `pnpm deploy` is a pnpm command of its own, which a script by that name can't replace.
 
-Then set the domain on the Worker, in the dashboard. `wrangler.toml` sets up the two things [usage](usage.md#build) asks of a host. It points the Worker at `.prose`, serves `404.html` for a missing address, and serves `/src/store.ts` from `src/store.ts.html`.
+`wrangler.toml` names the domain, `prose.amitkaps.com`, which needs the `amitkaps.com` zone on the same Cloudflare account. It also sets up the two things [usage](usage.md#build) asks of a host. It points the Worker at `.prose`, serves `404.html` for a missing address, and serves `/src/store.ts` from `src/store.ts.html`.
