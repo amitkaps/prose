@@ -26,10 +26,9 @@
     "access": "public"
   },
   "scripts": {
-    "prepack": "vp pack",
+    "prepack": "pnpm run build",
     "dev": "vp pack --watch",
     "build": "vp pack",
-    "preview": "pnpm run build && node dist/cli.js .",
     "check": "vp check",
     "fix": "vp check --fix",
     "test": "vp test --run",
