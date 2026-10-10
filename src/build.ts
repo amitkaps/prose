@@ -111,7 +111,8 @@ function folders(files: string[]): string[] {
  * The build clears its output before writing, so it refuses any folder it didn't make. That's a
  * folder that holds the repository, one with tracked files in it, or a non-empty one without a
  * previous build's marker. It never edits `.gitignore`. It warns when the output would show as
- * untracked files instead, since committing them is rarely what's wanted.
+ * untracked files instead, since committing them is rarely what's wanted. Clearing retries, since
+ * Finder can write a `.DS_Store` into the folder while it's being emptied.
  */
 function prepareOut(root: string, out: string, warnings: string[]): void {
   const rel = relative(out, root);
@@ -131,7 +132,7 @@ function prepareOut(root: string, out: string, warnings: string[]): void {
       `${relative(root, out)} isn't in .gitignore; add ${relative(root, out).split(sep)[0]}/ to keep the site out of the repository`,
     );
   }
-  rmSync(out, { recursive: true, force: true });
+  rmSync(out, { recursive: true, force: true, maxRetries: 3 });
   mkdirSync(out, { recursive: true });
 }
 
