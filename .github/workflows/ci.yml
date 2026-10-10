@@ -32,11 +32,9 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Format, lint and types.
-      - run: pnpm run check
-      - run: pnpm run test
-      # The library.
-      - run: pnpm run build
+      # The same script Cloudflare runs before each deploy: format, lint and types, the tests, the
+      # library, then the site.
+      - run: pnpm run verify
       # The package's `exports`, `files` and types, checked by publint against the packed tarball.
       # It's fetched for this step, not a dependency. arethetypeswrong was ruled out, since it
       # checks for old Node resolution that prose, ESM only on Node 24 and up, doesn't support.

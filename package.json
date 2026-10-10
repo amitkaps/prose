@@ -35,7 +35,9 @@
     "check": "vp check",
     "test": "vp test --run",
     "axe": "pnpm run build && node tests/axe.ts",
-    "keyboard": "pnpm run build && node tests/keyboard.ts"
+    "keyboard": "pnpm run build && node tests/keyboard.ts",
+    "verify": "pnpm check && pnpm test && pnpm build && node dist/cli.js build",
+    "ship": "wrangler deploy"
   },
   "devDependencies": {
     "@amitkaps/markz": "^0.3.0",
@@ -43,13 +45,14 @@
     "axe-core": "^4.14.0",
     "playwright-core": "^1.63.0",
     "typescript": "^7.0.2",
-    "vite-plus": "1.0.0"
+    "vite-plus": "1.0.0",
+    "wrangler": "^4.149.0"
   },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
       "version": "12.9.1",
-      "onFail": "error"
+      "onFail": "download"
     },
     "runtime": {
       "name": "node",

@@ -4,10 +4,9 @@
 # Cloudflare builds this repository's own site from `main`. It serves it as a Worker with static
 # assets, which are only the pages `prose build` writes, with no code.
 #
-# The Worker's build command is `pnpm install && pnpm run build && node dist/cli.js build`. Its
-# deploy command is `pnpm dlx wrangler deploy`, which reads this file. `npx` refuses to run here,
-# since `devEngines` names pnpm. The domain is set on the Worker in the dashboard, not here. The
-# steps are in [development](docs/development.md#the-site).
+# The Worker's build command is `pnpm run verify`, and its deploy command is `pnpm run ship`,
+# which runs `wrangler deploy` and reads this file. The domain is set on the Worker in the
+# dashboard, not here. The steps are in [development](docs/development.md#the-site).
 
 name = "prose"
 compatibility_date = "2026-10-01"
