@@ -45,7 +45,6 @@
     "axe-core": "^4.14.0",
     "playwright-core": "^1.63.0",
     "publint": "^0.3.25",
-    "typescript": "^7.0.2",
     "vite-plus": "1.1.0",
     "wrangler": "^4.149.0"
   },
