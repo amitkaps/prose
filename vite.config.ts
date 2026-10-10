@@ -104,7 +104,7 @@ export default defineConfig({
     platform: "node",
     // `type: "module"` already makes `.js` ESM; tsdown's Node default would emit `.mjs`.
     fixedExtension: false,
-    dts: true,
+    dts: { generator: "oxc" },
     sourcemap: false,
     banner: { js: "/*! @amitkaps/prose · MIT License · https://github.com/amitkaps/prose */" },
     outputOptions: { comments: { legal: true, annotation: true, jsdoc: false } },
