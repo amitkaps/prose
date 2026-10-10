@@ -26,26 +26,27 @@
     "access": "public"
   },
   "scripts": {
-    "prepack": "pnpm run build",
-    "build": "vp pack",
+    "prepack": "vp pack",
     "dev": "vp pack --watch",
+    "build": "vp pack",
     "preview": "pnpm run build && node dist/cli.js .",
-    "fmt": "vp fmt",
-    "lint": "vp lint",
     "check": "vp check",
+    "fix": "vp check --fix",
     "test": "vp test --run",
     "axe": "pnpm run build && node tests/axe.ts",
     "keyboard": "pnpm run build && node tests/keyboard.ts",
-    "verify": "pnpm check && pnpm test && pnpm build && node dist/cli.js build",
+    "prose": "node dist/cli.js",
+    "verify": "pnpm check && pnpm test && pnpm build && pnpm prose build",
     "ship": "wrangler deploy"
   },
   "devDependencies": {
-    "@amitkaps/markz": "^0.3.0",
-    "@types/node": "^24.0.0",
+    "@amitkaps/markz": "^0.4.0",
+    "@types/node": "^26.6.4",
     "axe-core": "^4.14.0",
     "playwright-core": "^1.63.0",
+    "publint": "^0.3.25",
     "typescript": "^7.0.2",
-    "vite-plus": "1.0.0",
+    "vite-plus": "1.1.0",
     "wrangler": "^4.149.0"
   },
   "devEngines": {
@@ -56,12 +57,12 @@
     },
     "runtime": {
       "name": "node",
-      "version": ">=24",
+      "version": ">=26",
       "onFail": "error"
     }
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "packageManager": "pnpm@12.9.1"
 }

@@ -4,7 +4,7 @@ Install it, read a repository with it, write `@prose` as you build, and publish 
 
 ## Install
 
-It runs on the current Node and the previous LTS, which today are 26 and 24. Install it from npm, into a project or globally.
+prose needs Node 26 or newer, the Node it's built and tested on. Install it from npm, into a project or globally.
 
 ```sh
 pnpm add -D @amitkaps/prose

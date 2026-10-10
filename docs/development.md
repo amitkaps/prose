@@ -8,7 +8,7 @@ How to work on prose itself: build it, test it, release it and deploy its site. 
 
 prose installs as one package, with no dependencies. markz is a dev dependency, so the build bundles it into `dist/`. Anything else it needs is written here, or bundled the same way.
 
-prose supports the current Node and the previous LTS, which today are 26 and 24. So `engines` and `devEngines` say `>=24`, `@types/node` follows the older one, and CI runs the tests on both.
+prose supports the Node it's built and tested on. So `engines` and `devEngines` both say `>=26`, `@types/node` is 26, and CI runs on one Node.
 
 ## Build and test
 
@@ -17,7 +17,7 @@ pnpm install
 pnpm run check         # format, lint and types
 pnpm run test
 pnpm run build         # the library and the command (vp pack)
-node dist/cli.js .     # read this repository with prose
+pnpm run prose         # read this repository with prose
 pnpm run preview       # build, then read it
 pnpm run axe           # the accessibility audit, in Chrome
 pnpm run keyboard      # the keyboard check, in Chrome
@@ -29,8 +29,8 @@ The build and server tests run against the committed [`tests/fixtures/simple`](.
 
 There are two, in [`.github/workflows/`](../.github/workflows/), and each file's own prose says what it does.
 
-- **`ci.yml`** runs the format, lint and type checks, the tests and the build, then checks the package with publint. It runs on every pull request and every push to `main`. Branch protection requires the check by its name, `ci`.
-- **`release.yml`** runs on a `v*` tag. It checks that the tag matches `package.json`, runs the checks and tests, and builds. Then it stages the version on npm and attaches `amitkaps-prose-<version>.tgz` to a GitHub Release.
+- **`ci.yml`** runs `verify`: the format, lint and type checks, the tests, the build with publint, then the site. It runs on every pull request and every push to `main`. Branch protection requires the check by its name, `ci`.
+- **`release.yml`** runs on a `v*` tag. It checks that the tag matches `package.json`, runs `verify` and packs the tarball. Then it stages the version on npm and attaches the tarball to a GitHub Release. It's the same file in every package, copied from ship.
 
 ## What ships
 
@@ -42,19 +42,19 @@ The package is one bundle with no dependencies, about 200 KB unpacked. It's read
 - **Types with their documentation.** `dist/index.d.ts` keeps the comment above each export, `@prose` included, so an editor shows it on hover. Nothing strips it. Each export's comment is written for that use ([writing](writing.md#in-each-language)).
 - **No sourcemaps.** They would carry every source file whole, prose included, at twice the size of the code. The source is on GitHub.
 
-CI runs [publint](https://publint.dev) on the packed tarball, fetched for the step, not installed. It checks `exports`, `files` and the types. arethetypeswrong was ruled out, because it tests old Node resolution that an ESM package for Node 24 and up doesn't support.
+`vp pack` runs [publint](https://publint.dev) on the package, and fails the build on a problem. It checks `exports`, `files` and the types. arethetypeswrong was ruled out, because it tests old Node resolution that an ESM package for Node 26 doesn't support.
 
 ## Release
 
 Run `pnpm run axe` and `pnpm run keyboard` first, and fix what they find. The audit runs axe on every page of this site, in both colour schemes, at a desktop and a phone width ([tests/axe.ts](../tests/axe.ts)). The keyboard check reads a page of each kind with Tab, Enter, Space and Esc ([tests/keyboard.ts](../tests/keyboard.ts)). Both need Chrome on the machine, so they aren't in CI yet. Running them in the release workflow could come later.
 
-Bump `version` in `package.json` and merge to `main`. Then tag the release and push the tag.
+prose releases the way every package does, as [ship's standard](https://github.com/amitkaps/ship/blob/main/docs/standard.md#releases) sets out. Open a pull request that bumps `version`, from a branch named `release-X.Y.Z`, titled `vX.Y.Z` and labelled `internal`. Its description, down to the first `---` line, goes above the release's generated notes. Once it's merged, tag that commit and push the tag.
 
 ```sh
-git tag v0.4.0 && git push origin v0.4.0
+git switch main && git pull && git tag v0.5.0 && git push origin v0.5.0
 ```
 
-The `release` workflow does the rest. The site needs no step of its own, because Cloudflare builds it from `main` ([the site](#the-site)).
+The `release` workflow does the rest. The notes are generated from the pull requests' labels (`.github/release.yml`), so there's no changelog file to keep. The site needs no step of its own, because Cloudflare builds it from `main` ([the site](#the-site)).
 
 ### Publishing to npm
 

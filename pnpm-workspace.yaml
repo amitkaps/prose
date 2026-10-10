@@ -4,9 +4,19 @@
 # pnpm holds back a version for a while after it's published. markz is ours, so a new release of
 # it can come in straight away. Drop the entry once that wait has passed.
 minimumReleaseAgeExclude:
-  - "@amitkaps/markz@0.3.0"
+  - "@amitkaps/markz@0.4.0"
 
 # Dependencies allowed to run install scripts: wrangler's native binaries.
 allowBuilds:
   esbuild: true
   workerd: true
+
+# @prose
+# Vite+ ships its own build of Vite, and every `vite` in the tree is pointed at it. Bump this
+# alongside the `vite-plus` devDependency, in every repository at once (ship's standard).
+overrides:
+  "vite@*": "npm:@voidzero-dev/vite-plus-core@1.1.0"
+
+peerDependencyRules:
+  allowAny:
+    - vite

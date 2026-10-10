@@ -1,9 +1,9 @@
 # @prose
 # # CI
 #
-# Runs on every pull request and every push to `main`. The `ci` job checks format, lint and
-# types, runs the tests, builds, then checks the package as npm would get it. Branch protection
-# requires that exact check name. A second job, `node-24`, runs the tests on the previous LTS.
+# Runs on every pull request and every push to `main`. The `ci` job runs `verify`: format, lint
+# and types, the tests, the build with publint, then the site. Branch protection requires that
+# exact check name.
 
 name: ci
 
@@ -33,22 +33,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # The same script Cloudflare runs before each deploy: format, lint and types, the tests, the
-      # library, then the site.
+      # library with publint, then the site.
       - run: pnpm run verify
-      # The package's `exports`, `files` and types, checked by publint against the packed tarball.
-      # It's fetched for this step, not a dependency. arethetypeswrong was ruled out, since it
-      # checks for old Node resolution that prose, ESM only on Node 24 and up, doesn't support.
-      - run: pnpm dlx publint@0.3 --strict
-
-  # The oldest Node `engines` allows; not a required check.
-  node-24:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run test
