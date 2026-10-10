@@ -22,6 +22,20 @@ function repo(readme: string | null): string[] {
 }
 
 describe("docsNav", () => {
+  it("warns when docs/README.md's metadata can't be read, and lists every doc", () => {
+    const files = repo("---\nnav:\n  - usage.md\n---\n# Docs\n");
+    const warnings: string[] = [];
+    expect(docsNav(root, files, warnings).map((item) => item.label)).toEqual([
+      "Design",
+      "Getting started",
+      "Usage",
+    ]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(
+      /^docs\/README\.md line 3: .*, so the bar lists every doc in alphabetical order$/,
+    );
+  });
+
   it("follows the nav list in docs/README.md, skipping and warning about a name that isn't a doc", () => {
     const files = repo("---\nnav: [usage.md, missing.md, design.md, /quality]\n---\n# Docs\n");
     const warnings: string[] = [];
