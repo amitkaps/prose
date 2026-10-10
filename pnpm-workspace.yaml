@@ -5,3 +5,8 @@
 # it can come in straight away. Drop the entry once that wait has passed.
 minimumReleaseAgeExclude:
   - "@amitkaps/markz@0.3.0"
+
+# Dependencies allowed to run install scripts: wrangler's native binaries.
+allowBuilds:
+  esbuild: true
+  workerd: true

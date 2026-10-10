@@ -77,7 +77,11 @@ The workflow skips a version that's already on the registry.
 In Cloudflare, create a Worker named `prose` from the repository, with these settings.
 
 - **Production branch:** `main`
-- **Build command:** `pnpm install && pnpm run build && node dist/cli.js build`
-- **Deploy command:** `pnpm dlx wrangler deploy`
+- **Build command:** `pnpm run verify`
+- **Deploy command:** `pnpm run ship`
+- **Build variable:** `NODE_VERSION` set to `26`, since Cloudflare reads pnpm's version from the repository but not Node's.
+- **Build cache:** on.
 
-Then set the domain on the Worker, in the dashboard. `wrangler.toml` sets up the two things [usage](usage.md#build) asks of a host. It points the Worker at `.prose`, serves `404.html` for a missing address, and serves `/src/store.ts` from `src/store.ts.html`. The deploy command uses `pnpm dlx`, not `npx`, because `npx` refuses to run in a repository whose `devEngines` names pnpm.
+The two commands are the same in every project, and `package.json` says what they run. `verify` runs the checks, the tests and the build, then reads the repository into `.prose`. It stops on a failing check, so a merge that breaks one doesn't deploy. `ship` runs `wrangler deploy` on what `verify` built. It's `ship` and not `deploy` because `pnpm deploy` is a pnpm command of its own, which a script by that name can't replace.
+
+Then set the domain on the Worker, in the dashboard. `wrangler.toml` sets up the two things [usage](usage.md#build) asks of a host. It points the Worker at `.prose`, serves `404.html` for a missing address, and serves `/src/store.ts` from `src/store.ts.html`.
