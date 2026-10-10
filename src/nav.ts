@@ -8,7 +8,8 @@
  * `docs/README.md` makes that choice with a `nav` list in its metadata, like
  * `nav: [design.md, usage.md]`. With no list, every Markdown file in `docs/` is linked, in
  * alphabetical order. A name that isn't a file there is skipped, and `prose build` warns about it,
- * so a misspelt name doesn't drop out of the bar unnoticed. The local server doesn't, since it
+ * so a misspelt name doesn't drop out of the bar unnoticed. So does metadata markz can't read,
+ * which would otherwise turn the bar alphabetical with no word why. The local server doesn't, since it
  * reads the list on every request. The label is the file's name, capitalised and without `.md`.
  * A doc's title is often a sentence, too long for the bar.
  *
@@ -41,8 +42,18 @@ export function docsNav(root: string, files: string[], warnings?: string[]): Nav
   let chosen: string[] | null = null;
   if (files.includes("docs/README.md")) {
     try {
-      const nav = parse(readFileSync(join(root, "docs/README.md"), "utf-8")).metadata?.["nav"];
+      const source = readFileSync(join(root, "docs/README.md"), "utf-8");
+      const doc = parse(source);
+      const nav = doc.metadata?.["nav"];
       if (Array.isArray(nav)) chosen = nav.map((name) => `docs/${String(name)}`);
+      else {
+        for (const w of doc.warnings.filter((w) => w.code.startsWith("metadata"))) {
+          const line = source.slice(0, w.start).split("\n").length;
+          warnings?.push(
+            `docs/README.md line ${line}: ${w.message}, so the bar lists every doc in alphabetical order`,
+          );
+        }
+      }
     } catch {
       chosen = null;
     }
