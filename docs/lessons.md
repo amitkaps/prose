@@ -30,6 +30,7 @@ Besides this repository, prose has been used on two projects. sitez is a static 
 - **Publishing belongs to a site generator.** markz's site renders its `prose/` docs in place as its pages, and sitez generalizes that, so a folder of Markdown is a site. It works because the docs link by repo path. They were also rewritten into neutral, current prose (markz #62), not left as a record of the conversation. So prose doesn't publish. It keeps the same files readable locally ([writing](writing.md#folders-and-docs)).
 - **A command to publish wasn't needed either.** `prose publish` committed a built site to a branch. The one site that could have used it deploys from `main` with a Cloudflare Worker instead ([development](development.md#the-site)).
 - **Each host keeps its own files.** The build has no `CNAME`, `.nojekyll` or other host config. Each host changes its files, credentials and rules on its own schedule, so a project keeps its host's config in its own repository.
+- **Clearing the output can race Finder.** sitez's build failed twice with `ENOTEMPTY` while clearing `.prose`, which had a `.DS_Store` in it. Finder writes one into a folder that's open, and it landed after the folder was emptied but before it was removed. `rmSync`'s `maxRetries` retries on `ENOTEMPTY`, so the build clears with it.
 
 ## What the code taught
 
