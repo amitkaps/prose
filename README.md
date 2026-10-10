@@ -29,7 +29,7 @@ let count = 0;
 
 ## Install and run
 
-It runs on the current Node and the previous LTS, which today are 26 and 24.
+prose needs Node 26 or newer, the Node it's built and tested on.
 
 ```sh
 npm install -g @amitkaps/prose

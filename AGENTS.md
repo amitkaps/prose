@@ -32,7 +32,7 @@ pnpm install
 pnpm run check         # format, lint and types
 pnpm run test
 pnpm run build         # the library and the command
-node dist/cli.js .     # read this repository with prose
+pnpm run prose         # read this repository with prose
 pnpm run preview       # build, then read it
 ```
 

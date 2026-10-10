@@ -108,6 +108,8 @@ export default defineConfig({
     sourcemap: false,
     banner: { js: "/*! @amitkaps/prose · MIT License · https://github.com/amitkaps/prose */" },
     outputOptions: { comments: { legal: true, annotation: true, jsdoc: false } },
+    // publint checks the package's `exports`, `files` and types, and fails the build on a problem.
+    publint: { strict: true },
     plugins: [built],
   },
 
