@@ -58,3 +58,10 @@ The `@prose` convention and the read-only renderer work. This repository is read
 
 - **Comment links on GitHub.** `src/store.ts#adding` works in the renderer, but GitHub scrolls only to a line, like `#L42`. Either accept it, or let whatever publishes the docs map links to lines.
 - **A map command.** `prose outline` could print every first paragraph, if the grep in [the agent rules](usage.md#for-agents) proves too noisy for agents.
+- **A project's own pages as elements.** A doc could hold a standalone page as a Markz element, such as markz's Quality page as `{@markz-quality}`, or ship's drift tables. markz already writes the tag. prose would add the script that defines it, written any way a custom element can be, and never run the project's build. The page would then sit in prose's frame, and couldn't drift from its bar. It waits, because two working pages don't pay for what it adds.
+  - A place for the scripts. prose has no folders or options of its own, only the docs it links in the bar.
+  - A way in for data. An element needs data the project's code generates, and prose reads only what is committed.
+  - The project's code in the browser. `prose .` would run each repository's scripts, including a repository someone else wrote.
+  - Exceptions to [design](design.md#what-it-isnt). prose would become a little of a site generator, and a little part of the app.
+  - An iframe is the way to try first, and it needs nothing from prose. markz refuses `{@iframe}`, but an `=html` block passes `<iframe src="/quality.html">` through. The page keeps its own look, and its scripts run in their own document. It has a fixed height, follows the system's theme rather than prose's switch, and needs `target="_top"` on its links. `prose .` may not serve a page the project generates.
+  - Revisit it with a third standalone page, or a request from a repository that isn't ours. An element format such as sitez's elementz isn't needed, since a custom element is the browser's own standard.
