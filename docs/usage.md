@@ -112,7 +112,7 @@ It's for the writer of a file, right after writing it. So it isn't part of `pros
 | `colon`         | a colon joins two ideas, with a lowercase clause after it                      |
 | `parenthetical` | a parenthesis holds an aside, not a link, an example or a gloss of a few words |
 
-Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A colon that leads into a list, or labels a list item, as in `- [a.ts](a.ts): what it does`, gets no suggestion. Text marked `-prose` gets no advice, as it gets no warnings, and its page still reads as any other.
+Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A colon that leads into a list, or labels a list item, as in `- [a.ts](a.ts): what it does`, gets no suggestion. A file that `.gitattributes` marks `-prose` gets no advice, as it gets no warnings ([warnings](#warnings)).
 
 ## For agents
 
