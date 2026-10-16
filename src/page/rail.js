@@ -16,10 +16,14 @@
       rail.scrollTop = saved.scroll;
     }
   } catch {}
+  // Set by hand, since `scrollIntoView` would also move where the keyboard's Tab starts from.
   const current = rail.querySelector("[aria-current]");
   if (current) {
     const r = current.getBoundingClientRect();
-    if (r.top < 0 || r.bottom > innerHeight) current.scrollIntoView({ block: "center" });
+    if (r.top < 0 || r.bottom > innerHeight) {
+      rail.scrollTop +=
+        r.top + r.height / 2 - rail.getBoundingClientRect().top - rail.clientHeight / 2;
+    }
   }
   addEventListener("pagehide", () => {
     try {
