@@ -7,7 +7,8 @@
  * ([design](../docs/design.md#what-it-isnt)).
  *
  * Only text `prose check` reads is asked. A Markdown file is prose already, and JSON can't hold a
- * comment, so neither is read for `@prose`.
+ * comment, so neither is read for `@prose`. Nor is HTML, since a hand-written page is served with
+ * its comments ([writing](../docs/writing.md#in-each-language)).
  */
 import { readFileSync } from "node:fs";
 import { join, posix } from "node:path";
@@ -19,7 +20,7 @@ export type PresenceCode = "no-prose" | "no-readme" | "undocumented-export";
 
 /** A source file prose reads that has no prose comment. */
 export function noProse(root: string, path: string): Warning<PresenceCode>[] {
-  if (!isSource(root, path) || extensionOf(path) === "md") return [];
+  if (!isSource(root, path) || ["md", "html"].includes(extensionOf(path))) return [];
   if ((fileToNode(root, path).comments ?? []).length) return [];
   return [
     {
