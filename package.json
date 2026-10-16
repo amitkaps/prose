@@ -35,7 +35,7 @@
     "axe": "pnpm run build && node tests/axe.ts",
     "keyboard": "pnpm run build && node tests/keyboard.ts",
     "prose": "node dist/cli.js",
-    "verify": "pnpm check && pnpm test && pnpm build && pnpm prose build",
+    "verify": "pnpm check && pnpm test && pnpm build && pnpm prose check && pnpm prose build",
     "ship": "wrangler deploy"
   },
   "devDependencies": {
