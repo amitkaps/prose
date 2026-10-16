@@ -35,17 +35,18 @@
     "axe": "pnpm run build && node tests/axe.ts",
     "keyboard": "pnpm run build && node tests/keyboard.ts",
     "prose": "node dist/cli.js",
-    "verify": "pnpm check && pnpm test && pnpm build && pnpm prose check && pnpm prose build",
-    "ship": "wrangler deploy"
+    "verify": "pnpm check && pnpm test && pnpm build && pnpm prose check && pnpm prose build && vp build",
+    "ship": "cf deploy --prebuilt"
   },
   "devDependencies": {
     "@amitkaps/markz": "^0.4.2",
+    "@cloudflare/vite-plugin": "2.0.0-beta.sha-67fa336fd",
     "@types/node": "^26.6.5",
     "axe-core": "^4.14.0",
+    "cf": "1.0.0-beta.17",
     "playwright-core": "^1.64.1",
     "publint": "^0.3.25",
-    "vite-plus": "1.2.0",
-    "wrangler": "^4.151.0"
+    "vite-plus": "1.2.0"
   },
   "devEngines": {
     "packageManager": {

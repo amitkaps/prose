@@ -1,7 +1,7 @@
 # @prose
 # # What git leaves out
 #
-# Dependencies, build output, secrets, and the output of prose and wrangler. None of them should
+# Dependencies, build output, secrets, and the output of prose and Cloudflare's Vite plugin. None of them should
 # reach a commit or the published site.
 
 node_modules/
@@ -13,4 +13,4 @@ dist/
 .DS_Store
 vite.config.ts.timestamp-*
 .prose/
-.wrangler/
+.cloudflare/
