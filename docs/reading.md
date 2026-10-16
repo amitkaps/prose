@@ -15,7 +15,9 @@ A page's address is its file's path in the repository. So a relative link in the
 
 ## Around the page
 
-The text is on the left and the file tree on the right. The page grows with a wide window, so a wide screen shows more page and less margin. Tables and code samples in the prose can be wider than the text, up to the width of a code run.
+The text is on the left and the file tree on the right. The page grows with a wide window, so a wide screen shows more page and less margin. Tables and code samples in the prose can be wider than the text, up to the width of a code run. They keep to the text's width only while a table of contents sits beside it.
+
+- **Tables are rows, not a grid.** A rule runs between rows, under a quiet header. A cell wraps between words, so each column is at least as wide as its longest word, as on GitHub. A column aligned in the Markdown, like `---:`, keeps its alignment. A table too wide for the page scrolls, with a shadow at the edge that's cut off, and a row's own heading stays in place.
 
 - **Each project has its own colour.** One of eight accents is picked by a hash of the project's name, with no config ([src/accent.ts](../src/accent.ts)). It marks links, focus, the current file and the section being read. The tab's icon is a square in that colour, with the project's first letter.
 - **Every page has a title.** A page whose text has no heading, like `package.json` or a folder without a README, shows its name as one.

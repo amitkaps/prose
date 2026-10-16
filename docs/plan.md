@@ -6,6 +6,10 @@ Where the project is and what comes next, in order. Finished work gets a line or
 
 The `@prose` convention and the read-only renderer work. This repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.4.0, on npm as `@amitkaps/prose` and as a GitHub release tarball.
 
+### Since 0.4.0
+
+- **Tables that read well.** Rows with no grid, a quiet header, and cells that wrap between words, so a column of short words keeps its room. A table that scrolls shows it, and `---:` alignment now shows. A doc with no table of contents lets a table grow to a code run's width, which ship's dashboard needed ([reading](reading.md#around-the-page)).
+
 ### 0.4.0
 
 - **The site on Cloudflare.** A Worker builds from `main`, so a merge deploys it ([development](development.md#the-site)). `prose publish` was dropped, since the one site that could use it deploys without it.
