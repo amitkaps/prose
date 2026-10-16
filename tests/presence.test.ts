@@ -41,6 +41,7 @@ describe("files and folders", () => {
         "src/b.ts": `${summary("B")}export const b = 2;\n`,
         "config.yaml": "key: value\n",
         "data.json": "{}\n",
+        "index.html": "<!doctype html>\n<p>A page.</p>\n",
         ".vscode/settings.json": "{}\n",
         "pkg/.github/workflows/ci.yml": "on: push\n",
         "docs/README.md": "# Docs\n",
