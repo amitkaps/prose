@@ -36,6 +36,9 @@ npm install -g @amitkaps/prose
 prose .            # read this repository in the browser
 prose build        # the same pages as static files, from the last commit
 prose check        # what the text gets wrong, by file and line
+prose style        # advice on how the text reads
 ```
 
 Or without installing: `npx @amitkaps/prose .`.
+
+`prose check` fails when it finds anything, so it can run in CI. `prose style` is for the writer of a file, right after writing it, and always passes ([usage](docs/usage.md#style)).
