@@ -68,11 +68,18 @@
  * # The section being read
  *
  * The contents mark the section being read as the page scrolls. That's the last heading whose top
- * has passed a line a little under the bar. Choosing a heading from the folded contents folds
- * them again, so the text it goes to isn't pushed down.
+ * has passed a line a little under the bar. The breadcrumb ends with that section's name, once
+ * the reader has reached one.
+ *
+ * The section's name opens the contents in the rail: the popover on a narrow screen, or the docked
+ * tree if it's closed. Choosing a heading from the popover closes it, so the text shows.
  */
 {
   const links = [...document.querySelectorAll(".toc a")];
+  const section = document.querySelector(".where .section");
+  const rail = document.getElementById("rail");
+  const pane = rail.querySelector(".toc-rail");
+  let shown;
   const idOf = (a) => decodeURIComponent(a.hash.slice(1));
   const targets = [...new Set(links.map(idOf))]
     .map((id) => document.getElementById(id))
@@ -87,6 +94,21 @@
       current = t.id;
     }
     for (const a of links) a.classList.toggle("here", idOf(a) === current);
+    // The rail's contents scroll on their own, so its mark is kept in view there, not the page's.
+    const marked = pane?.querySelector("a.here");
+    if (marked && current !== shown) {
+      shown = current;
+      const { offsetTop: top, offsetHeight: height } = marked;
+      if (top < pane.scrollTop || top + height > pane.scrollTop + pane.clientHeight) {
+        pane.scrollTop = top - pane.clientHeight / 2;
+      }
+    }
+    if (section) {
+      const reached = targets[0].getBoundingClientRect().top <= line;
+      section.hidden = !reached;
+      const named = links.find((a) => idOf(a) === current);
+      if (reached && named) section.querySelector("button").textContent = named.textContent;
+    }
   };
   if (targets.length) {
     addEventListener(
@@ -98,9 +120,14 @@
     );
     mark();
   }
-  for (const a of document.querySelectorAll(".toc-top a")) {
+  section?.querySelector("button").addEventListener("click", () => {
+    if (matchMedia("(max-width: 62rem)").matches) rail.showPopover();
+    else document.getElementById("dock").checked = false;
+    (pane.querySelector("a.here") ?? pane.querySelector("a")).focus();
+  });
+  for (const a of rail.querySelectorAll(".toc-rail a")) {
     a.addEventListener("click", () => {
-      a.closest("details").open = false;
+      if (rail.matches(":popover-open")) rail.hidePopover();
     });
   }
 }

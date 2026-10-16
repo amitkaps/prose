@@ -225,8 +225,11 @@
  * # The frame
  *
  * The bar and the page share one container, so both take their margins from its width.
- * `--docked` is how much of that width the docked tree holds. It animates, so the column and the
- * margins move together.
+ * `--docked` is how much of that width the docked tree holds. It animates, so the column slides.
+ *
+ * The text's margin, `--side`, sets aside the tree's width wherever the tree can dock, open or
+ * not. So the text sits where the window puts it. Opening or closing the tree only shows or hides
+ * the tree, and the space it leaves stays empty.
  */
 @property --docked {
   syntax: "<length>";
@@ -237,7 +240,8 @@
   .shell {
     container-type: inline-size;
     --docked: var(--rail);
-    --side: clamp(2rem, calc((100cqw - var(--docked) - var(--measure)) / 2), var(--lead));
+    --reserve: var(--rail);
+    --side: clamp(2rem, calc((100cqw - var(--reserve) - var(--measure)) / 2), var(--lead));
     transition: --docked var(--slide) ease;
   }
   .layout {
@@ -399,6 +403,7 @@
   .shell {
     @media (max-width: 62rem) {
       --docked: 0rem;
+      --reserve: 0rem;
     }
   }
   .rail {
@@ -666,6 +671,10 @@
     }
     & .editor {
       white-space: nowrap;
+      /* It opens an editor on the desktop, and would wrap the row onto a second line. */
+      @media (max-width: 40rem) {
+        display: none;
+      }
     }
   }
   .rail-foot {
@@ -840,7 +849,7 @@
     & table,
     & pre.highlighted {
       width: max-content;
-      max-width: min(var(--wide), calc(100cqw - var(--docked) - 2 * var(--side)));
+      max-width: min(var(--wide), calc(100cqw - var(--reserve) - 2 * var(--side)));
     }
     & pre.highlighted {
       min-width: 100%;
@@ -1182,16 +1191,50 @@
 /** @prose
  * # On this page
  *
- * The table of contents folds under the breadcrumb. Where there's room, it's a column beside the
- * page instead. On a doc it sits past the text, and on a source file past the code. The room
- * depends on whether the tree is docked, so each width is given twice.
+ * Where the window has room, the table of contents is a column beside the page: past the text on
+ * a doc, and past the code on a source file. It's as far from the text as the text is from the
+ * window's left edge, with 2rem to spare before the tree. That takes 89rem on a doc and 105rem on
+ * a source file, with room set aside for the tree, so the window alone decides it.
+ *
+ * Elsewhere it's at the top of the rail, above the files, as an editor's outline is. It stays put
+ * as the files scroll beneath it, and scrolls on its own when it's long. The breadcrumb's row then
+ * stays under the bar, and ends with the section being read, which opens it.
+ *
+ * Neither place takes room from the text, so the text never moves for the contents.
  *
  * Beside the page, its label lines up with the breadcrumb. It starts at the same `--top` and has
  * the same line box, so the two stay level as either changes.
  */
 @layer components {
   .prose :is(h2, h3, h4) {
-    scroll-margin-top: calc(var(--bar) + 1rem);
+    scroll-margin-top: calc(var(--bar) + var(--stuck, 0rem) + 1rem);
+  }
+  main:has(.toc-side) {
+    /* The breadcrumb's row, held under the bar. */
+    --stuck: 2.5rem;
+    & .where {
+      position: sticky;
+      top: var(--bar);
+      z-index: 2;
+      /* Padding the margins take back, so the text starts where it does on any other page. */
+      padding-block: 0.5rem;
+      margin-block: -0.5rem 2rem;
+      background: var(--paper);
+    }
+  }
+  .where .section {
+    white-space: nowrap;
+    & button {
+      color: var(--ink);
+      max-width: 16rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: inherit;
+      vertical-align: top;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
   .toc {
     & ul {
@@ -1212,31 +1255,50 @@
       padding-left: 0.75rem;
     }
   }
-  .toc-top {
-    margin: -1.5rem 0 1.5rem;
-    font-size: var(--text-s);
-    & summary {
-      cursor: pointer;
+  .toc-rail {
+    flex: none;
+    position: sticky;
+    /* Over the rail's top padding, which a sticky box would otherwise stop below, so nothing
+       shows above it. */
+    top: -0.75rem;
+    z-index: 1;
+    margin: -0.75rem 0 0.75rem;
+    padding: 0 0 0.5rem;
+    max-height: 40vh;
+    overflow-y: auto;
+    background: var(--panel);
+    border-bottom: 1px solid var(--rule);
+    /* The label holds the pane's top padding, so the headings scroll under it with no gap. */
+    & p {
+      position: sticky;
+      top: 0;
+      margin: 0 0 0.25rem;
+      padding: 0.95rem var(--edge) 0.2rem;
+      background: var(--panel);
       color: var(--muted);
-      width: max-content;
-      &:hover {
-        color: var(--ink);
-      }
-    }
-    & ul {
-      margin: 0.5rem 0 0;
-      padding-left: 0.75rem;
-      border-left: 1px solid var(--rule);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
     & a {
-      padding: 0.15rem 0;
+      padding: 0.2rem var(--edge);
+      &:hover {
+        background: var(--rule);
+      }
+      &.here {
+        box-shadow: inset 2px 0 var(--accent);
+      }
+    }
+    & .toc-3 a {
+      padding-left: calc(var(--edge) + var(--step));
     }
   }
   .toc-side {
     display: none;
     position: absolute;
     inset-block: 0;
-    left: calc(var(--side) + var(--toc-after) + 3rem);
+    left: calc(2 * var(--side) + var(--toc-after));
     width: 13rem;
     font-size: var(--text-s);
     line-height: var(--leading-snug);
@@ -1267,40 +1329,43 @@
       border-left-color: var(--accent);
     }
   }
-  @container (min-width: 68rem) {
-    .shell:has(#dock:checked) main:not(.has-code) {
-      &:has(.toc-side) {
-        --wide: var(--measure);
-      }
+  @container (min-width: 89rem) {
+    main:not(.has-code):has(.toc-side) {
+      --stuck: 0rem;
+      --wide: var(--measure);
       & .toc-side {
         display: block;
       }
-      & .toc-top {
+      & .where {
+        position: static;
+        padding-block: 0;
+        margin-block: 0 2.5rem;
+      }
+      & .where .section {
         display: none;
       }
     }
-  }
-  @container (min-width: 84rem) {
-    main:not(.has-code):has(.toc-side) {
-      --wide: var(--measure);
-    }
-    main:not(.has-code) .toc-side,
-    .shell:has(#dock:checked) main .toc-side {
-      display: block;
-    }
-    main:not(.has-code) .toc-top,
-    .shell:has(#dock:checked) main .toc-top {
+    .layout:has(main:not(.has-code)) .toc-rail {
       display: none;
     }
   }
-  @container (min-width: 100rem) {
-    main {
+  @container (min-width: 105rem) {
+    main:has(.toc-side) {
+      --stuck: 0rem;
       & .toc-side {
         display: block;
       }
-      & .toc-top {
+      & .where {
+        position: static;
+        padding-block: 0;
+        margin-block: 0 2.5rem;
+      }
+      & .where .section {
         display: none;
       }
+    }
+    .toc-rail {
+      display: none;
     }
   }
 }

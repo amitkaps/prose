@@ -92,14 +92,14 @@ function renderDir(dir: Dir, prefix: string, current: string, depth: number): st
   return rows.join("");
 }
 
-/** The rail for a page at `current` (`""`, `src/`, or `src/store.ts`). A folder's `README.md` is
+/** The rail's contents for a page at `current` (`""`, `src/`, or `src/store.ts`). A folder's `README.md` is
  *  listed first in it and links to the folder's page, where it is highlighted instead of the
  *  folder's own row. */
 export function renderRail(files: string[], current: string, project: string, footer = ""): string {
   const top = index(files);
-  return `<nav class="rail" id="rail" popover aria-label="Files"><a class="rail-project" href="/"${
+  return `<a class="rail-project" href="/"${
     current === "" && !top.files.includes("README.md") ? ` aria-current="page"` : ""
-  }>${escapeHtml(project)}</a><ul class="rail-tree">${renderDir(top, "", current, 0)}</ul>${footer}</nav>`;
+  }>${escapeHtml(project)}</a><ul class="rail-tree">${renderDir(top, "", current, 0)}</ul>${footer}`;
 }
 
 /** What a built page was made from: the short commit, and the tag only when `HEAD` is that tag. */

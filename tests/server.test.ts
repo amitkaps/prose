@@ -83,26 +83,34 @@ describe("sourceBody", () => {
 });
 
 describe("tableOfContents", () => {
-  it("lists a doc's second- and third-level headings by their ids, folded and beside the page", () => {
-    const toc = tableOfContents(
+  it("lists a doc's second- and third-level headings by their ids, beside the page and in the rail", () => {
+    const { side, rail, crumb } = tableOfContents(
       '<h1 id="t">T</h1><h2 id="a">A</h2><h3 id="b">B <code>x</code></h3><h4 id="c">C</h4><h2 id="d">D</h2>',
     );
-    expect(toc).toContain('<details class="toc toc-top"><summary>On this page</summary>');
-    expect(toc).toContain('<nav class="toc toc-side" aria-label="On this page">');
-    expect(toc).toContain('<li class="toc-3"><a href="#b">B x</a></li>');
-    expect(toc).not.toContain('href="#c"');
-    expect(toc).not.toContain('href="#t"');
+    expect(side).toContain('<nav class="toc toc-side" aria-label="On this page">');
+    expect(rail).toContain('<nav class="toc toc-rail" aria-label="On this page">');
+    for (const toc of [side, rail]) {
+      expect(toc).toContain('<li class="toc-3"><a href="#b">B x</a></li>');
+      expect(toc).not.toContain('href="#c"');
+      expect(toc).not.toContain('href="#t"');
+    }
+    // The script names the section being read, so the crumb starts empty and hidden.
+    expect(crumb).toContain('<span class="section" hidden>');
   });
 
   it("lists a comment's heading by its id, without its # link", () => {
     const block = (id: string) =>
       `<section class="block"><div class="prose"><h2 id="${id}"><a class="anchor" href="#${id}" aria-label="Link to this section">#</a>${id}</h2></div></section>`;
-    const toc = tableOfContents(block("one") + block("two") + block("three"));
+    const toc = tableOfContents(block("one") + block("two") + block("three")).side;
     expect(toc).toContain('<li class="toc-2"><a href="#two">two</a></li>');
   });
 
   it("has none for a page with fewer than three", () => {
-    expect(tableOfContents('<h2 id="a">A</h2><h2 id="b">B</h2>')).toBe("");
+    expect(tableOfContents('<h2 id="a">A</h2><h2 id="b">B</h2>')).toEqual({
+      side: "",
+      rail: "",
+      crumb: "",
+    });
   });
 });
 
