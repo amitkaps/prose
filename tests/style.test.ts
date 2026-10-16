@@ -75,7 +75,7 @@ describe("styleAdvice", () => {
   });
   afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-  it("places advice at the file's own line and column, and skips text marked -prose", () => {
+  it("places advice at the file's own line and column, and skips files .gitattributes marks -prose", () => {
     expect(styleAdvice(root, projectFiles(root))).toMatchObject([
       { path: "README.md", code: "semicolon", line: 3, column: 9 },
       { path: "src/a.ts", code: "semicolon", line: 4, column: 12 },
