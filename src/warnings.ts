@@ -181,11 +181,11 @@ export function fileWarnings(root: string, path: string, run: Run): Warning[] {
  * # Text prose doesn't check
  *
  * A repository can hold text that isn't held to its rules, like fixtures or a corpus of other
- * projects' docs. `-prose` in `.gitattributes` says so, with git's own syntax, so there's no
- * config file. A file `.gitattributes` marks `-prose` isn't checked, and its page still reads as any other.
+ * projects' docs. `prose-unchecked` in `.gitattributes` says so, as linguist's attributes do, so
+ * there's no config file. Such a file isn't checked, and its page still reads as any other.
  *
  * `linguist-vendored` and `linguist-generated` leave a file out too. They were the only way
- * before `-prose`, and they also hide a file from GitHub's languages. That suits copied-in code,
+ * before `prose-unchecked`, and they also hide a file from GitHub's languages. That suits copied-in code,
  * but not a repository's own tests. Outside a git repository, every file is checked.
  */
 export function unchecked(repo: string, files: string[]): Set<string> {
@@ -194,13 +194,11 @@ export function unchecked(repo: string, files: string[]): Set<string> {
   try {
     const out = execFileSync(
       "git",
-      ["check-attr", "-z", "--stdin", "prose", "linguist-vendored", "linguist-generated"],
+      ["check-attr", "-z", "--stdin", "prose-unchecked", "linguist-vendored", "linguist-generated"],
       { cwd: repo, input: files.join("\0"), encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] },
     ).split("\0");
     for (let i = 0; i + 2 < out.length; i += 3) {
-      const [path, attribute, value] = [out[i]!, out[i + 1], out[i + 2]];
-      const off = attribute === "prose" ? ["unset", "false"] : ["set", "true"];
-      if (off.includes(value!)) marked.add(path);
+      if (["set", "true"].includes(out[i + 2]!)) marked.add(out[i]!);
     }
   } catch {
     // Not a git repository: nothing is marked.

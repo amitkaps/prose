@@ -10,7 +10,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 
 - **More checks.** `prose check` warns about a link to a file or heading that isn't there, a heading that skips a level, `@prose` sharing its line, and a summary with no title. It also warns about a file with no `@prose`, a folder with no `README.md`, and an export a library ships with no comment ([usage](usage.md#warnings)). A repository that upgrades will likely see new warnings.
 - **Advice on style.** `prose style` reads the files just written for long summaries, long sentences, and colons, semicolons or asides that join two ideas. It always passes, and never shows on a page ([usage](usage.md#style)).
-- **What isn't checked is counted.** A file `.gitattributes` marks `-prose`, `linguist-vendored` or `linguist-generated` isn't checked. Both commands end with how many files they read and how many were left out. A local page says when its file wasn't checked.
+- **What isn't checked is counted.** A file `.gitattributes` marks `prose-unchecked`, `linguist-vendored` or `linguist-generated` isn't checked. Both commands end with how many files they read and how many were left out. A local page says when its file wasn't checked.
 
 ### 0.5.0
 
@@ -55,7 +55,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 
 - [ ] **Checks for more of the rules.** `prose check` reads more of [the agent rules](usage.md#for-agents), in five steps. Each was run on markz, sitez, ship and pagez first, to see what it finds. The first four are in 0.6.0.
   - Advice on style, from `prose style` on the files just written. It's never in CI or on a page. Done ([usage](usage.md#style)).
-  - Read `.gitattributes` for prose, and a `-prose` attribute for text that isn't checked, like fixtures. Done ([usage](usage.md#warnings)).
+  - Read `.gitattributes` for prose, and a `prose-unchecked` attribute for text that isn't checked, like fixtures. Done ([usage](usage.md#warnings)).
   - Warnings on structure. A link to a file or heading that isn't there, a heading that skips a level, `@prose` on one line with its text, and a file's summary with no heading. Done ([usage](usage.md#warnings)). A later comment may open with `##` under a `#` before it, since markz nests 84 that way, so only a skip warns.
   - Warnings on what's missing. A source file with no `@prose`, a folder with no `README.md`, and a library's export with no comment. Done ([usage](usage.md#warnings)). A folder of only JSON, like `.vscode/`, isn't asked for a README.
   - One term for each concept, from a short glossary, as a note.

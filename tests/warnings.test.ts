@@ -84,7 +84,7 @@ describe("a repository's warnings", () => {
       "src/a.ts": "/** @prose\n * # A\n *\n * A *star*.\n */\nexport const a = 1;\n",
       "src/b.ts": "/** @prose\n * # B\n *\n * One idea; another.\n */\nexport const b = 1;\n",
       ".gitattributes":
-        "# @prose\n# # Attributes\n#\n# Text that isn't ours; prose leaves it alone.\nvendor/** linguist-vendored\nfixtures/** -prose\n",
+        "# @prose\n# # Attributes\n#\n# Text that isn't ours; prose leaves it alone.\nvendor/** linguist-vendored\nfixtures/** prose-unchecked\n",
     };
     for (const [path, text] of Object.entries(files)) {
       mkdirSync(join(root, path, ".."), { recursive: true });
@@ -94,7 +94,7 @@ describe("a repository's warnings", () => {
   });
   afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-  it("reports the bar's warnings first, then each file's, with no advice on style, and skips files .gitattributes marks -prose or vendored", () => {
+  it("reports the bar's warnings first, then each file's, with no advice on style, and skips files .gitattributes marks prose-unchecked or vendored", () => {
     const found = contentWarnings(root, projectFiles(root));
     expect(found.map((w) => `${w.path}:${w.line} ${w.code}`)).toEqual([
       "docs/README.md:2 nav-missing",
