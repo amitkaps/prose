@@ -2,8 +2,9 @@
  * # Warnings tests
  *
  * What markz and prose report about a repository's text, at the file's own line and column. The
- * one-line form `check` and `build` print, the files `.gitattributes` marks as someone else's, and
- * the list at the foot of a local page that a built page never has.
+ * one-line form `check` and `build` print, a note told apart from a warning, the files
+ * `.gitattributes` marks as someone else's, and the list at the foot of a local page that a built
+ * page never has.
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -18,6 +19,7 @@ import {
   contentWarnings,
   formatWarning,
   markdownWarnings,
+  tally,
 } from "../src/warnings.js";
 
 describe("formatWarning", () => {
@@ -38,11 +40,29 @@ describe("formatWarning", () => {
   });
 });
 
+describe("tally", () => {
+  it("counts warnings and notes apart, leaving out a level with none", () => {
+    const warning = { code: "uncommitted", message: "x" } as const;
+    const note = { code: "semicolon", message: "x", level: "note" } as const;
+    expect(tally([warning, warning, note])).toBe("2 warnings and 1 note");
+    expect(tally([note, note])).toBe("2 notes");
+    expect(tally([warning])).toBe("1 warning");
+  });
+});
+
 describe("markdownWarnings", () => {
   it("places a warning at the file's own line, metadata included", () => {
     const source = "---\ntitle: X\n---\n# X\n\nSome __strong__ text.\n";
     expect(markdownWarnings("x.md", source)).toMatchObject([
       { code: "underscore-strong", path: "x.md", line: 6, column: 6, instead: "`**strong**`" },
+    ]);
+  });
+
+  it("gives a note its level and its place, among the warnings in order", () => {
+    const source = "# X\n\nOne idea; another __strong__ one.\n";
+    expect(markdownWarnings("x.md", source)).toMatchObject([
+      { code: "semicolon", level: "note", line: 3, column: 9 },
+      { code: "underscore-strong", line: 3, column: 19 },
     ]);
   });
 });
@@ -79,6 +99,7 @@ describe("a repository's warnings", () => {
       "docs/usage.md": "# Usage\n\n## Checks\n\n{@section #checks}\n{/section}\n",
       "vendor/theirs.md": "# Theirs\n\n[ref][x]\n",
       "src/a.ts": "/** @prose\n * # A\n *\n * A *star*.\n */\nexport const a = 1;\n",
+      "src/b.ts": "/** @prose\n * # B\n *\n * One idea; another.\n */\nexport const b = 1;\n",
       ".gitattributes": "vendor/** linguist-vendored\n",
     };
     for (const [path, text] of Object.entries(files)) {
@@ -96,6 +117,7 @@ describe("a repository's warnings", () => {
       "README.md:3 underscore-strong",
       "docs/usage.md:5 duplicate-id",
       "src/a.ts:4 star-emphasis",
+      "src/b.ts:4 semicolon",
     ]);
   });
 
@@ -108,6 +130,10 @@ describe("a repository's warnings", () => {
     );
     const home = renderRoute(site, "");
     expect(home.status === 200 && home.html).toContain("underscore-strong");
+    const notes = renderRoute(site, "src/b.ts");
+    expect(notes.status === 200 && notes.html).toContain(
+      '<aside class="warnings notes" aria-label="Notes"><p>1 note in this file</p>',
+    );
     const built = renderRoute({ ...site, live: false }, "src/a.ts");
     expect(built.status === 200 && built.html).not.toContain('class="warnings"');
     const theirs = renderRoute(site, "vendor/theirs.md");

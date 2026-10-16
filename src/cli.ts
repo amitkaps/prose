@@ -4,8 +4,8 @@
  *
  * The command. `prose` serves a repository and opens it in the browser. `prose build` writes the
  * same pages as static files, for any host to serve. `prose check` reads the same text for what it
- * gets wrong, and fails if it finds anything, so CI can stop a merge ([warnings.ts](warnings.ts)).
- * There's no config.
+ * gets wrong, and fails on a warning, so CI can stop a merge. A note is printed, but passes
+ * ([warnings.ts](warnings.ts)). There's no config.
  *
  * `check` reads the working tree, as `prose .` does, not the commit a build publishes. So it
  * never warns about uncommitted changes, or about where a build would go.
@@ -20,7 +20,7 @@ import { resolve } from "node:path";
 import { build } from "./build.js";
 import { serve } from "./server.js";
 import { projectFiles } from "./tree.js";
-import { contentWarnings, formatWarning } from "./warnings.js";
+import { contentWarnings, formatWarning, tally, type Warning } from "./warnings.js";
 
 const HELP = `Usage: prose [dir] [options]
        prose build [dir] [--out <dir>]
@@ -28,7 +28,7 @@ const HELP = `Usage: prose [dir] [options]
 
 Open a repository in the browser as a Markdown-first document. Read-only.
 \`prose build\` writes the same pages as a static site, from the last commit.
-\`prose check\` prints what the text gets wrong, and fails if it finds anything.
+\`prose check\` prints what the text gets wrong, and fails on a warning.
 
 Options:
   --port <n>   Port to try first (default 1234; the next free one if taken)
@@ -43,6 +43,11 @@ function version(): string {
     version: string;
   };
   return pkg.version;
+}
+
+/** `prose: note: docs/x.md:3:5: semicolon: …`, on stderr. */
+function report(w: Warning): void {
+  process.stderr.write(`prose: ${w.level ?? "warning"}: ${formatWarning(w)}\n`);
 }
 
 function openBrowser(url: string): void {
@@ -86,22 +91,19 @@ async function main(argv: string[]): Promise<void> {
   }
   if (building) {
     const built = await build(dir, { out });
-    for (const w of built.warnings) process.stderr.write(`prose: warning: ${formatWarning(w)}\n`);
+    built.warnings.forEach(report);
     process.stdout.write(`prose: ${built.pages} pages from ${built.version}\n  ${built.out}\n`);
     return;
   }
   if (command === "check") {
     const root = resolve(dir);
     const warnings = contentWarnings(root, projectFiles(root));
-    for (const w of warnings) process.stderr.write(`prose: warning: ${formatWarning(w)}\n`);
+    warnings.forEach(report);
     if (warnings.length) {
       const files = new Set(warnings.map((w) => w.path)).size;
-      const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-      process.stderr.write(
-        `prose: ${count(warnings.length, "warning")} in ${count(files, "file")}\n`,
-      );
-      process.exitCode = 1;
+      process.stderr.write(`prose: ${tally(warnings)} in ${files} file${files === 1 ? "" : "s"}\n`);
     }
+    if (warnings.some((w) => w.level !== "note")) process.exitCode = 1;
     return;
   }
   const served = await serve(resolve(dir), { port });

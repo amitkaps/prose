@@ -47,6 +47,12 @@ The `@prose` convention and the read-only renderer work. This repository is read
 
 ## Next, in order
 
+- [ ] **Checks for more of the rules.** `prose check` reads more of [the agent rules](usage.md#for-agents), in five steps. Each was run on markz, sitez, ship and pagez first, to see what it finds.
+  - Notes on style, which print but pass. Done ([usage](usage.md#notes)).
+  - Read `.gitattributes` for prose, and a `-prose` attribute for text that isn't checked, like fixtures and copied-in files. The linguist attributes also hide a file from GitHub's languages, which tests shouldn't be.
+  - Warnings on structure. A link to a file or heading that isn't there, a later comment that opens with `##`, `@prose` on one line with its text, and a file's summary with no heading.
+  - Warnings on what's missing. A source file with no `@prose`, a folder with no `README.md`, and a library's export with no comment. JSON can't hold `@prose`, so it's never asked for.
+  - One term for each concept, from a short glossary, as a note.
 - [ ] **Use it on base, sitez and markz.**
   - Install the latest release, and remove `prose()` from their Vite configs. Replace the snippet in their `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.
   - Move `prose/` to `docs/` in sitez and markz, with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website, so that moves to `site/` first, with its root scripts, workspace, package name and CI paths.
