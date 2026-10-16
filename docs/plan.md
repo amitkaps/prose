@@ -4,13 +4,18 @@ Where the project is and what comes next, in order. Finished work gets a line or
 
 ## Where it is
 
-The `@prose` convention and the read-only renderer work. This repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.6.0, on npm as `@amitkaps/prose` and as a GitHub release tarball.
+The `@prose` convention and the read-only renderer work. This repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.7.0, on npm as `@amitkaps/prose` and as a GitHub release tarball.
+
+### 0.7.0
+
+- **`prose-unchecked`, not `-prose`.** The attribute that leaves a file out of `prose check` and `prose style` is now `prose-unchecked`, like `linguist-vendored`. `-prose` read as "no prose", and it's no longer read ([usage](usage.md#warnings)).
+- **HTML isn't asked for `@prose`.** A hand-written page is served with its comments, so `no-prose` leaves `.html` out, as it does Markdown ([writing](writing.md#in-each-language)).
 
 ### 0.6.0
 
 - **More checks.** `prose check` warns about a link to a file or heading that isn't there, a heading that skips a level, `@prose` sharing its line, and a summary with no title. It also warns about a file with no `@prose`, a folder with no `README.md`, and an export a library ships with no comment ([usage](usage.md#warnings)). A repository that upgrades will likely see new warnings.
 - **Advice on style.** `prose style` reads the files just written for long summaries, long sentences, and colons, semicolons or asides that join two ideas. It always passes, and never shows on a page ([usage](usage.md#style)).
-- **What isn't checked is counted.** A file `.gitattributes` marks `prose-unchecked`, `linguist-vendored` or `linguist-generated` isn't checked. Both commands end with how many files they read and how many were left out. A local page says when its file wasn't checked.
+- **What isn't checked is counted.** A file `.gitattributes` marks `-prose`, `linguist-vendored` or `linguist-generated` isn't checked. Both commands end with how many files they read and how many were left out. A local page says when its file wasn't checked.
 
 ### 0.5.0
 
