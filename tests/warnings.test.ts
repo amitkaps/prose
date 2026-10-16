@@ -2,8 +2,8 @@
  * # Warnings tests
  *
  * What markz and prose report about a repository's text, at the file's own line and column. The
- * one-line form `check` and `build` print, the files `.gitattributes` leaves out, and the list at
- * the foot of a local page that a built page never has.
+ * one-line form `check` and `build` print, the files `.gitattributes` leaves out and how many, and
+ * the list at the foot of a local page that a built page never has.
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -14,6 +14,7 @@ import { parseFile } from "../src/parser.js";
 import { renderRoute, type Site } from "../src/server.js";
 import { projectFiles } from "../src/tree.js";
 import {
+  checkedCount,
   commentWarnings,
   contentWarnings,
   formatWarning,
@@ -102,6 +103,11 @@ describe("a repository's warnings", () => {
     ]);
   });
 
+  it("counts the files it read, apart from the ones .gitattributes leaves out", () => {
+    // All eight are read for prose, `.gitattributes` among them, and two are left out.
+    expect(checkedCount(root, projectFiles(root))).toEqual({ checked: 6, left: 2 });
+  });
+
   it("lists a local page's own warnings at its foot, linked to the editor, and a built page's never", () => {
     const files = projectFiles(root);
     const site: Site = { root, project: "demo", files, live: true, nav: [] };
@@ -116,9 +122,13 @@ describe("a repository's warnings", () => {
     expect(styled.status === 200 && styled.html).not.toContain('class="warnings"');
     const built = renderRoute({ ...site, live: false }, "src/a.ts");
     expect(built.status === 200 && built.html).not.toContain('class="warnings"');
-    const theirs = renderRoute(site, "vendor/theirs.md");
-    expect(theirs.status === 200 && theirs.html).not.toContain('class="warnings"');
-    const fixture = renderRoute(site, "fixtures/sample.md");
-    expect(fixture.status === 200 && fixture.html).not.toContain('class="warnings"');
+    // A file left out says so, rather than looking clean.
+    for (const path of ["vendor/theirs.md", "fixtures/sample.md"]) {
+      const page = renderRoute(site, path);
+      expect(page.status === 200 && page.html).toContain("Not checked, since");
+      expect(page.status === 200 && page.html).not.toContain("warning-code");
+      const built = renderRoute({ ...site, live: false }, path);
+      expect(built.status === 200 && built.html).not.toContain('class="warnings"');
+    }
   });
 });

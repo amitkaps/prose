@@ -65,10 +65,11 @@ prose check             # what the text gets wrong, by file and line
 prose check docs        # another folder
 ```
 
-`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It prints nothing when the text is clean.
+`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It always ends with how many files it read, and how many `.gitattributes` left out.
 
 ```text
 prose: warning: docs/usage.md:12:5: reference-link: reference link; write inline links
+prose: 1 warning in 1 file, of 84 files checked, 12 left out by .gitattributes
 ```
 
 Each warning has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds three of its own.
@@ -81,7 +82,7 @@ Each warning has a place, a code, what's wrong and what to write instead. Most c
 
 The last two are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
 
-Text that isn't held to the rules isn't checked, like fixtures or a corpus of other projects' docs. Mark it `-prose` in `.gitattributes`. Its page still reads as any other.
+Some files aren't held to the rules, like fixtures or a corpus of other projects' docs. Mark them `-prose` in `.gitattributes`, and `prose check` leaves them out. Their pages still read as any other, and on `prose .` each says it wasn't checked.
 
 ```text
 tests/fixtures/** -prose
@@ -129,6 +130,7 @@ Link to this section from the project's `AGENTS.md` or `CLAUDE.md`, so it follow
 - State a rule once. If a doc or a tested file owns it, link to it by repo path and keep only how and why this code does it.
 - Decisions made in the chat go into the prose in the same change. One that spans files goes into the doc it changes, and one about a single spot goes into the `@prose` there. Write docs for a reader who wasn't in the chat, since they may be published as they are. When something is ruled out, write down that it's out and why, so it isn't rebuilt.
 - If the project keeps a plan, keep it current, with what's done in one line each and what's next in order.
+- Never mark a file `-prose` in `.gitattributes` to quiet a warning. Fix the text. `-prose` is for files that are wrong on purpose, like fixtures.
 - After writing prose, run `prose style` on the files you changed. Rewrite where a suggestion helps the reader, and leave it where it doesn't. Never split or reword a sentence only to make a suggestion go away.
 - To find your way, `grep -rn -A4 "@prose" src` is the map, and `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet. Add an `--include` for each other language the project writes.
 ```

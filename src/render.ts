@@ -158,8 +158,14 @@ export function binaryBody(node: TreeNode): string {
  * It comes after the text, so it never moves it. Each line links to its place in the editor, and
  * the page reloads with the list redone when the file is saved. Advice on style never shows here,
  * since a page is for reading ([style.ts](style.ts)).
+ *
+ * A file `.gitattributes` leaves out says so in the same place. With no notice it would look
+ * clean, when it was never checked.
  */
-export function warningsNotice(warnings: Warning[], link: (w: Warning) => string): string {
+export function warningsNotice(warnings: Warning[] | null, link: (w: Warning) => string): string {
+  if (warnings === null) {
+    return `<aside class="warnings" aria-label="Warnings"><p>Not checked, since <code>.gitattributes</code> leaves this file out</p></aside>`;
+  }
   if (warnings.length === 0) return "";
   const items = warnings.map((w) => {
     const what = renderSummary(`${w.message}${w.instead ? `; write ${w.instead}` : ""}`);

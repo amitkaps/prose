@@ -10,7 +10,9 @@
  * ([style.ts](style.ts)).
  *
  * `check` and `style` read the working tree, as `prose .` does, not the commit a build publishes.
- * So `check` never warns about uncommitted changes, or about where a build would go.
+ * So `check` never warns about uncommitted changes, or about where a build would go. `check` always
+ * ends with how many files it read, and how many `.gitattributes` left out. A skip is never
+ * silent, and a wrong folder doesn't pass as clean.
  *
  * The flags are only the few a person would reach for. They set the port, skip opening the
  * browser, and say where a build goes ([build.ts](build.ts)). What each page shows is in
@@ -23,7 +25,7 @@ import { build } from "./build.js";
 import { serve } from "./server.js";
 import { styleAdvice } from "./style.js";
 import { projectFiles } from "./tree.js";
-import { contentWarnings, formatWarning, type Warning } from "./warnings.js";
+import { checkedCount, contentWarnings, formatWarning, type Warning } from "./warnings.js";
 
 const HELP = `Usage: prose [dir] [options]
        prose build [dir] [--out <dir>]
@@ -136,15 +138,18 @@ async function main(argv: string[]): Promise<void> {
   }
   if (command === "check") {
     const root = resolve(dir);
-    const warnings = contentWarnings(root, projectFiles(root));
+    const files = projectFiles(root);
+    const warnings = contentWarnings(root, files);
     warnings.forEach(report);
+    const { checked, left } = checkedCount(root, files);
+    const read = `${count(checked, "file")} checked${left ? `, ${left} left out by .gitattributes` : ""}`;
     if (warnings.length) {
-      const files = new Set(warnings.map((w) => w.path)).size;
+      const where = new Set(warnings.map((w) => w.path)).size;
       process.stderr.write(
-        `prose: ${count(warnings.length, "warning")} in ${count(files, "file")}\n`,
+        `prose: ${count(warnings.length, "warning")} in ${count(where, "file")}, of ${read}\n`,
       );
       process.exitCode = 1;
-    }
+    } else process.stdout.write(`prose: ${read}\n`);
     return;
   }
   const served = await serve(resolve(dir), { port });
