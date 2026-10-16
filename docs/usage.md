@@ -106,10 +106,11 @@ prose style docs/usage.md src/store.ts   # advice on the files you just wrote
 prose style docs                         # a folder
 ```
 
-`prose style` gives advice on how the files you name read, against [the agent rules](#for-agents). It prints one suggestion a line, like a warning, and always passes. With no path, it reads every file.
+`prose style` gives advice on how the files you name read, against [the agent rules](#for-agents). It prints one suggestion a line, like a warning, and always passes. With no path, it reads every file. It ends with how many files it read, as `prose check` does.
 
 ```text
 prose: style: docs/usage.md:20:31: semicolon: semicolon joining two ideas; write two sentences
+prose: 1 suggestion in 1 file, of 12 files read
 ```
 
 It's for the writer of a file, right after writing it. So it isn't part of `prose check` and never shows on a page. A count of words is only a guess at what's hard to read. In CI or on every page, it would teach an agent to dodge the count. Rewrite where a suggestion helps the reader, not to make it go away.

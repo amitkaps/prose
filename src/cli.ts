@@ -63,8 +63,10 @@ const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
  * # `prose style`
  *
  * Advice on the files or folders named, relative to where it runs, or on every file with none.
- * It's printed to stdout, since it's what was asked for, and it always exits 0. A path that holds
- * nothing prose reads is named, so a typo isn't mistaken for clean text.
+ * It's printed to stdout, since it's what was asked for, and it always exits 0.
+ *
+ * It ends with how many files it read, as `prose check` does. A path that holds nothing prose
+ * reads is named, so a typo isn't mistaken for clean text.
  */
 function style(paths: string[]): void {
   const root = resolve(".");
@@ -78,12 +80,20 @@ function style(paths: string[]): void {
   }
   const advice = styleAdvice(root, [...files].sort());
   for (const a of advice) process.stdout.write(`prose: style: ${formatWarning(a)}\n`);
-  if (advice.length) {
-    const where = new Set(advice.map((a) => a.path)).size;
-    process.stdout.write(
-      `prose: ${count(advice.length, "suggestion")} in ${count(where, "file")}\n`,
-    );
-  }
+  const read = readCount(root, [...files], "read");
+  const where = new Set(advice.map((a) => a.path)).size;
+  process.stdout.write(
+    advice.length
+      ? `prose: ${count(advice.length, "suggestion")} in ${count(where, "file")}, of ${read}\n`
+      : `prose: no suggestions, of ${read}\n`,
+  );
+}
+
+/** How many files a command read, and how many `.gitattributes` left out, so a skip is never
+ *  silent. */
+function readCount(root: string, files: string[], verb: string): string {
+  const { checked, left } = checkedCount(root, files);
+  return `${count(checked, "file")} ${verb}${left ? `, ${left} left out by .gitattributes` : ""}`;
 }
 
 function openBrowser(url: string): void {
@@ -141,8 +151,7 @@ async function main(argv: string[]): Promise<void> {
     const files = projectFiles(root);
     const warnings = contentWarnings(root, files);
     warnings.forEach(report);
-    const { checked, left } = checkedCount(root, files);
-    const read = `${count(checked, "file")} checked${left ? `, ${left} left out by .gitattributes` : ""}`;
+    const read = readCount(root, files, "checked");
     if (warnings.length) {
       // A folder's warning, like a missing README, is on its path with a trailing slash.
       const paths = [...new Set(warnings.map((w) => w.path))];
