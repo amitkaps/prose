@@ -206,7 +206,9 @@ function codeRun(text: string, lang: string, startLine: number): string {
  * # A source file as one document
  *
  * The file's first comment, then each later one in source order, with its code between them.
- * The first is the top of the page, and its headings stay as written. Every later comment's
+ * The first is the top of the page, and its headings stay as written.
+ *
+ * Every later comment's
  * headings go one level down (`demote`), so a comment can open with `#` and the file's title is
  * still the page's only `h1`. Code shows by default, and the page's **Prose only** switch folds
  * it (`page`). A file with no prose says so, above its code.
@@ -273,7 +275,9 @@ function withAnchor(prose: string): string {
  *
  * A long page's second- and third-level headings, as a table of contents. It sits beside the
  * text where the window is wide enough, and at the top of the rail where it isn't, as an editor's
- * outline sits by its files. It's read from the page as rendered, so a doc and a source file get
+ * outline sits by its files.
+ *
+ * It's read from the page as rendered, so a doc and a source file get
  * the same one. A page with fewer than three headings has none, since a short page is its own
  * contents.
  *

@@ -24,11 +24,13 @@ const PARALLEL = 8;
 /** @prose
  * # What's accepted
  *
- * A task list's checkbox has no label, and axe's `label` rule flags it. markz writes it as GFM
- * and GitHub do, unlabelled and disabled. It's skipped by Tab, and a screen reader reads the
- * item's text right after it. A label like _Done_ would repeat the state without naming the task,
- * and one naming the task would need ids that can clash with headings. So the finding is accepted,
- * and only these checkboxes are left out of that one rule. Any other missing label still fails.
+ * A task list's checkbox has no label, and axe's `label` rule flags it. That finding is accepted
+ * for these checkboxes alone, and any other missing label still fails.
+ *
+ * markz writes the checkbox as GFM and GitHub do, unlabelled and disabled. It's skipped by Tab,
+ * and a screen reader reads the item's text right after it. A label like _Done_ would repeat the
+ * state without naming the task, and one naming the task would need ids that can clash with
+ * headings.
  */
 const ACCEPTED: Record<string, string> = {
   label: ':is(li, li > p) > input[type="checkbox"][disabled]',

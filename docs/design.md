@@ -15,7 +15,7 @@ It is built for one person's repositories, up to about 500 files.
 
 ## Why
 
-**The human keeps the mental model by reading prose, not code.** One person works with coding agents that change code faster than anyone can read it. The human needs a model of the whole design: what the project promises, how it fits together, and why. The agent writes the code and most of the prose. The human reads the prose and gives direction in the chat.
+**The human keeps the mental model by reading prose, not code.** One person works with coding agents that change code faster than anyone can read it. The human needs a model of the whole design. That's what the project promises, how it fits together, and why. The agent writes the code and most of the prose. The human reads the prose and gives direction in the chat.
 
 **The agent explains as it builds.** The human gives direction, and the agent changes the code. In the same change, the agent updates the `@prose` next to that code and any doc the change affects. The human reads the result and redirects. The explanation sits in the code it explains, so a diff that changes one without the other shows it.
 

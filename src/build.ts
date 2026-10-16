@@ -113,8 +113,9 @@ function folders(files: string[]): string[] {
 /** @prose
  * # A safe output folder
  *
- * The build clears its output before writing, so it refuses any folder it didn't make. That's a
- * folder that holds the repository, one with tracked files in it, or a non-empty one without a
+ * The build clears its output before writing, so it refuses any folder it didn't make.
+ *
+ * That's a folder that holds the repository, one with tracked files in it, or a non-empty one without a
  * previous build's marker. It never edits `.gitignore`. It warns when the output would show as
  * untracked files instead, since committing them is rarely what's wanted. Clearing retries, since
  * Finder can write a `.DS_Store` into the folder while it's being emptied.

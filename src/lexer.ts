@@ -27,8 +27,9 @@ export interface Token {
 /** @prose
  * # A regex or a division
  *
- * A `/` can start a regex or divide, and only the token before it tells which. After a value,
- * like a name, a number, a string, `)` or `]`, it divides. After an operator, an opening bracket
+ * A `/` can start a regex or divide, and only the token before it tells which.
+ *
+ * After a value, like a name, a number, a string, `)` or `]`, it divides. After an operator, an opening bracket
  * or a keyword like `return`, it starts a regex. A `}` counts as the end of a block, so a regex
  * may follow it. An object literal divided by something is rarer than a statement that starts
  * with a regex.

@@ -1,6 +1,6 @@
 # The page
 
-What the browser gets: the page's frame, its stylesheet and its scripts. They're written as ordinary HTML, CSS and JS, so the editor, the formatter and the linter treat them as code.
+What the browser gets. That's the page's frame, its stylesheet and its scripts. They're written as ordinary HTML, CSS and JS, so the editor, the formatter and the linter treat them as code.
 
 The build imports each one with `?built`, which strips its comments and formats it ([vite.config.ts](../../vite.config.ts)). So the prose stays in the repository, and the browser gets clean, readable code. Nothing is minified ([assets.ts](../assets.ts)).
 

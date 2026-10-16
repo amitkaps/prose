@@ -113,9 +113,11 @@ const GITHUB_MARK = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden
 /** @prose
  * # The rail's footer
  *
- * The bottom of the rail says what the page is. A page served locally says **Live**, with a dot
- * that dims when the page loses the server. A built page says **Snapshot**, with the commit it
- * was built from. It names a tag only when that commit is the tag. The nearest earlier tag would
+ * The bottom of the rail says what the page is. A page served locally says **Live**, and a built
+ * page says **Snapshot**.
+ *
+ * Live has a dot that dims when the page loses the server. Snapshot has the commit the page was
+ * built from. It names a tag only when that commit is the tag. The nearest earlier tag would
  * name a release the page isn't. When `origin` is on GitHub, a GitHub mark links to the
  * repository, and the commit and tag link to their pages.
  */
