@@ -96,11 +96,13 @@ A note is advice on style, from [the agent rules](#for-agents). A warning is a f
 
 Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A colon that leads into a list, or labels a list item, as in `- [a.ts](a.ts): what it does`, isn't a note.
 
-Text the repository didn't write isn't checked, like a test corpus of other projects' docs. Mark it `linguist-vendored` or `linguist-generated` in `.gitattributes`, as GitHub reads it.
+Text that isn't held to the rules isn't checked, like fixtures or a corpus of other projects' docs. Mark it `-prose` in `.gitattributes`. Its page still reads as any other.
 
 ```text
-test/corpus/** linguist-vendored
+tests/fixtures/** -prose
 ```
+
+`linguist-vendored` and `linguist-generated` leave a file out too, as GitHub reads them. They also hide it from the repository's languages on GitHub. So they suit copied-in code, but not a repository's own tests.
 
 ## For agents
 

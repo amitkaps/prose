@@ -67,15 +67,15 @@ A prose comment's link is its first heading's id, made the way GitHub makes one 
 
 This is reference, for when something surprises you. The rule is the same everywhere. A prose comment's first word is `@prose`, and the comment starts its own line, at any depth. So a class can read method by method. A comment that shares its line with code, like `call(/** @prose … */ x)`, is an ordinary comment.
 
-| Language                 | Prose comment                     |
-| ------------------------ | --------------------------------- |
-| JS, TS, CSS              | `/** @prose … */`                 |
-| HTML, markup             | `<!-- @prose … -->`               |
-| YAML, TOML, `.gitignore` | `# @prose …`, with one `#` a line |
+| Language                                   | Prose comment                     |
+| ------------------------------------------ | --------------------------------- |
+| JS, TS, CSS                                | `/** @prose … */`                 |
+| HTML, markup                               | `<!-- @prose … -->`               |
+| YAML, TOML, `.gitignore`, `.gitattributes` | `# @prose …`, with one `#` a line |
 
 - **The body is Markdown**, in [markz](https://github.com/amitkaps/markz)'s dialect. That's everyday GFM with a few cuts, listed in its [syntax](https://markz.amitkaps.com/docs/syntax.md). Two catch people. Emphasis is `_x_`, and `*x*` stays as written. Raw HTML stays as text too. A comment that uses a cut form shows it on the page as written.
 - **JS, TS and CSS.** The body is everything after `@prose`, with each line's leading `*` stripped. A `*/` in the body would end the comment, so write `*\/`, and it shows as `*/`. TypeScript treats `@prose` as a JSDoc tag, so an editor's hover shows the prose as that tag's text.
-- **YAML, TOML and `.gitignore`.** These have no block comment. A prose comment is a run of `#` lines that starts with `# @prose`, with each line's `# ` stripped. It ends at the first line that isn't a comment, or at the next `# @prose`.
+- **YAML, TOML, `.gitignore` and `.gitattributes`.** These have no block comment. A prose comment is a run of `#` lines that starts with `# @prose`, with each line's `# ` stripped. It ends at the first line that isn't a comment, or at the next `# @prose`.
 - **Not shell or Python.** Neither is used in the projects prose reads, and Python's docstrings and indentation would need rules nobody tests. A shell file shows as highlighted text, and a Python file as plain text.
 - **HTML and Svelte.** Each part follows its own language. `<script>` follows JS or TS, the markup follows HTML, and `<style>` follows CSS. Prose from all three parts reads in source order. So an element's file can keep the why of a build helper in its template's `<script>`, and of a selector in its `<style>`.
 

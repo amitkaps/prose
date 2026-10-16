@@ -130,25 +130,29 @@ export function fileWarnings(root: string, path: string): Warning[] {
 }
 
 /** @prose
- * ## Text someone else wrote
+ * ## Text prose doesn't check
  *
- * A repository can hold Markdown it didn't write, like a test corpus of other projects' docs.
- * Git already has a way to say so. `linguist-vendored` or `linguist-generated` in
- * `.gitattributes` is what GitHub reads to leave a file out of a repository's languages. A file
- * marked either way isn't checked, and its page still reads as any other. Outside a git
- * repository, every file is checked.
+ * A repository can hold text that isn't held to its rules, like fixtures or a corpus of other
+ * projects' docs. `-prose` in `.gitattributes` says so, with git's own syntax, so there's no
+ * config file. A file marked `-prose` isn't checked, and its page still reads as any other.
+ *
+ * `linguist-vendored` and `linguist-generated` leave a file out too. They were the only way
+ * before `-prose`, and they also hide a file from GitHub's languages. That suits copied-in code,
+ * but not a repository's own tests. Outside a git repository, every file is checked.
  */
-function othersText(repo: string, files: string[]): Set<string> {
+function unchecked(repo: string, files: string[]): Set<string> {
   const marked = new Set<string>();
   if (files.length === 0) return marked;
   try {
     const out = execFileSync(
       "git",
-      ["check-attr", "-z", "--stdin", "linguist-vendored", "linguist-generated"],
+      ["check-attr", "-z", "--stdin", "prose", "linguist-vendored", "linguist-generated"],
       { cwd: repo, input: files.join("\0"), encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] },
     ).split("\0");
     for (let i = 0; i + 2 < out.length; i += 3) {
-      if (out[i + 2] === "set" || out[i + 2] === "true") marked.add(out[i]!);
+      const [path, attribute, value] = [out[i]!, out[i + 1], out[i + 2]];
+      const off = attribute === "prose" ? ["unset", "false"] : ["set", "true"];
+      if (off.includes(value!)) marked.add(path);
     }
   } catch {
     // Not a git repository: nothing is marked.
@@ -163,7 +167,7 @@ export function contentWarnings(root: string, files: string[], repo: string = ro
   const found: Warning[] = [];
   docsNav(root, files, found);
   const named = new Set(found.map((w) => `${w.path}:${w.line}:${w.code}`));
-  const skipped = othersText(repo, files);
+  const skipped = unchecked(repo, files);
   for (const path of files) {
     if (skipped.has(path)) continue;
     for (const w of fileWarnings(root, path)) {
@@ -173,7 +177,7 @@ export function contentWarnings(root: string, files: string[], repo: string = ro
   return found;
 }
 
-/** One page's warnings on `prose .`: its file's, unless the file is someone else's text. */
+/** One page's warnings on `prose .`: its file's, unless the file isn't checked. */
 export function pageWarnings(root: string, path: string): Warning[] {
-  return othersText(root, [path]).has(path) ? [] : fileWarnings(root, path);
+  return unchecked(root, [path]).has(path) ? [] : fileWarnings(root, path);
 }

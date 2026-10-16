@@ -125,12 +125,12 @@ function scanCss(source: string): ProseComment[] {
 }
 
 /** The languages whose comments are `#` lines, by extension (`.gitignore` is read as `gitignore`). */
-const HASH_EXTENSIONS = new Set(["yaml", "yml", "toml", "gitignore"]);
+const HASH_EXTENSIONS = new Set(["yaml", "yml", "toml", "gitignore", "gitattributes"]);
 
 /** @prose
  * # Scanning `#` comments
  *
- * YAML, TOML and `.gitignore` have only `#` line comments, with no closing delimiter, so the
+ * YAML, TOML, `.gitignore` and `.gitattributes` have only `#` line comments, with no closing delimiter, so the
  * marker sets the boundary. A comment starts at a `# @prose` line and runs through the `#` lines
  * after it, up to the next marker line or the first line that isn't a comment. So two comments
  * can sit back to back without the second joining the first.
