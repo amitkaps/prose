@@ -148,7 +148,7 @@ export function fileWarnings(root: string, path: string): Warning[] {
  *
  * A repository can hold text that isn't held to its rules, like fixtures or a corpus of other
  * projects' docs. `-prose` in `.gitattributes` says so, with git's own syntax, so there's no
- * config file. A file marked `-prose` isn't checked, and its page still reads as any other.
+ * config file. A file `.gitattributes` marks `-prose` isn't checked, and its page still reads as any other.
  *
  * `linguist-vendored` and `linguist-generated` leave a file out too. They were the only way
  * before `-prose`, and they also hide a file from GitHub's languages. That suits copied-in code,

@@ -92,7 +92,7 @@ describe("a repository's warnings", () => {
   });
   afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-  it("reports the bar's warnings first, then each file's, with no advice on style, and skips text marked -prose or vendored", () => {
+  it("reports the bar's warnings first, then each file's, with no advice on style, and skips files .gitattributes marks -prose or vendored", () => {
     const found = contentWarnings(root, projectFiles(root));
     expect(found.map((w) => `${w.path}:${w.line} ${w.code}`)).toEqual([
       "docs/README.md:2 nav-missing",
