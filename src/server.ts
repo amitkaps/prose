@@ -140,7 +140,9 @@ export function renderRoute(site: Site, path: string): Route {
   // A local page lists its own file's warnings at its foot; a built page never does.
   const notice = (file: string) =>
     live
-      ? warningsNotice(pageWarnings(root, file), (w) => editorUrl(root, file, w.line, w.column))
+      ? warningsNotice(pageWarnings(root, file, files), (w) =>
+          editorUrl(root, file, w.line, w.column),
+        )
       : "";
   const notFound = (): Route => ({
     status: 404,

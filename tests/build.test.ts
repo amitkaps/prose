@@ -161,7 +161,7 @@ describe("build: a repository", () => {
     const files: Record<string, string> = {
       ".gitignore": ".prose/\n",
       "README.md": "# Demo\n\nSee [a](src/a.ts).\n",
-      "src/a.ts": "/** @prose\n * Does a.\n */\nexport const a = 1;\n",
+      "src/a.ts": "/** @prose\n * # A\n *\n * Does a.\n */\nexport const a = 1;\n",
     };
     for (const [path, text] of Object.entries(files)) {
       mkdirSync(join(root, path, ".."), { recursive: true });

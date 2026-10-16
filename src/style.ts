@@ -22,7 +22,7 @@ export type StyleCode = "long-summary" | "long-sentence" | "semicolon" | "colon"
 type Advice = Found<StyleCode> & { instead: string };
 
 /** @prose
- * ## The limits
+ * # The limits
  *
  * The rules ask for about three lines of summary and about 25 words a sentence. Advice comes a
  * little past each, so "about" keeps its room. Three lines of the page's measure hold about 40
@@ -86,7 +86,7 @@ function words(text: string): number {
 }
 
 /** @prose
- * ## Sentences
+ * # Sentences
  *
  * A sentence ends at `.`, `!` or `?` before a space. It needn't be a capital that follows, since
  * names like prose's own are written lowercase. So `prose.amitkaps.com` doesn't end one, and
@@ -109,7 +109,7 @@ function sentences(text: string): { start: number; text: string }[] {
 }
 
 /** @prose
- * ## Joined ideas
+ * # Joined ideas
  *
  * A semicolon in a paragraph joins two ideas, so it always gets advice. A colon gets it only when
  * a lowercase clause follows it in the same paragraph. A colon that leads into a list or a code
@@ -180,7 +180,7 @@ function paragraphAdvice(flat: Flat): Advice[] {
 }
 
 /** @prose
- * ## The summary
+ * # The summary
  *
  * A text's first paragraph is its summary, when nothing but headings comes before it. That's a
  * doc's, a README's or a prose comment's. A text that opens with a list or code has no summary to

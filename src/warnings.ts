@@ -2,8 +2,8 @@
  * # Warnings
  *
  * What a repository's text gets wrong, by file and line. markz reports what it can't read in a
- * Markdown text, like a reference link or a repeated id. prose adds its own few, like a `nav`
- * name that isn't a doc. Each has a stable code, its place, what's wrong, and what to write
+ * Markdown text, like a reference link or a repeated id. prose adds its own, like a `nav` name
+ * that isn't a doc, or a link to a file that isn't there ([structure.ts](structure.ts)). Each has a stable code, its place, what's wrong, and what to write
  * instead ([usage](../docs/usage.md#warnings)).
  *
  * `prose build` prints them, `prose check` fails on them, and `prose .` lists a page's own at its
@@ -17,10 +17,11 @@ import { join } from "node:path";
 import { parse, type Document, type WarningCode as MarkzCode } from "@amitkaps/markz";
 import { docsNav } from "./nav.js";
 import type { ProseComment } from "./parser.js";
+import { structureWarnings, type StructureCode } from "./structure.js";
 import { extensionOf, fileToNode, isSource } from "./tree.js";
 
 /** prose's own codes. markz's are in its reference, and none share a name. */
-export type ProseCode = "nav-missing" | "uncommitted" | "out-not-ignored";
+export type ProseCode = "nav-missing" | "uncommitted" | "out-not-ignored" | StructureCode;
 export type WarningCode = MarkzCode | ProseCode;
 
 /** A finding in a file. `prose style` gives its advice in the same shape, with its own codes. */
@@ -86,7 +87,7 @@ export function markdownWarnings(path: string, source: string): Warning[] {
 }
 
 /** @prose
- * ## A comment's place in its file
+ * # A comment's place in its file
  *
  * A comment's prose is its body, with the delimiters, the marker and each line's gutter taken
  * off. A body's lines are still the file's lines, one for one, from the first one with text. So
@@ -138,13 +139,22 @@ export function findInFile<Code extends string>(
   return inComments(path, node.source ?? "", node.comments ?? [], find);
 }
 
-/** One file's warnings. */
-export function fileWarnings(root: string, path: string): Warning[] {
-  return findInFile(root, path, markzFindings);
+/** One file's warnings, markz's and prose's on structure, in the file's order. `ids` keeps each
+ *  linked page's heading ids for the run. */
+export function fileWarnings(
+  root: string,
+  path: string,
+  files: Set<string>,
+  ids: Map<string, Set<string>> = new Map(),
+): Warning[] {
+  return [
+    ...findInFile(root, path, markzFindings),
+    ...structureWarnings(root, path, files, ids),
+  ].sort((a, b) => (a.line ?? 0) - (b.line ?? 0) || (a.column ?? 0) - (b.column ?? 0));
 }
 
 /** @prose
- * ## Text prose doesn't check
+ * # Text prose doesn't check
  *
  * A repository can hold text that isn't held to its rules, like fixtures or a corpus of other
  * projects' docs. `-prose` in `.gitattributes` says so, with git's own syntax, so there's no
@@ -182,9 +192,11 @@ export function contentWarnings(root: string, files: string[], repo: string = ro
   docsNav(root, files, found);
   const named = new Set(found.map((w) => `${w.path}:${w.line}:${w.code}`));
   const skipped = unchecked(repo, files);
+  const all = new Set(files);
+  const ids = new Map<string, Set<string>>();
   for (const path of files) {
     if (skipped.has(path)) continue;
-    for (const w of fileWarnings(root, path)) {
+    for (const w of fileWarnings(root, path, all, ids)) {
       if (!named.has(`${w.path}:${w.line}:${w.code}`)) found.push(w);
     }
   }
@@ -204,6 +216,6 @@ export function checkedCount(
 }
 
 /** One page's warnings on `prose .`, or `null` when `.gitattributes` leaves its file out. */
-export function pageWarnings(root: string, path: string): Warning[] | null {
-  return unchecked(root, [path]).has(path) ? null : fileWarnings(root, path);
+export function pageWarnings(root: string, path: string, files: string[]): Warning[] | null {
+  return unchecked(root, [path]).has(path) ? null : fileWarnings(root, path, new Set(files));
 }

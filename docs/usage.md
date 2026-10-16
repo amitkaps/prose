@@ -72,15 +72,20 @@ prose: warning: docs/usage.md:12:5: reference-link: reference link; write inline
 prose: 1 warning in 1 file, of 84 files checked, 12 left out by .gitattributes
 ```
 
-Each warning has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds three of its own.
+Each warning has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds its own, on how the text is put together ([writing](writing.md)).
 
-| Code              | When                                                    |
-| ----------------- | ------------------------------------------------------- |
-| `nav-missing`     | `nav` in `docs/README.md` names a file that isn't a doc |
-| `uncommitted`     | the build leaves out uncommitted changes                |
-| `out-not-ignored` | the build's folder isn't in `.gitignore`                |
+| Code               | When                                                                      |
+| ------------------ | ------------------------------------------------------------------------- |
+| `broken-link`      | a relative link reaches no file or folder in the repository               |
+| `broken-anchor`    | a link's `#fragment` matches no heading on the page it reaches            |
+| `heading-skip`     | a heading is two or more levels below the one before it on the page       |
+| `marker-line`      | prose shares a line with `@prose`, or with the comment's close            |
+| `untitled-summary` | a file's first `@prose` comment, its summary, doesn't open with a heading |
+| `nav-missing`      | `nav` in `docs/README.md` names a file that isn't a doc                   |
+| `uncommitted`      | the build leaves out uncommitted changes                                  |
+| `out-not-ignored`  | the build's folder isn't in `.gitignore`                                  |
 
-The last two are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
+A link with a scheme, a site path like `/about`, or a path out of the repository isn't checked, since prose can't see where it goes. Neither is a GitHub line, like `#L42`. The last two codes are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
 
 Some files aren't held to the rules, like fixtures or a corpus of other projects' docs. Mark them `-prose` in `.gitattributes`, and `prose check` leaves them out. Their pages still read as any other, and on `prose .` each says it wasn't checked.
 

@@ -60,7 +60,7 @@ function report(w: Warning): void {
 const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** @prose
- * ## `prose style`
+ * # `prose style`
  *
  * Advice on the files or folders named, relative to where it runs, or on every file with none.
  * It's printed to stdout, since it's what was asked for, and it always exits 0. A path that holds

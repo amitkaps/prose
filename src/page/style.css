@@ -546,7 +546,7 @@
 /** @prose
  * ## The docs' links
  *
- * The docs' links ([nav.ts](nav.ts)) follow the name in the bar. Below 62rem they're a popover
+ * The docs' links ([nav.ts](../nav.ts)) follow the name in the bar. Below 62rem they're a popover
  * behind a **Docs** button, dropping from the bar, as the file tree does. It's the same element at
  * every width, so it needs no script.
  */
@@ -1133,7 +1133,7 @@
 /** @prose
  * # A folder's listing
  *
- * A label for each group, and its rows indented under it ([render.ts](render.ts)).
+ * A label for each group, and its rows indented under it ([render.ts](../render.ts)).
  */
 @layer components {
   .group {
