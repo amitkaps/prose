@@ -74,26 +74,29 @@ prose: 1 warning in 1 file, of 84 files checked, 12 left out by .gitattributes
 
 Each warning has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds its own, on how the text is put together ([writing](writing.md)).
 
-| Code               | When                                                                      |
-| ------------------ | ------------------------------------------------------------------------- |
-| `broken-link`      | a relative link reaches no file or folder in the repository               |
-| `broken-anchor`    | a link's `#fragment` matches no heading on the page it reaches            |
-| `heading-skip`     | a heading is two or more levels below the one before it on the page       |
-| `marker-line`      | prose shares a line with `@prose`, or with the comment's close            |
-| `untitled-summary` | a file's first `@prose` comment, its summary, doesn't open with a heading |
-| `nav-missing`      | `nav` in `docs/README.md` names a file that isn't a doc                   |
-| `uncommitted`      | the build leaves out uncommitted changes                                  |
-| `out-not-ignored`  | the build's folder isn't in `.gitignore`                                  |
+| Code                  | When                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| `broken-link`         | a relative link reaches no file or folder in the repository                         |
+| `broken-anchor`       | a link's `#fragment` matches no heading on the page it reaches                      |
+| `heading-skip`        | a heading is two or more levels below the one before it on the page                 |
+| `marker-line`         | prose shares a line with `@prose`, or with the comment's close                      |
+| `untitled-summary`    | a file's first `@prose` comment, its summary, doesn't open with a heading           |
+| `no-prose`            | a file prose reads for prose has no `@prose` comment                                |
+| `no-readme`           | a folder with a file prose reads has no `README.md`, except `.github/`              |
+| `undocumented-export` | a package that isn't private ships types, and an export it ships has no doc comment |
+| `nav-missing`         | `nav` in `docs/README.md` names a file that isn't a doc                             |
+| `uncommitted`         | the build leaves out uncommitted changes                                            |
+| `out-not-ignored`     | the build's folder isn't in `.gitignore`                                            |
 
-A link with a scheme, a site path like `/about`, or a path out of the repository isn't checked, since prose can't see where it goes. Neither is a GitHub line, like `#L42`. The last two codes are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
+A Markdown file is prose already, and JSON can't hold a comment, so neither is asked for `@prose`. What a package ships is read from the `types` paths in its `package.json`, like `./dist/index.d.ts` for `src/index.ts`, through each `export … from`. A link with a scheme, a site path like `/about`, or a path out of the repository isn't checked, since prose can't see where it goes. Neither is a GitHub line, like `#L42`. The last two codes are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
 
-Some files aren't held to the rules, like fixtures or a corpus of other projects' docs. Mark them `-prose` in `.gitattributes`, and `prose check` leaves them out. Their pages still read as any other, and on `prose .` each says it wasn't checked.
+Some files aren't held to the rules, like fixtures, build snapshots or a corpus of other projects' docs. Mark them `-prose` in `.gitattributes`, and `prose check` leaves them out. Their pages still read as any other, and on `prose .` each says it wasn't checked.
 
 ```text
 tests/fixtures/** -prose
 ```
 
-`linguist-vendored` and `linguist-generated` leave a file out too, as GitHub reads them. They also hide it from the repository's languages on GitHub. So they suit copied-in code, but not a repository's own tests.
+`linguist-vendored` and `linguist-generated` leave a file out too, as GitHub reads them. They also hide it from the repository's languages on GitHub. So `linguist-vendored` suits copied-in code, and `linguist-generated` a test's build snapshot, whose diff GitHub then folds. Neither suits a repository's own tests.
 
 ## Style
 

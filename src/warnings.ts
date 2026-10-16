@@ -2,9 +2,11 @@
  * # Warnings
  *
  * What a repository's text gets wrong, by file and line. markz reports what it can't read in a
- * Markdown text, like a reference link or a repeated id. prose adds its own, like a `nav` name
- * that isn't a doc, or a link to a file that isn't there ([structure.ts](structure.ts)). Each has a stable code, its place, what's wrong, and what to write
- * instead ([usage](../docs/usage.md#warnings)).
+ * Markdown text, like a reference link. prose adds its own, on how prose is put together
+ * ([structure.ts](structure.ts)) and on prose that's missing ([presence.ts](presence.ts)).
+ *
+ * Each has a stable code, its place, what's wrong, and what to write instead
+ * ([usage](../docs/usage.md#warnings)).
  *
  * `prose build` prints them, `prose check` fails on them, and `prose .` lists a page's own at its
  * foot ([cli.ts](cli.ts)). The text is parsed again for them, apart from rendering, so a page is
@@ -17,11 +19,23 @@ import { join } from "node:path";
 import { parse, type Document, type WarningCode as MarkzCode } from "@amitkaps/markz";
 import { docsNav } from "./nav.js";
 import type { ProseComment } from "./parser.js";
+import {
+  noProse,
+  noReadme,
+  shippedExports,
+  undocumentedExports,
+  type PresenceCode,
+} from "./presence.js";
 import { structureWarnings, type StructureCode } from "./structure.js";
 import { extensionOf, fileToNode, isSource } from "./tree.js";
 
 /** prose's own codes. markz's are in its reference, and none share a name. */
-export type ProseCode = "nav-missing" | "uncommitted" | "out-not-ignored" | StructureCode;
+export type ProseCode =
+  | "nav-missing"
+  | "uncommitted"
+  | "out-not-ignored"
+  | StructureCode
+  | PresenceCode;
 export type WarningCode = MarkzCode | ProseCode;
 
 /** A finding in a file. `prose style` gives its advice in the same shape, with its own codes. */
@@ -139,17 +153,26 @@ export function findInFile<Code extends string>(
   return inComments(path, node.source ?? "", node.comments ?? [], find);
 }
 
-/** One file's warnings, markz's and prose's on structure, in the file's order. `ids` keeps each
- *  linked page's heading ids for the run. */
-export function fileWarnings(
-  root: string,
-  path: string,
-  files: Set<string>,
-  ids: Map<string, Set<string>> = new Map(),
-): Warning[] {
+/** What one run of the check knows of the repository: its files, each linked page's heading
+ *  ids, and the exports its package ships, each read once. */
+export interface Run {
+  files: Set<string>;
+  ids: Map<string, Set<string>>;
+  shipped?: Map<string, Map<string, number>>;
+}
+
+export function newRun(files: string[]): Run {
+  return { files: new Set(files), ids: new Map() };
+}
+
+/** One file's warnings, markz's and prose's own, in the file's order. */
+export function fileWarnings(root: string, path: string, run: Run): Warning[] {
+  run.shipped ??= shippedExports(root, run.files);
   return [
+    ...noProse(root, path),
     ...findInFile(root, path, markzFindings),
-    ...structureWarnings(root, path, files, ids),
+    ...structureWarnings(root, path, run.files, run.ids),
+    ...undocumentedExports(path, run.shipped, root),
   ].sort((a, b) => (a.line ?? 0) - (b.line ?? 0) || (a.column ?? 0) - (b.column ?? 0));
 }
 
@@ -192,11 +215,11 @@ export function contentWarnings(root: string, files: string[], repo: string = ro
   docsNav(root, files, found);
   const named = new Set(found.map((w) => `${w.path}:${w.line}:${w.code}`));
   const skipped = unchecked(repo, files);
-  const all = new Set(files);
-  const ids = new Map<string, Set<string>>();
-  for (const path of files) {
-    if (skipped.has(path)) continue;
-    for (const w of fileWarnings(root, path, all, ids)) {
+  const run = newRun(files);
+  const checked = files.filter((path) => !skipped.has(path));
+  found.push(...noReadme(root, checked, run.files));
+  for (const path of checked) {
+    for (const w of fileWarnings(root, path, run)) {
       if (!named.has(`${w.path}:${w.line}:${w.code}`)) found.push(w);
     }
   }
@@ -217,5 +240,5 @@ export function checkedCount(
 
 /** One page's warnings on `prose .`, or `null` when `.gitattributes` leaves its file out. */
 export function pageWarnings(root: string, path: string, files: string[]): Warning[] | null {
-  return unchecked(root, [path]).has(path) ? null : fileWarnings(root, path, new Set(files));
+  return unchecked(root, [path]).has(path) ? null : fileWarnings(root, path, newRun(files));
 }

@@ -24,11 +24,13 @@ import { notFoundPage, renderRoute, type Site } from "./server.js";
 import { walkFiles } from "./tree.js";
 import { contentWarnings, type Warning } from "./warnings.js";
 
+/** How `build` writes a site. */
 export interface BuildOptions {
   /** Where the site goes; `.prose` inside the repository by default. */
   out?: string;
 }
 
+/** What `build` wrote: where, how many pages, from which commit, and what it warned about. */
 export interface Built {
   out: string;
   pages: number;

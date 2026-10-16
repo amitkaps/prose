@@ -33,6 +33,7 @@ import {
 } from "./tree.js";
 import { pageWarnings } from "./warnings.js";
 
+/** How `serve` listens. */
 export interface ServeOptions {
   /** The port to try first; the next free one is used if it's taken. `0` lets the OS pick. */
   port?: number;
@@ -41,6 +42,7 @@ export interface ServeOptions {
   watch?: boolean;
 }
 
+/** A running server: its address, and how to stop it. */
 export interface Served {
   url: string;
   close(): Promise<void>;

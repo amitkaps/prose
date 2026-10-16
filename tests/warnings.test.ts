@@ -80,6 +80,7 @@ describe("a repository's warnings", () => {
       "docs/usage.md": "# Usage\n\n## Checks\n\n{@section #checks}\n{/section}\n",
       "vendor/theirs.md": "# Theirs\n\n[ref][x]\n",
       "fixtures/sample.md": "# Sample\n\nSome __strong__ text.\n",
+      "src/README.md": "# Source\n",
       "src/a.ts": "/** @prose\n * # A\n *\n * A *star*.\n */\nexport const a = 1;\n",
       "src/b.ts": "/** @prose\n * # B\n *\n * One idea; another.\n */\nexport const b = 1;\n",
       ".gitattributes":
@@ -104,8 +105,8 @@ describe("a repository's warnings", () => {
   });
 
   it("counts the files it read, apart from the ones .gitattributes leaves out", () => {
-    // All eight are read for prose, `.gitattributes` among them, and two are left out.
-    expect(checkedCount(root, projectFiles(root))).toEqual({ checked: 6, left: 2 });
+    // All nine are read for prose, `.gitattributes` among them, and two are left out.
+    expect(checkedCount(root, projectFiles(root))).toEqual({ checked: 7, left: 2 });
   });
 
   it("lists a local page's own warnings at its foot, linked to the editor, and a built page's never", () => {

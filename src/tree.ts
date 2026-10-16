@@ -22,6 +22,7 @@ import {
 import { basename, join, resolve } from "node:path";
 import { firstParagraph, parseFile, type ProseComment } from "./parser.js";
 
+/** One folder or file in the tree, with its summary and what its page shows. */
 export interface TreeNode {
   name: string;
   kind: "project" | "folder" | "file" | "raw" | "binary";

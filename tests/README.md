@@ -10,6 +10,7 @@ One test file for each source file that has logic, run with `pnpm run test`. The
 - [repo.test.ts](repo.test.ts): the project's name and GitHub address, and the rail's footer and README rows.
 - [nav.test.ts](nav.test.ts): the docs linked in the bar.
 - [warnings.test.ts](warnings.test.ts): what `prose check` finds, at its place in the file.
+- [presence.test.ts](presence.test.ts): a file, folder or export with no prose, and what isn't asked.
 - [structure.test.ts](structure.test.ts): links that reach nothing, headings that skip a level, and prose on the marker's line.
 - [style.test.ts](style.test.ts): the advice `prose style` gives, and what looks like a break but isn't.
 - [stylesheet.test.ts](stylesheet.test.ts): every rule in the stylesheet sits in a layer.
