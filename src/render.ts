@@ -244,16 +244,24 @@ function withAnchor(prose: string): string {
  * # On this page
  *
  * A long page's second- and third-level headings, as a table of contents. It sits beside the
- * text where the page is wide enough, and folds above it where it isn't. It's read from the page
- * as rendered, so a doc and a source file get the same one. A page with fewer than three headings
- * has none, since a short page is its own contents.
+ * text where the window is wide enough, and at the top of the rail where it isn't, as an editor's
+ * outline sits by its files. It's read from the page as rendered, so a doc and a source file get
+ * the same one. A page with fewer than three headings has none, since a short page is its own
+ * contents.
  *
  * It's in the HTML twice, once for each place, so it works without script. Moving one element by
- * script would need it. The page's script only marks the section being read (`TOC_SCRIPT`).
+ * script would need it. A third part ends the breadcrumb with the section being read, which the
+ * page's script fills in, and which opens the rail's contents.
  */
 const HEADING_RE = /<h([23]) id="([^"]+)">([\s\S]*?)<\/h\1>/g;
 
-export function tableOfContents(body: string): string {
+export interface Contents {
+  side: string;
+  rail: string;
+  crumb: string;
+}
+
+export function tableOfContents(body: string): Contents {
   const entries: { level: number; id: string; text: string }[] = [];
   for (const match of body.matchAll(HEADING_RE)) {
     const id = match[2]!;
@@ -263,14 +271,18 @@ export function tableOfContents(body: string): string {
       .trim();
     if (text) entries.push({ level: Number(match[1]), id, text });
   }
-  if (entries.length < 3) return "";
+  if (entries.length < 3) return { side: "", rail: "", crumb: "" };
   const list = `<ul>${entries
     .map(
       ({ level, id, text }) =>
         `<li class="toc-${level}"><a href="#${escapeHtml(id)}">${text}</a></li>`,
     )
     .join("")}</ul>`;
-  return `<details class="toc toc-top"><summary>On this page</summary>${list}</details><nav class="toc toc-side" aria-label="On this page"><div><p>On this page</p>${list}</div></nav>`;
+  return {
+    side: `<nav class="toc toc-side" aria-label="On this page"><div><p>On this page</p>${list}</div></nav>`,
+    rail: `<nav class="toc toc-rail" aria-label="On this page"><p>On this page</p>${list}</nav>`,
+    crumb: `<span class="section" hidden><span class="sep">›</span><button type="button" title="On this page"></button></span>`,
+  };
 }
 
 export interface PageOptions {
@@ -278,7 +290,7 @@ export interface PageOptions {
   project: string;
   /** The page's repo path: `""` for the root, `src/` for a folder, `src/store.ts` for a file. */
   path: string;
-  /** The file tree for the right rail (`rail.ts`). */
+  /** The file tree for the right rail (`rail.ts`), which the page puts after its contents. */
   rail: string;
   body: string;
   /** A `vscode://file/…` link for the file, or null for a folder and on a built page. */
@@ -369,6 +381,7 @@ export function page(options: PageOptions): string {
   const { project, path, rail, editorLink, hasCode, live, readme = false, nav = [] } = options;
   const body = withHeading(options.body, options.heading ?? pageName(project, path));
   const hue = accentHue(project);
+  const contents = tableOfContents(body);
   const off = hasCode ? "" : ` disabled title="No code on this page"`;
   const mode = `<div class="mode" role="group" aria-label="View"><button type="button" data-mode="code" aria-pressed="true"${off}>Prose &amp; Code</button><button type="button" data-mode="prose" aria-pressed="false"${off}>Prose only</button></div>`;
   const end = editorLink
@@ -389,10 +402,11 @@ export function page(options: PageOptions): string {
     mode,
     icon: PANEL_ICON,
     "main-class": hasCode ? `class="has-code"` : "",
-    crumbs: breadcrumb(project, path, readme),
+    crumbs: breadcrumb(project, path, readme) + contents.crumb,
     editor: end,
-    toc: tableOfContents(body),
+    toc: contents.side,
     body,
+    outline: contents.rail,
     rail,
     "rail-script": inlineScript(railScript),
     speculation: `<script type="speculationrules">${SPECULATION}</script>`,

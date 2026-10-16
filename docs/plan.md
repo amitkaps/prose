@@ -6,6 +6,12 @@ Where the project is and what comes next, in order. Finished work gets a line or
 
 The `@prose` convention and the read-only renderer work. This repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.4.0, on npm as `@amitkaps/prose` and as a GitHub release tarball.
 
+### Since 0.4.0
+
+- **Tables that read well.** Rows with no grid, a quiet header, and cells that wrap between words, so a column of short words keeps its room. A table that scrolls shows it, and `---:` alignment now shows. A doc with no table of contents lets a table grow to a code run's width, which ship's dashboard needed ([reading](reading.md#around-the-page)).
+- **The text holds still.** The window alone sets where the text sits, so opening or closing the tree no longer moves it. The table of contents sits beside the text only with room to spare, as far from it as the text is from the window's edge. Otherwise it's at the top of the tree, as VS Code's outline is. The breadcrumb then stays under the bar and names the section being read, as Starlight's does, and opens the contents. The folded contents above the text went, so every page's text starts at the same height.
+- **Inline code and four tones.** Inline code has a hairline edge and pads only its sides, so it never pushes lines apart. The stylesheet has four tones, `--success`, `--warning`, `--danger` and `--info`, each with a soft background. The live dot is the first to use one.
+
 ### 0.4.0
 
 - **The site on Cloudflare.** A Worker builds from `main`, so a merge deploys it ([development](development.md#the-site)). `prose publish` was dropped, since the one site that could use it deploys without it.
@@ -58,6 +64,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 
 - **Comment links on GitHub.** `src/store.ts#adding` works in the renderer, but GitHub scrolls only to a line, like `#L42`. Either accept it, or let whatever publishes the docs map links to lines.
 - **A map command.** `prose outline` could print every first paragraph, if the grep in [the agent rules](usage.md#for-agents) proves too noisy for agents.
+- **The tones as a promise.** A project's own page, like ship's dashboard, could use `--success` and the other tones instead of its own colours. That makes the names public, so renaming one would break someone's page. Either list them in [reading](reading.md#around-the-page) as tokens a page may use, or keep them prose's own. It waits for a page that needs them.
 - **A project's own pages as elements.** A doc could hold a standalone page as a Markz element, such as markz's Quality page as `{@markz-quality}`, or ship's drift tables. markz already writes the tag. prose would add the script that defines it, written any way a custom element can be, and never run the project's build. The page would then sit in prose's frame, and couldn't drift from its bar. It waits, because two working pages don't pay for what it adds.
   - A place for the scripts. prose has no folders or options of its own, only the docs it links in the bar.
   - A way in for data. An element needs data the project's code generates, and prose reads only what is committed.
