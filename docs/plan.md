@@ -4,9 +4,9 @@ Where the project is and what comes next, in order. Finished work gets a line or
 
 ## Where it is
 
-The `@prose` convention and the read-only renderer work. This repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.4.0, on npm as `@amitkaps/prose` and as a GitHub release tarball.
+The `@prose` convention and the read-only renderer work. This repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.5.0, on npm as `@amitkaps/prose` and as a GitHub release tarball.
 
-### Since 0.4.0
+### 0.5.0
 
 - **Tables that read well.** Rows with no grid, a quiet header, and cells that wrap between words, so a column of short words keeps its room. A table that scrolls shows it, and `---:` alignment now shows. A doc with no table of contents lets a table grow to a code run's width, which ship's dashboard needed ([reading](reading.md#around-the-page)).
 - **The text holds still.** The window alone sets where the text sits, so opening or closing the tree no longer moves it. The table of contents sits beside the text only with room to spare, as far from it as the text is from the window's edge. Otherwise it's at the top of the tree, as VS Code's outline is. The breadcrumb then stays under the bar and names the section being read, as Starlight's does, and opens the contents. The folded contents above the text went, so every page's text starts at the same height.
