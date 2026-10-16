@@ -191,7 +191,19 @@ export function contentWarnings(root: string, files: string[], repo: string = ro
   return found;
 }
 
-/** One page's warnings on `prose .`: its file's, unless the file isn't checked. */
-export function pageWarnings(root: string, path: string): Warning[] {
-  return unchecked(root, [path]).has(path) ? [] : fileWarnings(root, path);
+/** How many files `prose check` read, and how many `.gitattributes` left out, so a skip is
+ *  never silent. Only files prose reads for prose count. */
+export function checkedCount(
+  root: string,
+  files: string[],
+  repo: string = root,
+): { checked: number; left: number } {
+  const readable = files.filter((path) => isSource(root, path));
+  const left = unchecked(repo, readable).size;
+  return { checked: readable.length - left, left };
+}
+
+/** One page's warnings on `prose .`, or `null` when `.gitattributes` leaves its file out. */
+export function pageWarnings(root: string, path: string): Warning[] | null {
+  return unchecked(root, [path]).has(path) ? null : fileWarnings(root, path);
 }
