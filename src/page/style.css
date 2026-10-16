@@ -867,8 +867,9 @@
  * ## Wide tables and code samples
  *
  * A table or a code sample in the prose may grow past the text, as far as a code run does or the
- * page allows. It's a grid or code to scan, not lines to read, so the measure isn't for it. Past
- * that, a table scrolls and code wraps. A short sample keeps the text's width, as a run does.
+ * page allows. It's a grid or code to scan, not lines to read, so the measure isn't for it.
+ *
+ * Past that, a table scrolls and code wraps. A short sample keeps the text's width, as a run does.
  */
 @layer components {
   .prose {
@@ -1259,8 +1260,10 @@
 /** @prose
  * # On this page
  *
- * Where the window has room, the table of contents is a column beside the page: past the text on
- * a doc, and past the code on a source file. It's as far from the text as the text is from the
+ * Where the window has room, the table of contents is a column beside the page. It sits past the
+ * text on a doc, and past the code on a source file.
+ *
+ * It's as far from the text as the text is from the
  * window's left edge, with 2rem to spare before the tree. That takes 89rem on a doc and 105rem on
  * a source file, with room set aside for the tree, so the window alone decides it.
  *

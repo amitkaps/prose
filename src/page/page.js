@@ -71,8 +71,8 @@
  * has passed a line a little under the bar. The breadcrumb ends with that section's name, once
  * the reader has reached one.
  *
- * The section's name opens the contents in the rail: the popover on a narrow screen, or the docked
- * tree if it's closed. Choosing a heading from the popover closes it, so the text shows.
+ * The section's name opens the contents in the rail. That's the popover on a narrow screen, or the
+ * docked tree if it's closed. Choosing a heading from the popover closes it, so the text shows.
  */
 {
   const links = [...document.querySelectorAll(".toc a")];

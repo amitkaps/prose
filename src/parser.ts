@@ -25,8 +25,9 @@ const MARKER = "@prose";
  * # Recognizing a prose comment
  *
  * A comment counts only if its first line, trimmed, starts with `@prose`. Any other comment
- * returns `null` and stays an ordinary comment, like unmarked JSDoc, `//` or a tool pragma. Each
- * style strips its own gutter before this runs. That's JS's ` * `, YAML's `# `, and for HTML the
+ * returns `null` and stays an ordinary comment, like unmarked JSDoc, `//` or a tool pragma.
+ *
+ * Each style strips its own gutter before this runs. That's JS's ` * `, YAML's `# `, and for HTML the
  * indent its lines share. Blank lines at either edge of the body are dropped, and a CRLF file's
  * `\r` stays out.
  */
@@ -131,8 +132,10 @@ const HASH_EXTENSIONS = new Set(["yaml", "yml", "toml", "gitignore", "gitattribu
 /** @prose
  * # Scanning `#` comments
  *
- * YAML, TOML, `.gitignore` and `.gitattributes` have only `#` line comments, with no closing delimiter, so the
- * marker sets the boundary. A comment starts at a `# @prose` line and runs through the `#` lines
+ * YAML, TOML, `.gitignore` and `.gitattributes` have only `#` line comments, with no closing
+ * delimiter, so the marker sets the boundary.
+ *
+ * A comment starts at a `# @prose` line and runs through the `#` lines
  * after it, up to the next marker line or the first line that isn't a comment. So two comments
  * can sit back to back without the second joining the first.
  */
@@ -241,7 +244,9 @@ function markupParts(
  *
  * A comment counts when it starts its own line, at any depth, in every language. So a class can
  * read method by method, and a comment that shares its line with code, like
- * `call(/** @prose … *\/ x)`, stays part of that code. This one rule replaced a statement walk
+ * `call(/** @prose … *\/ x)`, stays part of that code.
+ *
+ * This one rule replaced a statement walk
  * for JS and a brace counter for CSS, which each drew the line by depth instead.
  */
 export function parseFile(source: string, extension: string): ProseComment[] {

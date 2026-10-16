@@ -56,10 +56,12 @@ const PORT_ATTEMPTS = 20;
 /** @prose
  * # Routing
  *
- * An address is a repo path. `/`, and any path that ends in `/`, is a folder. A folder asked for
- * without its slash redirects to it, so the relative links in its README resolve from inside it.
- * A folder's `README.md` redirects there too, since it's the same page. A path is served only if
- * the walk lists it. Anything else is a 404, including a path outside the root.
+ * An address is a repo path. `/`, and any path that ends in `/`, is a folder. A path is served only
+ * if the walk lists it, and anything else is a 404.
+ *
+ * A folder asked for without its slash redirects to it, so the relative links in its README
+ * resolve from inside it. A folder's `README.md` redirects there too, since it's the same page. A
+ * path outside the root is a 404.
  *
  * `renderRoute` is all of routing, with no HTTP in it. The server answers each request with it,
  * and `prose build` calls it once a page ([build.ts](build.ts)). So the static site is these
@@ -93,9 +95,10 @@ function editorUrl(root: string, path: string, line?: number, column?: number): 
  * # The host's 404 page
  *
  * A static host serves `404.html`, at the site's root, for any address the site doesn't have.
- * So a missing page still shows the file tree, not the host's own page. It's served at whatever
- * address was missing, so it can't name that address. Its title is _Page not found_, as is a
- * missing page's under `prose .`. Its links are absolute, so they work from
+ * So a missing page still shows the file tree, not the host's own page.
+ *
+ * It's served at whatever address was missing, so it can't name that address. Its title is _Page
+ * not found_, as is a missing page's under `prose .`. Its links are absolute, so they work from
  * any address. GitHub Pages also serves it for everything under `.github/`, which it never
  * publishes.
  */

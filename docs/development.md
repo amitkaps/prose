@@ -1,6 +1,6 @@
 # Development
 
-How to work on prose itself: build it, test it, release it and deploy its site. What every repository shares, like the toolchain, CI, the Worker's settings and releases, is in [ship's standard](https://ship.amitkaps.com/docs/standard.md), and isn't repeated here. The rules for changing it are in [AGENTS.md](../AGENTS.md).
+How to work on prose itself. That's how to build it, test it, release it and deploy its site. What every repository shares, like the toolchain, CI, the Worker's settings and releases, is in [ship's standard](https://ship.amitkaps.com/docs/standard.md), and isn't repeated here. The rules for changing it are in [AGENTS.md](../AGENTS.md).
 
 ## Build and test
 

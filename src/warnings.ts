@@ -104,8 +104,9 @@ export function markdownWarnings(path: string, source: string): Warning[] {
  * # A comment's place in its file
  *
  * A comment's prose is its body, with the delimiters, the marker and each line's gutter taken
- * off. A body's lines are still the file's lines, one for one, from the first one with text. So
- * a finding's line in the body is found in the file by counting on from there. Its column is
+ * off. A body's lines are still the file's lines, one for one, from the first one with text.
+ *
+ * So a finding's line in the body is found in the file by counting on from there. Its column is
  * found by where the body's line sits in the file's, after its gutter.
  */
 function inComments<Code extends string>(

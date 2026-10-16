@@ -1,6 +1,6 @@
 # Agents
 
-How to work in this repository: the standard and prose rules every repository shares, how this one applies them, then its commands and workflow.
+How to work in this repository. It covers the standard and prose rules every repository shares, how this one applies them, then its commands and workflow.
 
 ## Standard
 
@@ -22,9 +22,14 @@ The rules live in [docs/usage.md](docs/usage.md#for-agents), the one copy every 
 
 For this repository that means:
 
-- `docs/` is where writing that spans files lives: [design](docs/design.md) (what it is, why, and what it isn't), [writing](docs/writing.md) (the `@prose` rules), [usage](docs/usage.md), [reading](docs/reading.md) (what each page shows), [plan](docs/plan.md) (the order of the work), [lessons](docs/lessons.md), [development](docs/development.md) (build and release). Reference a section by file and heading (`docs/reading.md#pages`), never by a number.
-- Every folder has a `README.md`, except `.github/` (the workflows carry their own prose, and [development](docs/development.md) covers them). `src/` and `tests/` say what lives there and how it's organised.
-- Tests carry file prose too: what the file covers, in a line or two.
+- `docs/` is where writing that spans files lives. Reference a section by file and heading, like `docs/reading.md#pages`, never by a number.
+  - [design](docs/design.md) says what it is, why, and what it isn't.
+  - [writing](docs/writing.md) has the `@prose` rules, and [usage](docs/usage.md) how to use prose.
+  - [reading](docs/reading.md) says what each page shows.
+  - [plan](docs/plan.md) has the order of the work, and [lessons](docs/lessons.md) what it taught.
+  - [development](docs/development.md) covers build and release.
+- Every folder has a `README.md`, except `.github/`. Its workflows carry their own prose, and [development](docs/development.md) covers them. `src/` and `tests/` say what lives there and how it's organised.
+- Tests carry file prose too. It says what the file covers, in a line or two.
 
 ## Commands
 

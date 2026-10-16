@@ -402,10 +402,11 @@ function folderToNode(root: string, relDir: string, name: string, index: DirInde
 /** @prose
  * # One folder, one level deep
  *
- * What a folder page needs, and no more. That's its `README.md` as prose, its subfolders with
- * their own READMEs' summaries, and its files with their first paragraphs. Subfolders aren't
- * walked and other files aren't read. So a page costs only the files directly in the folder,
- * whatever the size of the repository. A folder that holds nothing the walk lists gives `null`.
+ * What a folder page needs, and no more. Subfolders aren't walked and other files aren't read, so
+ * a page costs only the files directly in the folder, whatever the size of the repository.
+ *
+ * A page has its `README.md` as prose, its subfolders with their own READMEs' summaries, and its
+ * files with their first paragraphs. A folder that holds nothing the walk lists gives `null`.
  */
 export function folderListing(root: string, files: string[], relDir: string): TreeNode | null {
   let index: DirIndex | undefined = indexFiles(files);
