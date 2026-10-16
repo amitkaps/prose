@@ -144,10 +144,16 @@ async function main(argv: string[]): Promise<void> {
     const { checked, left } = checkedCount(root, files);
     const read = `${count(checked, "file")} checked${left ? `, ${left} left out by .gitattributes` : ""}`;
     if (warnings.length) {
-      const where = new Set(warnings.map((w) => w.path)).size;
-      process.stderr.write(
-        `prose: ${count(warnings.length, "warning")} in ${count(where, "file")}, of ${read}\n`,
-      );
+      // A folder's warning, like a missing README, is on its path with a trailing slash.
+      const paths = [...new Set(warnings.map((w) => w.path))];
+      const folders = paths.filter((p) => p?.endsWith("/")).length;
+      const where = [
+        paths.length - folders ? count(paths.length - folders, "file") : "",
+        folders ? count(folders, "folder") : "",
+      ]
+        .filter(Boolean)
+        .join(" and ");
+      process.stderr.write(`prose: ${count(warnings.length, "warning")} in ${where}, of ${read}\n`);
       process.exitCode = 1;
     } else process.stdout.write(`prose: ${read}\n`);
     return;
