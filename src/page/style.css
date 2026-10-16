@@ -845,22 +845,76 @@
     & pre.highlighted {
       min-width: 100%;
     }
-    & table {
-      border-collapse: collapse;
-      display: block;
-      overflow-x: auto;
-    }
-    & th,
-    & td {
-      border: 1px solid var(--rule);
-      padding: 0.3rem 0.6rem;
-      text-align: left;
-    }
     & blockquote {
       margin: 0;
       padding-left: 1rem;
       border-left: 3px solid var(--rule);
       color: var(--muted);
+    }
+  }
+}
+/** @prose
+ * ## Tables
+ *
+ * A table has a rule between rows and no grid, with a quiet header in the contents' label style.
+ * Its first column lines up with the text, and the space between columns is on their right.
+ *
+ * A cell wraps between words, never inside one, though the prose around it may break anywhere.
+ * That keeps a column at least as wide as its longest word, as GitHub's tables do. So a column of
+ * short words keeps its room, and the column of sentences does the wrapping.
+ *
+ * A table that scrolls shows a shadow at the edge that's cut off. The paper-coloured covers move
+ * with the cells and the shadows stay with the box, so a shadow shows only where there's more.
+ * A row's own heading, a `th` in the body, stays put as the rest scrolls past it.
+ *
+ * A column aligned in the Markdown, like `---:`, keeps its `align`, so cells set no alignment of
+ * their own.
+ */
+@layer components {
+  .prose {
+    & table {
+      display: block;
+      overflow-x: auto;
+      border-collapse: collapse;
+      font-size: var(--text-s);
+      line-height: var(--leading-snug);
+      font-variant-numeric: tabular-nums;
+      background:
+        linear-gradient(to right, var(--paper) 30%, transparent) left / 2rem 100% no-repeat local,
+        linear-gradient(to left, var(--paper) 30%, transparent) right / 2rem 100% no-repeat local,
+        radial-gradient(farthest-side at 0 50%, var(--shade), transparent) left / 0.75rem 100%
+          no-repeat scroll,
+        radial-gradient(farthest-side at 100% 50%, var(--shade), transparent) right / 0.75rem 100%
+          no-repeat scroll;
+    }
+    & th,
+    & td {
+      overflow-wrap: break-word;
+      vertical-align: top;
+      padding: 0.5rem 1rem 0.5rem 0;
+      border-bottom: 1px solid var(--rule);
+      &:last-child {
+        padding-right: 0;
+      }
+    }
+    & th:not([align]) {
+      text-align: start;
+    }
+    & thead th {
+      color: var(--muted);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-bottom-color: var(--ink);
+    }
+    & tbody tr:last-child > * {
+      border-bottom: 0;
+    }
+    & tbody th {
+      position: sticky;
+      left: 0;
+      background: var(--paper);
     }
   }
 }
@@ -1215,7 +1269,9 @@
   }
   @container (min-width: 68rem) {
     .shell:has(#dock:checked) main:not(.has-code) {
-      --wide: var(--measure);
+      &:has(.toc-side) {
+        --wide: var(--measure);
+      }
       & .toc-side {
         display: block;
       }
@@ -1225,7 +1281,7 @@
     }
   }
   @container (min-width: 84rem) {
-    main:not(.has-code) {
+    main:not(.has-code):has(.toc-side) {
       --wide: var(--measure);
     }
     main:not(.has-code) .toc-side,
