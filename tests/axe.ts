@@ -86,6 +86,9 @@ async function audit(page: Page, { path, scheme, width }: (typeof jobs)[number])
 await Promise.all(
   Array.from({ length: PARALLEL }, async () => {
     const page = await site.newPage();
+    // Each page as it first loads. A tab keeps the rail's scroll from the page before, so a tree
+    // link could sit half under the contents, as any scroll can leave it.
+    await page.addInitScript(() => sessionStorage.removeItem("prose:rail"));
     for (let job = jobs.shift(); job; job = jobs.shift()) await audit(page, job);
   }),
 );
