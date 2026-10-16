@@ -40,7 +40,7 @@ The text is on the left and the file tree on the right. The page grows with a wi
 `prose .` serves the pages locally, and `prose build` writes the same pages as static files ([usage.md](usage.md)). Both come from the same code, so a published site is the same reader, not a second design.
 
 - **Local pages are live.** A page reloads when a file it shows changes, and keeps its scroll position.
-- **Local pages show their warnings.** A page whose text markz or prose can't read well lists the warnings at its foot. Each links to its line in the editor ([usage](usage.md#warnings)).
+- **Local pages show their warnings.** A page whose text markz or prose can't read well lists the warnings at its foot, and its notes on style. Each links to its line in the editor. A page with only notes shows them in a calmer tone ([usage](usage.md#warnings)).
 - **A published site is one commit.** The build renders the files tracked at `HEAD`, as the public repository shows them. Untracked, ignored and uncommitted files never reach the site, and the build warns when there are uncommitted changes. Below the file tree, a footer names the commit, and the tag when `HEAD` has one. Both link to GitHub.
 - **Addresses stay the same.** `/src/store.ts` is `/src/store.ts` in both, so a link works in either. A static host serves each page without its `.html`, and without a redirect.
 - **Pages share one stylesheet and one script.** They're files under `/assets/`, each named by a hash of its text, so a page carries only its own HTML. The build writes a `_headers` file that asks the host to cache them for good ([assets.ts](../src/assets.ts)).

@@ -65,13 +65,14 @@ prose check             # what the text gets wrong, by file and line
 prose check docs        # another folder
 ```
 
-`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It prints nothing when the text is clean.
+`prose check` reads the working tree and prints one finding a line, as a compiler does. A finding is a warning or a note. It fails on a warning, so it can run in CI, and passes with only notes. It prints nothing when the text is clean.
 
 ```text
 prose: warning: docs/usage.md:12:5: reference-link: reference link; write inline links
+prose: note: docs/usage.md:20:31: semicolon: semicolon joining two ideas; write two sentences
 ```
 
-Each warning has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds three of its own.
+Each finding has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds three of its own.
 
 | Code              | When                                                    |
 | ----------------- | ------------------------------------------------------- |
@@ -79,7 +80,21 @@ Each warning has a place, a code, what's wrong and what to write instead. Most c
 | `uncommitted`     | the build leaves out uncommitted changes                |
 | `out-not-ignored` | the build's folder isn't in `.gitignore`                |
 
-The last two are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
+The last two are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings and notes at its foot, each linked to its line in the editor. A published page never does.
+
+### Notes
+
+A note is advice on style, from [the agent rules](#for-agents). A warning is a fault a machine can be sure of. A note is a guess, so `prose check` prints it and still passes. Failing on a count of words would teach an agent to dodge the count.
+
+| Code            | When                                                                           |
+| --------------- | ------------------------------------------------------------------------------ |
+| `long-summary`  | a text's first paragraph is over 60 words, about four lines                    |
+| `long-sentence` | a sentence is over 35 words                                                    |
+| `semicolon`     | a semicolon joins two ideas                                                    |
+| `colon`         | a colon joins two ideas, with a lowercase clause after it                      |
+| `parenthetical` | a parenthesis holds an aside, not a link, an example or a gloss of a few words |
+
+Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A colon that leads into a list, or labels a list item, as in `- [a.ts](a.ts): what it does`, isn't a note.
 
 Text the repository didn't write isn't checked, like a test corpus of other projects' docs. Mark it `linguist-vendored` or `linguist-generated` in `.gitattributes`, as GitHub reads it.
 

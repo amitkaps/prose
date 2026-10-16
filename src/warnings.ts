@@ -6,8 +6,10 @@
  * name that isn't a doc. Each has a stable code, its place, what's wrong, and what to write
  * instead ([usage](../docs/usage.md#warnings)).
  *
- * `prose build` prints them, `prose check` fails on them, and `prose .` lists a page's own at its
- * foot ([cli.ts](cli.ts)). The text is parsed again for them, apart from rendering, so a page is
+ * A finding is a warning or a note. A warning is a fault a machine can be sure of, so
+ * `prose check` fails on it. A note is advice on style, which it prints but passes
+ * ([notes.ts](notes.ts)). `prose build` prints both, and `prose .` lists a page's own at its foot
+ * ([cli.ts](cli.ts)). The text is parsed again for them, apart from rendering, so a page is
  * rendered the same whether or not anyone asks.
  */
 import { execFileSync } from "node:child_process";
@@ -15,15 +17,18 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse, type WarningCode as MarkzCode } from "@amitkaps/markz";
 import { docsNav } from "./nav.js";
+import { textNotes, type NoteCode } from "./notes.js";
 import type { ProseComment } from "./parser.js";
 import { extensionOf, fileToNode, isSource } from "./tree.js";
 
 /** prose's own codes. markz's are in its reference, and none share a name. */
 export type ProseCode = "nav-missing" | "uncommitted" | "out-not-ignored";
-export type WarningCode = MarkzCode | ProseCode;
+export type WarningCode = MarkzCode | ProseCode | NoteCode;
 
 export interface Warning {
   code: WarningCode;
+  /** A note is advice that `check` prints but passes. Without a level, it's a warning. */
+  level?: "note";
   message: string;
   /** The form to write instead, as markz words it: a noun, like `inline links`. */
   instead?: string;
@@ -42,6 +47,16 @@ export function formatWarning(w: Warning): string {
   return `${place}${w.code}: ${w.message}${w.instead ? `; write ${w.instead}` : ""}`;
 }
 
+/** `2 warnings and 1 note`, leaving out a level with none. */
+export function tally(found: Warning[]): string {
+  const notes = found.filter((w) => w.level === "note").length;
+  const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const parts = [];
+  if (found.length > notes) parts.push(count(found.length - notes, "warning"));
+  if (notes) parts.push(count(notes, "note"));
+  return parts.join(" and ");
+}
+
 /** The 1-based line and column of `offset` in `text`. */
 export function position(text: string, offset: number): { line: number; column: number } {
   const before = text.slice(0, offset);
@@ -49,15 +64,29 @@ export function position(text: string, offset: number): { line: number; column: 
   return { line: before.split("\n").length, column: offset - lineStart + 1 };
 }
 
-/** A Markdown file's warnings. The whole file is parsed, metadata included, so a line is the
- *  file's own. */
-export function markdownWarnings(path: string, source: string): Warning[] {
-  return parse(source).warnings.map((w) => ({
+/** A finding at an offset in the text it was found in, before it has a place in a file. */
+type Found = Omit<Warning, "path" | "line" | "column"> & { start: number };
+
+/** A text's markz warnings and its notes, from one parse, in the order they occur. */
+function textFindings(text: string): Found[] {
+  const doc = parse(text);
+  const warnings: Found[] = doc.warnings.map((w) => ({
     code: w.code,
     message: w.message,
     instead: w.instead || undefined,
+    start: w.start,
+  }));
+  const notes: Found[] = textNotes(doc).map((n) => ({ ...n, level: "note" }));
+  return [...warnings, ...notes].sort((a, b) => a.start - b.start);
+}
+
+/** A Markdown file's warnings and notes. The whole file is parsed, metadata included, so a line
+ *  is the file's own. */
+export function markdownWarnings(path: string, source: string): Warning[] {
+  return textFindings(source).map(({ start, ...w }) => ({
+    ...w,
     path,
-    ...position(source, w.start),
+    ...position(source, start),
   }));
 }
 
@@ -76,21 +105,14 @@ export function commentWarnings(path: string, source: string, comments: ProseCom
     const body = comment.body.split("\n");
     let start = position(source, comment.start).line - 1;
     while (start < lines.length && !lines[start]!.includes(body[0]!)) start++;
-    for (const w of parse(comment.body).warnings) {
-      const at = position(comment.body, w.start);
+    for (const { start: offset, ...w } of textFindings(comment.body)) {
+      const at = position(comment.body, offset);
       const line = lines[start + at.line - 1] ?? "";
       const text = body[at.line - 1] ?? "";
       const gutter = line.endsWith(text)
         ? line.length - text.length
         : Math.max(0, line.indexOf(text));
-      found.push({
-        code: w.code,
-        message: w.message,
-        instead: w.instead || undefined,
-        path,
-        line: start + at.line,
-        column: gutter + at.column,
-      });
+      found.push({ ...w, path, line: start + at.line, column: gutter + at.column });
     }
   }
   return found;
