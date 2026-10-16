@@ -18,6 +18,7 @@ import { escapeHtml, highlight, markdownHtml } from "./highlight.js";
 import { type NavItem, renderNav } from "./nav.js";
 import type { ProseComment } from "./parser.js";
 import { extensionOf, type TreeNode } from "./tree.js";
+import type { Warning } from "./warnings.js";
 
 export function renderMarkdown(text: string): string {
   return text.trim() ? markdownHtml(parse(text)) : "";
@@ -73,7 +74,7 @@ export function segments(source: string, comments: ProseComment[]): Segment[] {
  * then **Code**. Each group is a label, not an icon, with a row for each name and its summary.
  *
  * Files with no prose yet don't get a row each. They're named on one line at the end, **No prose
- * yet**. So coverage shows where you read, without a page full of *undocumented*. Files that
+ * yet**. So coverage shows where you read, without a page full of _undocumented_. Files that
  * can't carry prose, like `LICENSE` or an image, are named on a last line, **Other files**.
  */
 function renderListing(children: TreeNode[]): string {
@@ -145,6 +146,24 @@ export function binaryBody(node: TreeNode): string {
     ? `<img class="binary-image" src="${node.image}" alt="${escapeHtml(node.path)}">`
     : "";
   return `<p class="binary">${escapeHtml(node.about ?? "")}</p>${image}`;
+}
+
+/** @prose
+ * # Warnings on a local page
+ *
+ * What markz or prose found wrong in the page's own text, at the foot of the page
+ * ([warnings.ts](warnings.ts)). It comes after the text, so it never moves it. Each line links
+ * to its place in the editor, and the page reloads with the list redone when the file is saved.
+ * Only `prose .` shows it. A built page never has it, since its reader can't fix the text.
+ */
+export function warningsNotice(warnings: Warning[], link: (w: Warning) => string): string {
+  if (warnings.length === 0) return "";
+  const items = warnings.map((w) => {
+    const what = renderSummary(`${w.message}${w.instead ? `; write ${w.instead}` : ""}`);
+    return `<li><a href="${escapeHtml(link(w))}">line ${w.line ?? 1}</a> ${what} <span class="warning-code">${escapeHtml(w.code)}</span></li>`;
+  });
+  const count = `${warnings.length} warning${warnings.length === 1 ? "" : "s"}`;
+  return `<aside class="warnings" aria-label="Warnings"><p>${count} in this file</p><ul>${items.join("")}</ul></aside>`;
 }
 
 /** Shown in place of prose on a file that has none, so **Prose only** doesn't leave a bare header. */

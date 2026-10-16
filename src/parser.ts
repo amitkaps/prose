@@ -25,8 +25,9 @@ const MARKER = "@prose";
  *
  * A comment counts only if its first line, trimmed, starts with `@prose`. Any other comment
  * returns `null` and stays an ordinary comment, like unmarked JSDoc, `//` or a tool pragma. Each
- * style strips its own gutter before this runs. That's JS's ` * `, YAML's `# `, and none for
- * HTML. Blank lines at either edge of the body are dropped, and a CRLF file's `\r` stays out.
+ * style strips its own gutter before this runs. That's JS's ` * `, YAML's `# `, and for HTML the
+ * indent its lines share. Blank lines at either edge of the body are dropped, and a CRLF file's
+ * `\r` stays out.
  */
 function extractMarkedFromLines(rawLines: string[]): string | null {
   const lines = rawLines.map((line) => line.replace(/\r$/, ""));
@@ -44,8 +45,22 @@ function extractMarkedFromLines(rawLines: string[]): string | null {
 
 function extractMarkedBlock(inner: string, stripContinuation: boolean): string | null {
   const lines = inner.split("\n");
+  // An HTML comment has no gutter, only the markup's indent, which every line after the first
+  // shares. Left in, markz would read the prose as indented code.
+  const indent = stripContinuation
+    ? 0
+    : Math.min(
+        ...lines
+          .slice(1)
+          .filter((line) => line.trim())
+          .map((line) => /^[ \t]*/.exec(line)![0].length),
+      );
   const stripped = lines.map((line, i) =>
-    i === 0 || !stripContinuation ? line : line.replace(/^[ \t]*\*[ \t]?/, ""),
+    i === 0
+      ? line
+      : stripContinuation
+        ? line.replace(/^[ \t]*\*[ \t]?/, "")
+        : line.slice(Math.min(indent, /^[ \t]*/.exec(line)![0].length)),
   );
   const body = extractMarkedFromLines(stripped);
   // `*/` would end the comment, so a block spells it `*\/`; the prose has it as written.

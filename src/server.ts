@@ -10,7 +10,15 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { resolve, sep } from "node:path";
 import { LIVE, SCRIPT, STYLE } from "./assets.js";
 import { escapeHtml } from "./highlight.js";
-import { binaryBody, folderBody, markdownBody, page, rawBody, sourceBody } from "./render.js";
+import {
+  binaryBody,
+  folderBody,
+  markdownBody,
+  page,
+  rawBody,
+  sourceBody,
+  warningsNotice,
+} from "./render.js";
 import { docsNav, type NavItem } from "./nav.js";
 import { renderRail, railFooter, type Snapshot } from "./rail.js";
 import { projectName, repoUrl } from "./repo.js";
@@ -23,6 +31,7 @@ import {
   projectFiles,
   rawToNode,
 } from "./tree.js";
+import { pageWarnings } from "./warnings.js";
 
 export interface ServeOptions {
   /** The port to try first; the next free one is used if it's taken. `0` lets the OS pick. */
@@ -71,6 +80,12 @@ export interface Site {
 }
 
 export type Route = { status: 200 | 404; html: string } | { status: 301; location: string };
+
+/** A file's `vscode://` link, at a line and column when given, as VS Code reads it. */
+function editorUrl(root: string, path: string, line?: number, column?: number): string {
+  const at = line ? `:${line}${column ? `:${column}` : ""}` : "";
+  return `vscode://file${resolve(root, path).split(sep).join("/")}${at}`;
+}
 
 /** @prose
  * # The host's 404 page
@@ -122,6 +137,11 @@ export function renderRoute(site: Site, path: string): Route {
       readme,
       nav: site.nav,
     });
+  // A local page lists its own file's warnings at its foot; a built page never does.
+  const notice = (file: string) =>
+    live
+      ? warningsNotice(pageWarnings(root, file), (w) => editorUrl(root, file, w.line, w.column))
+      : "";
   const notFound = (): Route => ({
     status: 404,
     html: shell(
@@ -140,7 +160,12 @@ export function renderRoute(site: Site, path: string): Route {
     const ignored = live ? ignoredIn(root, path.replace(/\/$/, "")) : [];
     return {
       status: 200,
-      html: shell(folderBody(node, ignored), null, false, Boolean(node.prose)),
+      html: shell(
+        folderBody(node, ignored) + (node.prose ? notice(`${path}README.md`) : ""),
+        null,
+        false,
+        Boolean(node.prose),
+      ),
     };
   }
 
@@ -151,15 +176,14 @@ export function renderRoute(site: Site, path: string): Route {
   }
 
   if (files.includes(path)) {
-    const editorLink = `vscode://file${resolve(root, path).split(sep).join("/")}`;
+    const editorLink = editorUrl(root, path);
     if (extensionOf(path) === "md") {
-      return { status: 200, html: shell(markdownBody(fileToNode(root, path)), editorLink) };
+      const body = markdownBody(fileToNode(root, path)) + notice(path);
+      return { status: 200, html: shell(body, editorLink) };
     }
     if (isSource(root, path)) {
-      return {
-        status: 200,
-        html: shell(sourceBody(fileToNode(root, path)), editorLink, true),
-      };
+      const body = sourceBody(fileToNode(root, path)) + notice(path);
+      return { status: 200, html: shell(body, editorLink, true) };
     }
     const node = rawToNode(root, path);
     if (node.kind === "binary") return { status: 200, html: shell(binaryBody(node), editorLink) };

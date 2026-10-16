@@ -49,7 +49,7 @@ prose build             # the same pages as static files, in .prose
 prose build --out site  # somewhere else
 ```
 
-`prose build` renders the last commit, not the working tree. Nothing untracked, ignored or uncommitted reaches the site, and the build warns when there are uncommitted changes. Add `.prose/` to `.gitignore`, since the folder is prose's own and each build clears it. How the published pages differ from local ones is in [reading.md](reading.md#local-and-published).
+`prose build` renders the last commit, not the working tree. Nothing untracked, ignored or uncommitted reaches the site, and the build warns when there are uncommitted changes. It prints the text's [warnings](#warnings) too, and writes the site anyway. Add `.prose/` to `.gitignore`, since the folder is prose's own and each build clears it. How the published pages differ from local ones is in [reading.md](reading.md#local-and-published).
 
 The folder is plain static files, and any static host can serve it. Point the host at the folder, and set it up for two things.
 
@@ -57,6 +57,35 @@ The folder is plain static files, and any static host can serve it. Point the ho
 - **A 404 page.** The build writes `404.html`, with the file tree, for any missing address.
 
 The build also writes a `_headers` file, which Cloudflare and Netlify read. It caches the shared stylesheet and script in `/assets/` for good. Deploying is the host's job, and prose has no command for it. This repository's own site, on Cloudflare, is set up in [development.md](development.md#the-site).
+
+## Warnings
+
+```sh
+prose check             # what the text gets wrong, by file and line
+prose check docs        # another folder
+```
+
+`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It prints nothing when the text is clean.
+
+```text
+prose: warning: docs/usage.md:12:5: reference-link: reference link; write inline links
+```
+
+Each warning has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds three of its own.
+
+| Code              | When                                                    |
+| ----------------- | ------------------------------------------------------- |
+| `nav-missing`     | `nav` in `docs/README.md` names a file that isn't a doc |
+| `uncommitted`     | the build leaves out uncommitted changes                |
+| `out-not-ignored` | the build's folder isn't in `.gitignore`                |
+
+The last two are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
+
+Text the repository didn't write isn't checked, like a test corpus of other projects' docs. Mark it `linguist-vendored` or `linguist-generated` in `.gitattributes`, as GitHub reads it.
+
+```text
+test/corpus/** linguist-vendored
+```
 
 ## For agents
 

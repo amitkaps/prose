@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { docsNav, renderNav } from "../src/nav.js";
+import type { Warning } from "../src/warnings.js";
 
 let root: string;
 afterEach(() => rmSync(root, { recursive: true, force: true }));
@@ -24,28 +25,33 @@ function repo(readme: string | null): string[] {
 describe("docsNav", () => {
   it("warns when docs/README.md's metadata can't be read, and lists every doc", () => {
     const files = repo("---\nnav:\n  - usage.md\n---\n# Docs\n");
-    const warnings: string[] = [];
+    const warnings: Warning[] = [];
     expect(docsNav(root, files, warnings).map((item) => item.label)).toEqual([
       "Design",
       "Getting started",
       "Usage",
     ]);
     expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toMatch(
-      /^docs\/README\.md line 3: .*, so the bar lists every doc in alphabetical order$/,
-    );
+    expect(warnings[0]).toMatchObject({ path: "docs/README.md", line: 3 });
+    expect(warnings[0]!.code).toMatch(/^metadata/);
+    expect(warnings[0]!.message).toMatch(/, so the bar lists every doc in alphabetical order$/);
   });
 
   it("follows the nav list in docs/README.md, skipping and warning about a name that isn't a doc", () => {
     const files = repo("---\nnav: [usage.md, missing.md, design.md, /quality]\n---\n# Docs\n");
-    const warnings: string[] = [];
+    const warnings: Warning[] = [];
     expect(docsNav(root, files, warnings)).toEqual([
       { path: "docs/usage.md", label: "Usage" },
       { path: "docs/design.md", label: "Design" },
     ]);
-    expect(warnings).toEqual([
-      "docs/README.md's nav lists missing.md, which isn't a doc in docs/, so the bar skips it",
-      "docs/README.md's nav lists /quality, which isn't a doc in docs/, so the bar skips it",
+    expect(warnings.map((w) => [w.code, w.line, w.column, w.message])).toEqual([
+      [
+        "nav-missing",
+        2,
+        17,
+        "nav lists missing.md, which isn't a doc in docs/, so the bar skips it",
+      ],
+      ["nav-missing", 2, 40, "nav lists /quality, which isn't a doc in docs/, so the bar skips it"],
     ]);
   });
 

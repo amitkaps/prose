@@ -62,6 +62,11 @@ describe("parseFile: HTML (<!-- @prose -->)", () => {
       "Line one.\n * looks like a bullet but is not a gutter",
     ]);
   });
+
+  it("drops the indent its lines share, so indented markup's prose isn't read as code", () => {
+    const source = `<body>\n\t\t<!-- @prose\n\t\tThe count.\n\n\t\t  - kept two\n\t\t-->\n</body>\n`;
+    expect(bodies(source, "html")).toEqual(["The count.\n\n  - kept two"]);
+  });
 });
 
 describe("parseFile: YAML, TOML and .gitignore (# @prose)", () => {

@@ -1181,6 +1181,47 @@
   }
 }
 /** @prose
+ * # Warnings
+ *
+ * On a local page, what's wrong in the page's own text, after the text and at its width
+ * ([render.ts](../render.ts)). It's the first use of a tone, `--warning`, on its soft background.
+ * Each line leads with a link to its place in the editor, and ends with the warning's code, dimmed,
+ * for a search.
+ */
+@layer components {
+  .warnings {
+    max-width: var(--measure);
+    margin-block: 3rem 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid color-mix(in oklch, var(--warning) 35%, transparent);
+    border-radius: var(--radius);
+    background: var(--warning-soft);
+    font-size: var(--text-s);
+    line-height: var(--leading-snug);
+    & p {
+      margin: 0 0 0.5rem;
+      color: var(--warning);
+      font-weight: 600;
+    }
+    & ul {
+      display: grid;
+      gap: 0.4rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    & li > a {
+      font-variant-numeric: tabular-nums;
+      margin-inline-end: 0.5ch;
+    }
+    & .warning-code {
+      color: var(--muted);
+      font-size: var(--text-xs);
+      margin-inline-start: 0.5ch;
+    }
+  }
+}
+/** @prose
  * # Short notes
  *
  * The line on a missing page, what's ignored in a folder, what was cut from a long file, and a
