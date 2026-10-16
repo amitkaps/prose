@@ -50,6 +50,7 @@ const ALIASES: Record<string, string> = {
   zsh: "sh",
   shell: "sh",
   shellscript: "sh",
+  gitattributes: "gitignore",
 };
 
 export function escapeHtml(text: string): string {

@@ -69,9 +69,9 @@ describe("parseFile: HTML (<!-- @prose -->)", () => {
   });
 });
 
-describe("parseFile: YAML, TOML and .gitignore (# @prose)", () => {
+describe("parseFile: YAML, TOML, .gitignore and .gitattributes (# @prose)", () => {
   it("reads a run of # lines from the marker, gutter stripped", () => {
-    for (const ext of ["yaml", "toml", "gitignore"]) {
+    for (const ext of ["yaml", "toml", "gitignore", "gitattributes"]) {
       expect(bodies("# @prose\n# # Run\n#\n# Starts it.\n\nname = 1\n", ext)).toEqual([
         "# Run\n\nStarts it.",
       ]);

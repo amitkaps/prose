@@ -98,9 +98,11 @@ describe("a repository's warnings", () => {
       "docs/README.md": "---\nnav: [usage.md, gone.md]\n---\n# Docs\n",
       "docs/usage.md": "# Usage\n\n## Checks\n\n{@section #checks}\n{/section}\n",
       "vendor/theirs.md": "# Theirs\n\n[ref][x]\n",
+      "fixtures/sample.md": "# Sample\n\nSome __strong__ text.\n",
       "src/a.ts": "/** @prose\n * # A\n *\n * A *star*.\n */\nexport const a = 1;\n",
       "src/b.ts": "/** @prose\n * # B\n *\n * One idea; another.\n */\nexport const b = 1;\n",
-      ".gitattributes": "vendor/** linguist-vendored\n",
+      ".gitattributes":
+        "# @prose\n# Text that isn't ours; prose leaves it alone.\nvendor/** linguist-vendored\nfixtures/** -prose\n",
     };
     for (const [path, text] of Object.entries(files)) {
       mkdirSync(join(root, path, ".."), { recursive: true });
@@ -110,10 +112,11 @@ describe("a repository's warnings", () => {
   });
   afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-  it("reports the bar's warnings first, then each file's, and skips text marked as someone else's", () => {
+  it("reports the bar's warnings first, then each file's, and skips text marked -prose or vendored", () => {
     const found = contentWarnings(root, projectFiles(root));
     expect(found.map((w) => `${w.path}:${w.line} ${w.code}`)).toEqual([
       "docs/README.md:2 nav-missing",
+      ".gitattributes:2 semicolon",
       "README.md:3 underscore-strong",
       "docs/usage.md:5 duplicate-id",
       "src/a.ts:4 star-emphasis",
@@ -138,5 +141,7 @@ describe("a repository's warnings", () => {
     expect(built.status === 200 && built.html).not.toContain('class="warnings"');
     const theirs = renderRoute(site, "vendor/theirs.md");
     expect(theirs.status === 200 && theirs.html).not.toContain('class="warnings"');
+    const fixture = renderRoute(site, "fixtures/sample.md");
+    expect(fixture.status === 200 && fixture.html).not.toContain('class="warnings"');
   });
 });

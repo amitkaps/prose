@@ -1,7 +1,8 @@
 /** @prose
- * # YAML, TOML and `.gitignore`
+ * # YAML, TOML, `.gitignore` and `.gitattributes`
  *
- * The files that configure a project, each a list of keys and values with `#` comments. A YAML
+ * The files that configure a project, each a list of keys and values with `#` comments.
+ * `.gitattributes` is coloured as `.gitignore` is, since both are a list of paths. A YAML
  * key is coloured as a keyword and a plain value as a string, as shiki colours them. TOML's keys
  * and tables stay plain, as they did with shiki, and its values take their own colours.
  *
