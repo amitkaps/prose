@@ -1186,8 +1186,8 @@
  * On a local page, what's wrong in the page's own text, after the text and at its width
  * ([render.ts](../render.ts)). It's in the `--warning` tone, on its soft background.
  *
- * A page with only notes uses `--info`, since none of it is a fault. Each line leads with a link
- * to its place in the editor, and ends with the code, dimmed, for a search.
+ * Each line leads with a link to its place in the editor, and ends with the warning's code,
+ * dimmed, for a search.
  */
 @layer components {
   .warnings {
@@ -1219,13 +1219,6 @@
       color: var(--muted);
       font-size: var(--text-xs);
       margin-inline-start: 0.5ch;
-    }
-    &.notes {
-      border-color: color-mix(in oklch, var(--info) 35%, transparent);
-      background: var(--info-soft);
-      & p {
-        color: var(--info);
-      }
     }
   }
 }

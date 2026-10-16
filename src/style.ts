@@ -1,31 +1,30 @@
 /** @prose
- * # Notes
+ * # Style
  *
- * Where a text's sentences break the agent rules' plain style
- * ([usage](../docs/usage.md#for-agents)). A note is advice, not a fault. `prose check` prints it
- * but still passes, because a count of words is only a guess at what's hard to read. Failing on it
- * would teach an agent to dodge the count, which is the cramming the rules are there to stop.
+ * Advice on where a text's sentences break the agent rules' plain style, for `prose style`
+ * ([usage](../docs/usage.md#style)). It's advice for the writer of a file, not a fault, so it never
+ * fails and never shows on a page.
+ *
+ * A count of words is only a guess at what's hard to read. In CI or on every page, it would teach
+ * an agent to dodge the count, which is the cramming the rules are there to stop. So `prose check`
+ * leaves it out, and the writer asks for it on the files they just wrote.
  *
  * Only paragraphs are read, wherever they sit, like in a list or a quote. Headings, code, tables
  * and metadata aren't sentences. Inline code counts as one word, and a link's text counts as its
  * words.
  */
 import { NONE, type Document, type NodeId } from "@amitkaps/markz";
+import { findInFile, unchecked, type Found, type Warning } from "./warnings.js";
 
-export type NoteCode = "long-summary" | "long-sentence" | "semicolon" | "colon" | "parenthetical";
+export type StyleCode = "long-summary" | "long-sentence" | "semicolon" | "colon" | "parenthetical";
 
-/** A note at an offset in the text it was found in. */
-export interface Note {
-  code: NoteCode;
-  message: string;
-  instead: string;
-  start: number;
-}
+/** Advice at an offset in the text it was found in. */
+type Advice = Found<StyleCode> & { instead: string };
 
 /** @prose
  * ## The limits
  *
- * The rules ask for about three lines of summary and about 25 words a sentence. A note fires a
+ * The rules ask for about three lines of summary and about 25 words a sentence. Advice comes a
  * little past each, so "about" keeps its room. Three lines of the page's measure hold about 40
  * words.
  */
@@ -112,12 +111,12 @@ function sentences(text: string): { start: number; text: string }[] {
 /** @prose
  * ## Joined ideas
  *
- * A semicolon in a paragraph joins two ideas, so it's always a note. A colon is a note only when
+ * A semicolon in a paragraph joins two ideas, so it always gets advice. A colon gets it only when
  * a lowercase clause follows it in the same paragraph. A colon that leads into a list or a code
  * block ends its paragraph. One right after a link or code, as in `- [a.ts](a.ts): what it does`,
  * is a list item's label.
  *
- * A parenthesis is a note unless it holds a link, opens with an example word like "like", or is a
+ * A parenthesis gets advice unless it holds a link, opens with an example word like "like", or is a
  * short gloss.
  */
 const EXAMPLE = /^(?:like|e\.g\.|for example|such as|as in|say)\b/i;
@@ -139,13 +138,13 @@ function parentheticals(text: string): number[] {
   return found;
 }
 
-function paragraphNotes(flat: Flat): Note[] {
-  const notes: Note[] = [];
+function paragraphAdvice(flat: Flat): Advice[] {
+  const advice: Advice[] = [];
   const { text, at } = flat;
   for (const sentence of sentences(text)) {
     const count = words(sentence.text);
     if (count > SENTENCE_WORDS) {
-      notes.push({
+      advice.push({
         code: "long-sentence",
         message: `sentence of ${count} words`,
         instead: "one idea a sentence, in about 25 words",
@@ -154,7 +153,7 @@ function paragraphNotes(flat: Flat): Note[] {
     }
   }
   for (const match of text.matchAll(/;/g)) {
-    notes.push({
+    advice.push({
       code: "semicolon",
       message: "semicolon joining two ideas",
       instead: "two sentences",
@@ -162,7 +161,7 @@ function paragraphNotes(flat: Flat): Note[] {
     });
   }
   for (const match of text.matchAll(/(?<![\uE000\uE002]):\s+(?=\p{Ll})/gu)) {
-    notes.push({
+    advice.push({
       code: "colon",
       message: "colon joining two ideas",
       instead: "two sentences",
@@ -170,14 +169,14 @@ function paragraphNotes(flat: Flat): Note[] {
     });
   }
   for (const open of parentheticals(text)) {
-    notes.push({
+    advice.push({
       code: "parenthetical",
       message: "aside in parentheses",
       instead: "its own sentence, or cut it",
       start: at[open]!,
     });
   }
-  return notes;
+  return advice;
 }
 
 /** @prose
@@ -196,9 +195,9 @@ function summary(doc: Document): NodeId | undefined {
   return undefined;
 }
 
-/** Every note in a parsed text, in the order they occur. */
-export function textNotes(doc: Document): Note[] {
-  const notes: Note[] = [];
+/** Every piece of advice on a parsed text, in the order it occurs. */
+export function textStyle(doc: Document): Advice[] {
+  const advice: Advice[] = [];
   const first = summary(doc);
   const visit = (node: NodeId): void => {
     for (const child of doc.children(node)) {
@@ -209,7 +208,7 @@ export function textNotes(doc: Document): Note[] {
         if (child === first) {
           const count = words(flat.text);
           if (count > SUMMARY_WORDS) {
-            notes.push({
+            advice.push({
               code: "long-summary",
               message: `first paragraph of ${count} words`,
               instead: "a summary of about three lines, with detail below it",
@@ -217,10 +216,19 @@ export function textNotes(doc: Document): Note[] {
             });
           }
         }
-        notes.push(...paragraphNotes(flat));
+        advice.push(...paragraphAdvice(flat));
       } else if (type !== "heading" && type !== "code" && type !== "table") visit(child);
     }
   };
   visit(doc.root);
-  return notes.sort((a, b) => a.start - b.start);
+  return advice.sort((a, b) => a.start - b.start);
+}
+
+/** Advice on each of `files`, in file order, leaving out what isn't checked
+ *  ([warnings.ts](warnings.ts)). */
+export function styleAdvice(root: string, files: string[]): Warning<StyleCode>[] {
+  const skipped = unchecked(root, files);
+  return files
+    .filter((path) => !skipped.has(path))
+    .flatMap((path) => findInFile(root, path, textStyle));
 }

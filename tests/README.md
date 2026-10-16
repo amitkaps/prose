@@ -9,8 +9,9 @@ One test file for each source file that has logic, run with `pnpm run test`. The
 - [server.test.ts](server.test.ts) and [build.test.ts](build.test.ts): the pages and the static site.
 - [repo.test.ts](repo.test.ts): the project's name and GitHub address, and the rail's footer and README rows.
 - [nav.test.ts](nav.test.ts): the docs linked in the bar.
-- [warnings.test.ts](warnings.test.ts) and [notes.test.ts](notes.test.ts): what `prose check` finds, at its place in the file, and how a note differs from a warning.
-- [style.test.ts](style.test.ts): every rule in the stylesheet sits in a layer.
+- [warnings.test.ts](warnings.test.ts): what `prose check` finds, at its place in the file.
+- [style.test.ts](style.test.ts): the advice `prose style` gives, and what looks like a break but isn't.
+- [stylesheet.test.ts](stylesheet.test.ts): every rule in the stylesheet sits in a layer.
 - [accent.test.ts](accent.test.ts): a project's colour and tab icon, and the browser's bar in the paper's colour.
 
 Two checks need Chrome, so they run by hand before a release, not with the rest. [axe.ts](axe.ts) is the accessibility audit, `pnpm run axe`. [keyboard.ts](keyboard.ts) reads pages by keyboard, `pnpm run keyboard`. Both build and serve the site through [site.ts](site.ts).

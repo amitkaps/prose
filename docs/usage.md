@@ -65,14 +65,13 @@ prose check             # what the text gets wrong, by file and line
 prose check docs        # another folder
 ```
 
-`prose check` reads the working tree and prints one finding a line, as a compiler does. A finding is a warning or a note. It fails on a warning, so it can run in CI, and passes with only notes. It prints nothing when the text is clean.
+`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It prints nothing when the text is clean.
 
 ```text
 prose: warning: docs/usage.md:12:5: reference-link: reference link; write inline links
-prose: note: docs/usage.md:20:31: semicolon: semicolon joining two ideas; write two sentences
 ```
 
-Each finding has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds three of its own.
+Each warning has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds three of its own.
 
 | Code              | When                                                    |
 | ----------------- | ------------------------------------------------------- |
@@ -80,11 +79,30 @@ Each finding has a place, a code, what's wrong and what to write instead. Most c
 | `uncommitted`     | the build leaves out uncommitted changes                |
 | `out-not-ignored` | the build's folder isn't in `.gitignore`                |
 
-The last two are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings and notes at its foot, each linked to its line in the editor. A published page never does.
+The last two are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
 
-### Notes
+Text that isn't held to the rules isn't checked, like fixtures or a corpus of other projects' docs. Mark it `-prose` in `.gitattributes`. Its page still reads as any other.
 
-A note is advice on style, from [the agent rules](#for-agents). A warning is a fault a machine can be sure of. A note is a guess, so `prose check` prints it and still passes. Failing on a count of words would teach an agent to dodge the count.
+```text
+tests/fixtures/** -prose
+```
+
+`linguist-vendored` and `linguist-generated` leave a file out too, as GitHub reads them. They also hide it from the repository's languages on GitHub. So they suit copied-in code, but not a repository's own tests.
+
+## Style
+
+```sh
+prose style docs/usage.md src/store.ts   # advice on the files you just wrote
+prose style docs                         # a folder
+```
+
+`prose style` gives advice on how the files you name read, against [the agent rules](#for-agents). It prints one suggestion a line, like a warning, and always passes. With no path, it reads every file.
+
+```text
+prose: style: docs/usage.md:20:31: semicolon: semicolon joining two ideas; write two sentences
+```
+
+It's for the writer of a file, right after writing it. So it isn't part of `prose check` and never shows on a page. A count of words is only a guess at what's hard to read. In CI or on every page, it would teach an agent to dodge the count. Rewrite where a suggestion helps the reader, not to make it go away.
 
 | Code            | When                                                                           |
 | --------------- | ------------------------------------------------------------------------------ |
@@ -94,15 +112,7 @@ A note is advice on style, from [the agent rules](#for-agents). A warning is a f
 | `colon`         | a colon joins two ideas, with a lowercase clause after it                      |
 | `parenthetical` | a parenthesis holds an aside, not a link, an example or a gloss of a few words |
 
-Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A colon that leads into a list, or labels a list item, as in `- [a.ts](a.ts): what it does`, isn't a note.
-
-Text that isn't held to the rules isn't checked, like fixtures or a corpus of other projects' docs. Mark it `-prose` in `.gitattributes`. Its page still reads as any other.
-
-```text
-tests/fixtures/** -prose
-```
-
-`linguist-vendored` and `linguist-generated` leave a file out too, as GitHub reads them. They also hide it from the repository's languages on GitHub. So they suit copied-in code, but not a repository's own tests.
+Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A colon that leads into a list, or labels a list item, as in `- [a.ts](a.ts): what it does`, gets no suggestion. Text marked `-prose` isn't read.
 
 ## For agents
 
@@ -119,5 +129,6 @@ Link to this section from the project's `AGENTS.md` or `CLAUDE.md`, so it follow
 - State a rule once. If a doc or a tested file owns it, link to it by repo path and keep only how and why this code does it.
 - Decisions made in the chat go into the prose in the same change. One that spans files goes into the doc it changes, and one about a single spot goes into the `@prose` there. Write docs for a reader who wasn't in the chat, since they may be published as they are. When something is ruled out, write down that it's out and why, so it isn't rebuilt.
 - If the project keeps a plan, keep it current, with what's done in one line each and what's next in order.
+- After writing prose, run `prose style` on the files you changed. Rewrite where a suggestion helps the reader, and leave it where it doesn't. Never split or reword a sentence only to make a suggestion go away.
 - To find your way, `grep -rn -A4 "@prose" src` is the map, and `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet. Add an `--include` for each other language the project writes.
 ```
