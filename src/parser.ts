@@ -10,6 +10,7 @@
  */
 import { lexJs } from "./lexer.js";
 
+/** One `@prose` comment in a file: its Markdown, and where it sits. */
 export interface ProseComment {
   /** The comment's Markdown, without its delimiters, gutter or marker. */
   body: string;

@@ -51,7 +51,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
   - Advice on style, from `prose style` on the files just written. It's never in CI or on a page. Done ([usage](usage.md#style)).
   - Read `.gitattributes` for prose, and a `-prose` attribute for text that isn't checked, like fixtures. Done ([usage](usage.md#warnings)).
   - Warnings on structure. A link to a file or heading that isn't there, a heading that skips a level, `@prose` on one line with its text, and a file's summary with no heading. Done ([usage](usage.md#warnings)). A later comment may open with `##` under a `#` before it, since markz nests 84 that way, so only a skip warns.
-  - Warnings on what's missing. A source file with no `@prose`, a folder with no `README.md`, and a library's export with no comment. JSON can't hold `@prose`, so it's never asked for.
+  - Warnings on what's missing. A source file with no `@prose`, a folder with no `README.md`, and a library's export with no comment. Done ([usage](usage.md#warnings)). A folder of only JSON, like `.vscode/`, isn't asked for a README.
   - One term for each concept, from a short glossary, as a note.
 - [ ] **Use it on base, sitez and markz.**
   - Install the latest release, and remove `prose()` from their Vite configs. Replace the snippet in their `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.
