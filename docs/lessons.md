@@ -21,8 +21,10 @@ Besides this repository, prose has been used on two projects. sitez is a static 
 
 ### Keeping prose true
 
-- **The checks never ran.** markz's `AGENTS.md` says "nothing checks prose against code on its own", and its agents grep instead. The one real drift was that block about origins. It was about meaning, which no symbol or staleness check sees. So prose kept the reading, the convention and a renderer, and dropped the checks ([design](design.md#what-it-isnt)).
+- **The checks never ran.** markz's `AGENTS.md` says "nothing checks prose against code on its own", and its agents grep instead. The one real drift was that block about origins. It was about meaning, which no symbol or staleness check sees. So prose kept the reading, the convention and a renderer, and dropped the checks ([design](design.md#what-it-isnt)). Checks came back later only for form a machine can be sure of, in `prose check`, which runs in CI where nobody has to remember it.
 - **The prose costs a second edit per change and drifts toward density.** 36 of sitez's 49 commits touch `prose/`. Blocks grew into long sentences carrying three qualifications each, since "rewrite, don't append" is harder than it sounds. The three-line limit on first paragraphs came from this. It wasn't enough, because the docs kept packing points into long sentences. So the rules later asked for plain sentences too ([the agent rules](usage.md#for-agents)).
+- **Run a check on real repositories before it lands.** Each of `prose check`'s new warnings was run on markz, sitez, ship and pagez first. The first run asked `.vscode/`, which holds only JSON, for a README, and a resolver bug flagged exports that had comments. Both were fixed before the check shipped, so every warning left was real.
+- **Fixtures swamp the counts.** 183 of pagez's 191 warnings were test pages and build snapshots, each in its own folder. `.gitattributes` leaves them out, as `-prose` or `linguist-generated`. A way to leave text out is also a way to hide it, so both commands say how many files were left out, and the agent rules forbid it to quiet a warning ([usage](usage.md#for-agents)).
 - **Tuning changes rightly skip prose, and staleness can't tell.** markz's speed commits changed code without prose, which was correct. But a speed change that alters a cost the prose states would slip through the same way.
 
 ### Publishing
@@ -57,6 +59,7 @@ These were found by dogfooding on prose's own source and on real repositories. R
 
 - **A global `code { padding }` rule for inline spans also hit the highlighter's `<pre><code>`.** It added a stray space before every block's first token. Copied text came out clean, since padding is box model, not content. A `pre code` reset fixes it.
 - **Measure a replacement against what it replaces.** Small tokenizers replaced shiki, which was about 18 MB installed and most of what a page cost. A script compared their colours with shiki's, character by character, on this repository's files. It started near 95% and pointed straight at the misses, like arrow functions, CSS units and shell arguments. It reached 99.3% before shiki went, and cases from it stay in `tests/highlight.test.ts`. The highlighter is now about 50 times faster, and a page about a third smaller, since a token carries a class instead of an inline style.
+- **An audit that reuses a tab carries its state.** axe failed a tree link on a different number of pages each run. The rail keeps its scroll in `sessionStorage`, so each page opened where the one before had left it, sometimes with a link half under the contents. The audit now clears it, so each page is checked as it first loads.
 - **`oxlint`'s type-aware mode (`tsgolint`) is the type check** for `.ts`, not a separate `tsc --noEmit`. It caught a real `no-floating-promises` at once.
 
 ### Working style
