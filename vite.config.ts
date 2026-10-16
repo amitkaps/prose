@@ -14,6 +14,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { defineConfig } from "vite-plus";
+import { cloudflare } from "@cloudflare/vite-plugin";
 import { format } from "vite-plus/fmt";
 import { lexJs } from "./src/lexer.js";
 
@@ -69,7 +70,10 @@ const built = {
 };
 
 export default defineConfig({
-  plugins: [built],
+  // The site: `vp build` hands the folder `prose build` writes to Cloudflare, assets only, for
+  // `cf deploy --prebuilt`. It's ship's prose site: https://ship.amitkaps.com/docs/standard.md
+  publicDir: ".prose",
+  plugins: [built, cloudflare({ assetsOnly: true })],
 
   // oxfmt's defaults, as the editor has them.
   fmt: {

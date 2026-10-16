@@ -42,8 +42,8 @@ Merging it is the release, and the `release` workflow does the rest. The notes a
 
 ## The site
 
-[prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, on a Cloudflare Worker with static assets. It builds from `main`, so its configuration is a file in the repository, [wrangler.toml](../wrangler.toml). Every merge deploys it.
+[prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, on a Cloudflare Worker with static assets. It builds from `main`, so its configuration is a file in the repository, [cloudflare.config.ts](../cloudflare.config.ts). Every merge deploys it.
 
-The `prose` Worker has the build settings every Worker has, in [ship's standard](https://ship.amitkaps.com/docs/standard.md#cloudflare). `verify` ends by reading the repository into `.prose`, and `ship` deploys it.
+The `prose` Worker has the build settings every Worker has, in [ship's standard](https://ship.amitkaps.com/docs/standard.md#cloudflare). `verify` reads the repository into `.prose` and ends with `vp build`, which hands the folder to Cloudflare, as [ship's standard](https://ship.amitkaps.com/docs/standard.md#a-prose-site) has it. `ship` runs `cf deploy --prebuilt` on that.
 
-`wrangler.toml` names the domain, `prose.amitkaps.com`, which needs the `amitkaps.com` zone on the same Cloudflare account. It also sets up the two things [usage](usage.md#build) asks of a host. It points the Worker at `.prose`, serves `404.html` for a missing address, and serves `/src/store.ts` from `src/store.ts.html`.
+`cloudflare.config.ts` names the domain, `prose.amitkaps.com`, which needs the `amitkaps.com` zone on the same Cloudflare account. It also sets up the two things [usage](usage.md#build) asks of a host. It serves `404.html` for a missing address, and serves `/src/store.ts` from `src/store.ts.html`.
