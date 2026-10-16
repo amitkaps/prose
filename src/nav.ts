@@ -7,10 +7,11 @@
  *
  * `docs/README.md` makes that choice with a `nav` list in its metadata, like
  * `nav: [design.md, usage.md]`. With no list, every Markdown file in `docs/` is linked, in
- * alphabetical order. A name that isn't a file there is skipped, and `prose build` warns about it,
- * so a misspelt name doesn't drop out of the bar unnoticed. So does metadata markz can't read,
- * which would otherwise turn the bar alphabetical with no word why. The local server doesn't, since it
- * reads the list on every request. The label is the file's name, capitalised and without `.md`.
+ * alphabetical order. A name that isn't a file there is skipped, and `prose build` and
+ * `prose check` warn about it, so a misspelt name doesn't drop out of the bar unnoticed. So does
+ * metadata markz can't read, which would otherwise turn the bar alphabetical with no word why
+ * ([warnings.ts](warnings.ts)). The local server doesn't, since it reads the list on every
+ * request. The label is the file's name, capitalised and without `.md`.
  * A doc's title is often a sentence, too long for the bar.
  *
  * A site path like `/quality`, for a page the deploy writes beside the site, was ruled out. prose
@@ -21,6 +22,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "@amitkaps/markz";
 import { escapeHtml } from "./highlight.js";
+import { position, type Warning } from "./warnings.js";
 
 export interface NavItem {
   path: string;
@@ -34,24 +36,28 @@ function label(name: string): string {
 }
 
 /** The docs to link for a repository whose files (the walk's list) are under `root`. Each `nav`
- * name that isn't a doc is added to `warnings`, when given. */
-export function docsNav(root: string, files: string[], warnings?: string[]): NavItem[] {
+ * name that isn't a doc is added to `warnings`, when given, at its line in `docs/README.md`. */
+export function docsNav(root: string, files: string[], warnings?: Warning[]): NavItem[] {
   const docs = files
     .filter((path) => /^docs\/[^/]+\.md$/.test(path) && path !== "docs/README.md")
     .sort();
   let chosen: string[] | null = null;
+  let source = "";
   if (files.includes("docs/README.md")) {
     try {
-      const source = readFileSync(join(root, "docs/README.md"), "utf-8");
+      source = readFileSync(join(root, "docs/README.md"), "utf-8");
       const doc = parse(source);
       const nav = doc.metadata?.["nav"];
       if (Array.isArray(nav)) chosen = nav.map((name) => `docs/${String(name)}`);
       else {
         for (const w of doc.warnings.filter((w) => w.code.startsWith("metadata"))) {
-          const line = source.slice(0, w.start).split("\n").length;
-          warnings?.push(
-            `docs/README.md line ${line}: ${w.message}, so the bar lists every doc in alphabetical order`,
-          );
+          warnings?.push({
+            code: w.code,
+            message: `${w.message}, so the bar lists every doc in alphabetical order`,
+            instead: w.instead || undefined,
+            path: "docs/README.md",
+            ...position(source, w.start),
+          });
         }
       }
     } catch {
@@ -62,9 +68,14 @@ export function docsNav(root: string, files: string[], warnings?: string[]): Nav
   for (const path of chosen ?? []) {
     if (docs.includes(path)) continue;
     const name = path.slice("docs/".length);
-    warnings?.push(
-      `docs/README.md's nav lists ${name}, which isn't a doc in docs/, so the bar skips it`,
-    );
+    const at = source.indexOf(name, source.indexOf("nav"));
+    warnings?.push({
+      code: "nav-missing",
+      message: `nav lists ${name}, which isn't a doc in docs/, so the bar skips it`,
+      instead: "a doc's name in docs/",
+      path: "docs/README.md",
+      ...(at === -1 ? {} : position(source, at)),
+    });
   }
   return paths.map((path) => ({ path, label: label(path.slice("docs/".length)) }));
 }

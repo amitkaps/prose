@@ -11,6 +11,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 - **Tables that read well.** Rows with no grid, a quiet header, and cells that wrap between words, so a column of short words keeps its room. A table that scrolls shows it, and `---:` alignment now shows. A doc with no table of contents lets a table grow to a code run's width, which ship's dashboard needed ([reading](reading.md#around-the-page)).
 - **The text holds still.** The window alone sets where the text sits, so opening or closing the tree no longer moves it. The table of contents sits beside the text only with room to spare, as far from it as the text is from the window's edge. Otherwise it's at the top of the tree, as VS Code's outline is. The breadcrumb then stays under the bar and names the section being read, as Starlight's does, and opens the contents. The folded contents above the text went, so every page's text starts at the same height.
 - **Inline code and four tones.** Inline code has a hairline edge and pads only its sides, so it never pushes lines apart. The stylesheet has four tones, `--success`, `--warning`, `--danger` and `--info`, each with a soft background. The live dot is the first to use one.
+- **Warnings, with codes.** `prose check` prints what the text gets wrong and fails on it. `prose build` prints the same, and a local page lists its own at its foot. Each warning has a code, markz's or one of prose's three. Text marked `linguist-vendored` isn't checked ([usage](usage.md#warnings)).
 
 ### 0.4.0
 

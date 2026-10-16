@@ -7,8 +7,10 @@
  *
  * `git archive` exports the tracked files of that commit into a temporary folder, and the pages
  * are rendered from there. So no untracked file, no `.env` and no ignored output can reach the
- * site. Uncommitted edits can't either, and the build warns about them. The live parts drop out,
- * and the footer says which commit it is. The same commit always gives the same bytes.
+ * site. Uncommitted edits can't either, and the build warns about them. It also warns about what
+ * the text gets wrong, as `prose check` does, but writes the site anyway
+ * ([warnings.ts](warnings.ts)). The live parts drop out, and the footer says which commit it is.
+ * The same commit always gives the same bytes.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
@@ -20,6 +22,7 @@ import { docsNav } from "./nav.js";
 import { projectName, repoUrl } from "./repo.js";
 import { notFoundPage, renderRoute, type Site } from "./server.js";
 import { walkFiles } from "./tree.js";
+import { contentWarnings, type Warning } from "./warnings.js";
 
 export interface BuildOptions {
   /** Where the site goes; `.prose` inside the repository by default. */
@@ -31,7 +34,7 @@ export interface Built {
   pages: number;
   /** `v0.1.0 · 1c77293`: the nearest tag and the commit, or the commit alone before a first tag. */
   version: string;
-  warnings: string[];
+  warnings: Warning[];
 }
 
 /** Marks a folder as a build's output, so a later build may clear it and nothing else. */
@@ -114,7 +117,7 @@ function folders(files: string[]): string[] {
  * untracked files instead, since committing them is rarely what's wanted. Clearing retries, since
  * Finder can write a `.DS_Store` into the folder while it's being emptied.
  */
-function prepareOut(root: string, out: string, warnings: string[]): void {
+function prepareOut(root: string, out: string, warnings: Warning[]): void {
   const rel = relative(out, root);
   if (rel === "" || !rel.startsWith("..")) {
     throw new Error(`the output folder ${out} holds the repository itself`);
@@ -128,9 +131,11 @@ function prepareOut(root: string, out: string, warnings: string[]): void {
   }
   // A path inside it: `.prose/` in `.gitignore` matches a folder, which may not exist yet.
   if (inside && tryGit(root, ["check-ignore", "-q", "--no-index", join(out, MARKER)]) === null) {
-    warnings.push(
-      `${relative(root, out)} isn't in .gitignore; add ${relative(root, out).split(sep)[0]}/ to keep the site out of the repository`,
-    );
+    warnings.push({
+      code: "out-not-ignored",
+      message: `${relative(root, out)} isn't in .gitignore, so the site would show as untracked files`,
+      instead: `\`${relative(root, out).split(sep)[0]}/\` in .gitignore`,
+    });
   }
   rmSync(out, { recursive: true, force: true, maxRetries: 3 });
   mkdirSync(out, { recursive: true });
@@ -148,9 +153,12 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
   const tag = tryGit(root, ["describe", "--tags", "--exact-match", "HEAD"]) ?? undefined;
   const version = tag ? `${tag} · ${commit}` : commit;
 
-  const warnings: string[] = [];
+  const warnings: Warning[] = [];
   if (git(root, ["status", "--porcelain", "--", "."])) {
-    warnings.push(`uncommitted changes aren't in the build, which is ${commit}`);
+    warnings.push({
+      code: "uncommitted",
+      message: `uncommitted changes aren't in the build, which is ${commit}`,
+    });
   }
   const out = resolve(root, options.out ?? ".prose");
   prepareOut(root, out, warnings);
@@ -171,8 +179,9 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
       live: false,
       snapshot: { commit, tag },
       repo: repoUrl(root),
-      nav: docsNav(snapshot, files, warnings),
+      nav: docsNav(snapshot, files),
     };
+    warnings.push(...contentWarnings(snapshot, files, root));
     const paths = ["", ...folders(files), ...files];
     // Written first, so a source file named `404` keeps its page.
     writeFileSync(join(out, "404.html"), notFoundPage(site));
