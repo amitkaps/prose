@@ -35,6 +35,7 @@ prose needs Node 26 or newer, the Node it's built and tested on.
 npm install -g @amitkaps/prose
 prose .            # read this repository in the browser
 prose build        # the same pages as static files, from the last commit
+prose check        # what the text gets wrong, by file and line
 ```
 
 Or without installing: `npx @amitkaps/prose .`.
