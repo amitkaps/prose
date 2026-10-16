@@ -1,14 +1,6 @@
 # Development
 
-How to work on prose itself: build it, test it, release it and deploy its site. The rules for changing it, including the prose rules it follows, are in [AGENTS.md](../AGENTS.md).
-
-## Toolchain
-
-`package.json` says what the repository needs. `devEngines` names the Node and pnpm to develop with, and `engines` names the Node range the published command runs on. mise reads the Node version from `devEngines`, with its `idiomatic_version_file_enable_tools` setting on for `node`, so there's no `mise.toml`. `packageManager` repeats the exact pnpm version for CI's `pnpm/action-setup`.
-
-prose installs as one package, with no dependencies. markz is a dev dependency, so the build bundles it into `dist/`. Anything else it needs is written here, or bundled the same way.
-
-prose supports the Node it's built and tested on. So `engines` and `devEngines` both say `>=26`, `@types/node` is 26, and CI runs on one Node.
+How to work on prose itself: build it, test it, release it and deploy its site. What every repository shares, like the toolchain, CI, the Worker's settings and releases, is in [ship's standard](https://ship.amitkaps.com/docs/standard.md), and isn't repeated here. The rules for changing it are in [AGENTS.md](../AGENTS.md).
 
 ## Build and test
 
@@ -23,13 +15,6 @@ pnpm run keyboard      # the keyboard check, in Chrome
 ```
 
 The build and server tests run against the committed [`tests/fixtures/simple`](../tests/fixtures/simple/), because `prose build` reads `HEAD`. Commit a change to the fixture before testing it.
-
-## Workflows
-
-There are two, in [`.github/workflows/`](../.github/workflows/), and each file's own prose says what it does.
-
-- **`ci.yml`** runs `verify`: the format, lint and type checks, the tests, the build with publint, then the site. It runs on every pull request and every push to `main`. Branch protection requires the check by its name, `ci`.
-- **`release.yml`** runs when a merge changes `package.json`'s version. It runs `verify` and packs the tarball. Then it stages the version on npm, tags the commit `vX.Y.Z` and attaches the tarball to a GitHub Release. It's the same file in every package, copied from ship.
 
 ## What ships
 
@@ -47,7 +32,7 @@ The package is one bundle with no dependencies, about 200 KB unpacked. It's read
 
 Run `pnpm run axe` and `pnpm run keyboard` first, and fix what they find. The audit runs axe on every page of this site, in both colour schemes, at a desktop and a phone width ([tests/axe.ts](../tests/axe.ts)). The keyboard check reads a page of each kind with Tab, Enter, Space and Esc ([tests/keyboard.ts](../tests/keyboard.ts)). Both need Chrome on the machine, so they aren't in CI yet. Running them in the release workflow could come later.
 
-prose releases the way every package does, as [ship's standard](https://github.com/amitkaps/ship/blob/main/docs/standard.md#releases) sets out. From ship, open the pull request that bumps `version`. Its description goes above the release's generated notes.
+prose releases the way every package does, as [ship's standard](https://ship.amitkaps.com/docs/standard.md#releases) sets out. From ship, open the pull request that bumps `version`. Its description goes above the release's generated notes.
 
 ```sh
 pnpm release prose 0.5.0 --notes "What changed for users …"
@@ -55,32 +40,10 @@ pnpm release prose 0.5.0 --notes "What changed for users …"
 
 Merging it is the release, and the `release` workflow does the rest. The notes are generated from the pull requests' labels (`.github/release.yml`), so there's no changelog file to keep. The site needs no step of its own, because Cloudflare builds it from `main` ([the site](#the-site)).
 
-### Publishing to npm
-
-The workflow stages each version on npm with trusted publishing, which uses OIDC and adds provenance. There's no token, and CI can't release on its own. A maintainer approves each version with 2FA, in the **Staged Packages** tab on npmjs.com or with `npm stage approve <id>`.
-
-Set this up once, in the package's settings on npmjs.com. Add a trusted publisher for the repository `amitkaps/prose` and the workflow `release.yml`. Leave direct publishing (`npm publish`) and dist-tags unchecked, so staging is all it can do.
-
-npm may not take that setting before the package exists. If so, publish the first version by hand, then set the publisher. Run it from a folder outside the repository, because `npm` refuses to run in one whose `devEngines` names pnpm.
-
-```sh
-pnpm pack && cd /tmp && npm login && npm publish ~/code/prose/amitkaps-prose-<version>.tgz --access public
-```
-
-The workflow skips a version that's already on the registry.
-
 ## The site
 
 [prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, on a Cloudflare Worker with static assets. It builds from `main`, so its configuration is a file in the repository, [wrangler.toml](../wrangler.toml). Every merge deploys it.
 
-In Cloudflare, create a Worker named `prose` from the repository, with these settings.
-
-- **Production branch:** `main`
-- **Build command:** `pnpm run verify`
-- **Deploy command:** `pnpm run ship`
-- **Build variable:** `NODE_VERSION` set to `26`, since Cloudflare reads pnpm's version from the repository but not Node's.
-- **Build cache:** on.
-
-The two commands are the same in every project, and `package.json` says what they run. `verify` runs the checks, the tests and the build, then reads the repository into `.prose`. It stops on a failing check, so a merge that breaks one doesn't deploy. `ship` runs `wrangler deploy` on what `verify` built. It's `ship` and not `deploy` because `pnpm deploy` is a pnpm command of its own, which a script by that name can't replace.
+The `prose` Worker has the build settings every Worker has, in [ship's standard](https://ship.amitkaps.com/docs/standard.md#cloudflare). `verify` ends by reading the repository into `.prose`, and `ship` deploys it.
 
 `wrangler.toml` names the domain, `prose.amitkaps.com`, which needs the `amitkaps.com` zone on the same Cloudflare account. It also sets up the two things [usage](usage.md#build) asks of a host. It points the Worker at `.prose`, serves `404.html` for a missing address, and serves `/src/store.ts` from `src/store.ts.html`.
