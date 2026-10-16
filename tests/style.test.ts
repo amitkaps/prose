@@ -1,39 +1,84 @@
 /** @prose
- * # Stylesheet tests
+ * # Style tests
  *
- * Every rule in the shipped stylesheet sits in a cascade layer. A rule outside one would beat
- * every layer, and no page would show the mistake at once ([style.css](../src/page/style.css)).
+ * Where a text's style breaks the plain-sentence rules, and the forms that look like a break but
+ * aren't, like a list item's label, an abbreviation or a short gloss. Then the advice on a
+ * repository's files, at each one's own line, leaving out what isn't checked.
  */
-import { describe, expect, it } from "vite-plus/test";
-import { STYLE } from "../src/assets.js";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { parse } from "@amitkaps/markz";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
+import { styleAdvice, textStyle } from "../src/style.js";
+import { projectFiles } from "../src/tree.js";
 
-/** The start of each top-level statement, up to its `{` or `;`. Comments are already stripped. */
-function topLevel(css: string): string[] {
-  const found: string[] = [];
-  let depth = 0;
-  let start = 0;
-  for (let i = 0; i < css.length; i++) {
-    const c = css[i];
-    if (c === '"' || c === "'") {
-      i = css.indexOf(c, i + 1);
-    } else if (c === "{") {
-      if (depth === 0) found.push(css.slice(start, i).trim());
-      depth++;
-    } else if (c === "}") {
-      depth--;
-      if (depth === 0) start = i + 1;
-    } else if (c === ";" && depth === 0) {
-      found.push(css.slice(start, i).trim());
-      start = i + 1;
+const codes = (text: string) => textStyle(parse(text)).map((n) => n.code);
+const words = (n: number) => Array.from({ length: n }, () => "word").join(" ");
+
+describe("textStyle", () => {
+  it("notes a first paragraph past about three lines, and only the first", () => {
+    expect(codes(`# A\n\n${words(30)}. ${words(31)}.\n`)).toEqual(["long-summary"]);
+    expect(codes(`# A\n\nShort.\n\n${words(30)}. ${words(31)}.\n`)).toEqual([]);
+    expect(codes(`- ${words(30)}. ${words(31)}.\n`)).toEqual([]);
+  });
+
+  it("notes a long sentence at its start, and splits before a lowercase name", () => {
+    const text = `Short one. ${words(36)}.\n`;
+    expect(textStyle(parse(text))).toMatchObject([{ code: "long-sentence", start: 11 }]);
+    expect(codes(`${words(20)}. prose ${words(20)}.\n`)).toEqual([]);
+    expect(codes(`${words(20)}, e.g. ${words(20)}.\n`)).toEqual(["long-sentence"]);
+  });
+
+  it("counts inline code as one word and a link's text as its words", () => {
+    expect(codes(`\`${words(40)}\` is fine.\n`)).toEqual([]);
+    expect(codes(`[${words(36)}](x.md).\n`)).toEqual(["long-sentence"]);
+  });
+
+  it("notes a semicolon, and a colon only before a lowercase clause", () => {
+    expect(codes("One idea; another.\n")).toEqual(["semicolon"]);
+    expect(codes("It means one thing: the other follows.\n")).toEqual(["colon"]);
+    expect(codes("It does this:\n\n- a list\n")).toEqual([]);
+    expect(codes("- [a.ts](a.ts): what it does.\n- `b`: what it holds.\n")).toEqual([]);
+    expect(codes("- **Stories:** one page, its own design.\n")).toEqual([]);
+  });
+
+  it("notes an aside in parentheses, but not a link, an example or a short gloss", () => {
+    expect(codes("It builds (which takes a while to finish) first.\n")).toEqual(["parenthetical"]);
+    expect(codes("It builds ([usage](usage.md)) first.\n")).toEqual([]);
+    expect(codes("Some tools (like the formatter and the linter) keep working.\n")).toEqual([]);
+    expect(codes("The port (default 1234) is tried first.\n")).toEqual([]);
+  });
+
+  it("reads paragraphs only, not headings, code or tables", () => {
+    const text = `# One; two\n\n\`\`\`\none; two\n\`\`\`\n\n| a; b |\n| --- |\n| c; d |\n`;
+    expect(codes(text)).toEqual([]);
+  });
+});
+
+describe("styleAdvice", () => {
+  let root: string;
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), "prose-style-"));
+    const files: Record<string, string> = {
+      "README.md": "# Demo\n\nOne idea; another.\n",
+      "src/a.ts": "/** @prose\n * # A\n *\n * One idea; another.\n */\nexport const a = 1;\n",
+      "fixtures/b.md": "# B\n\nOne idea; another.\n",
+      ".gitattributes": "fixtures/** -prose\n",
+    };
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(join(root, path, ".."), { recursive: true });
+      writeFileSync(join(root, path), text);
     }
-  }
-  return found;
-}
+    execFileSync("git", ["init", "-q"], { cwd: root });
+  });
+  afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-describe("style.css", () => {
-  it("puts every rule in a layer", () => {
-    const statements = topLevel(STYLE.body);
-    expect(statements).toContain("@layer tokens, base, components");
-    expect(statements.filter((s) => !/^@(layer|property|view-transition)\b/.test(s))).toEqual([]);
+  it("places advice at the file's own line and column, and skips text marked -prose", () => {
+    expect(styleAdvice(root, projectFiles(root))).toMatchObject([
+      { path: "README.md", code: "semicolon", line: 3, column: 9 },
+      { path: "src/a.ts", code: "semicolon", line: 4, column: 12 },
+    ]);
   });
 });

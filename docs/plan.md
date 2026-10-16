@@ -48,7 +48,7 @@ The `@prose` convention and the read-only renderer work. This repository is read
 ## Next, in order
 
 - [ ] **Checks for more of the rules.** `prose check` reads more of [the agent rules](usage.md#for-agents), in five steps. Each was run on markz, sitez, ship and pagez first, to see what it finds.
-  - Notes on style, which print but pass. Done ([usage](usage.md#notes)).
+  - Advice on style, from `prose style` on the files just written. It's never in CI or on a page. Done ([usage](usage.md#style)).
   - Read `.gitattributes` for prose, and a `-prose` attribute for text that isn't checked, like fixtures. Done ([usage](usage.md#warnings)).
   - Warnings on structure. A link to a file or heading that isn't there, a later comment that opens with `##`, `@prose` on one line with its text, and a file's summary with no heading.
   - Warnings on what's missing. A source file with no `@prose`, a folder with no `README.md`, and a library's export with no comment. JSON can't hold `@prose`, so it's never asked for.

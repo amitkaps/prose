@@ -6,29 +6,26 @@
  * name that isn't a doc. Each has a stable code, its place, what's wrong, and what to write
  * instead ([usage](../docs/usage.md#warnings)).
  *
- * A finding is a warning or a note. A warning is a fault a machine can be sure of, so
- * `prose check` fails on it. A note is advice on style, which it prints but passes
- * ([notes.ts](notes.ts)). `prose build` prints both, and `prose .` lists a page's own at its foot
- * ([cli.ts](cli.ts)). The text is parsed again for them, apart from rendering, so a page is
- * rendered the same whether or not anyone asks.
+ * `prose build` prints them, `prose check` fails on them, and `prose .` lists a page's own at its
+ * foot ([cli.ts](cli.ts)). The text is parsed again for them, apart from rendering, so a page is
+ * rendered the same whether or not anyone asks. Advice on style isn't a warning, and only
+ * `prose style` gives it ([style.ts](style.ts)).
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parse, type WarningCode as MarkzCode } from "@amitkaps/markz";
+import { parse, type Document, type WarningCode as MarkzCode } from "@amitkaps/markz";
 import { docsNav } from "./nav.js";
-import { textNotes, type NoteCode } from "./notes.js";
 import type { ProseComment } from "./parser.js";
 import { extensionOf, fileToNode, isSource } from "./tree.js";
 
 /** prose's own codes. markz's are in its reference, and none share a name. */
 export type ProseCode = "nav-missing" | "uncommitted" | "out-not-ignored";
-export type WarningCode = MarkzCode | ProseCode | NoteCode;
+export type WarningCode = MarkzCode | ProseCode;
 
-export interface Warning {
-  code: WarningCode;
-  /** A note is advice that `check` prints but passes. Without a level, it's a warning. */
-  level?: "note";
+/** A finding in a file. `prose style` gives its advice in the same shape, with its own codes. */
+export interface Warning<Code extends string = WarningCode> {
+  code: Code;
   message: string;
   /** The form to write instead, as markz words it: a noun, like `inline links`. */
   instead?: string;
@@ -40,21 +37,11 @@ export interface Warning {
 
 /** `docs/x.md:3:5: reference-link: reference link; write inline links`, one warning a line, as a
  *  compiler writes it, so an editor's terminal links the place. */
-export function formatWarning(w: Warning): string {
+export function formatWarning(w: Warning<string>): string {
   const place = w.path
     ? `${w.path}${w.line ? `:${w.line}${w.column ? `:${w.column}` : ""}` : ""}: `
     : "";
   return `${place}${w.code}: ${w.message}${w.instead ? `; write ${w.instead}` : ""}`;
-}
-
-/** `2 warnings and 1 note`, leaving out a level with none. */
-export function tally(found: Warning[]): string {
-  const notes = found.filter((w) => w.level === "note").length;
-  const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-  const parts = [];
-  if (found.length > notes) parts.push(count(found.length - notes, "warning"));
-  if (notes) parts.push(count(notes, "note"));
-  return parts.join(" and ");
 }
 
 /** The 1-based line and column of `offset` in `text`. */
@@ -65,29 +52,37 @@ export function position(text: string, offset: number): { line: number; column: 
 }
 
 /** A finding at an offset in the text it was found in, before it has a place in a file. */
-type Found = Omit<Warning, "path" | "line" | "column"> & { start: number };
+export type Found<Code extends string = WarningCode> = Omit<
+  Warning<Code>,
+  "path" | "line" | "column"
+> & { start: number };
 
-/** A text's markz warnings and its notes, from one parse, in the order they occur. */
-function textFindings(text: string): Found[] {
-  const doc = parse(text);
-  const warnings: Found[] = doc.warnings.map((w) => ({
+/** What to look for in a parsed text: markz's warnings, or `prose style`'s advice. */
+export type Finder<Code extends string> = (doc: Document) => Found<Code>[];
+
+/** What markz can't read in a text. */
+function markzFindings(doc: Document): Found[] {
+  return doc.warnings.map((w) => ({
     code: w.code,
     message: w.message,
     instead: w.instead || undefined,
     start: w.start,
   }));
-  const notes: Found[] = textNotes(doc).map((n) => ({ ...n, level: "note" }));
-  return [...warnings, ...notes].sort((a, b) => a.start - b.start);
 }
 
-/** A Markdown file's warnings and notes. The whole file is parsed, metadata included, so a line
- *  is the file's own. */
-export function markdownWarnings(path: string, source: string): Warning[] {
-  return textFindings(source).map(({ start, ...w }) => ({
+/** A Markdown text's findings. The whole file is parsed, metadata included, so a line is the
+ *  file's own. */
+function inMarkdown<Code extends string>(path: string, source: string, find: Finder<Code>) {
+  return find(parse(source)).map(({ start, ...w }): Warning<Code> => ({
     ...w,
     path,
     ...position(source, start),
   }));
+}
+
+/** A Markdown file's warnings. */
+export function markdownWarnings(path: string, source: string): Warning[] {
+  return inMarkdown(path, source, markzFindings);
 }
 
 /** @prose
@@ -95,17 +90,22 @@ export function markdownWarnings(path: string, source: string): Warning[] {
  *
  * A comment's prose is its body, with the delimiters, the marker and each line's gutter taken
  * off. A body's lines are still the file's lines, one for one, from the first one with text. So
- * a warning's line in the body is found in the file by counting on from there. Its column is
+ * a finding's line in the body is found in the file by counting on from there. Its column is
  * found by where the body's line sits in the file's, after its gutter.
  */
-export function commentWarnings(path: string, source: string, comments: ProseComment[]): Warning[] {
+function inComments<Code extends string>(
+  path: string,
+  source: string,
+  comments: ProseComment[],
+  find: Finder<Code>,
+): Warning<Code>[] {
   const lines = source.split("\n").map((line) => line.replace(/\r$/, ""));
-  const found: Warning[] = [];
+  const found: Warning<Code>[] = [];
   for (const comment of comments) {
     const body = comment.body.split("\n");
     let start = position(source, comment.start).line - 1;
     while (start < lines.length && !lines[start]!.includes(body[0]!)) start++;
-    for (const { start: offset, ...w } of textFindings(comment.body)) {
+    for (const { start: offset, ...w } of find(parse(comment.body))) {
       const at = position(comment.body, offset);
       const line = lines[start + at.line - 1] ?? "";
       const text = body[at.line - 1] ?? "";
@@ -118,15 +118,29 @@ export function commentWarnings(path: string, source: string, comments: ProseCom
   return found;
 }
 
-/** One file's warnings: a Markdown file's, or a source file's prose comments'. A file that isn't
+/** A source file's prose comments' warnings. */
+export function commentWarnings(path: string, source: string, comments: ProseComment[]): Warning[] {
+  return inComments(path, source, comments, markzFindings);
+}
+
+/** One file's findings: a Markdown file's, or a source file's prose comments'. A file that isn't
  *  read for prose has none. */
-export function fileWarnings(root: string, path: string): Warning[] {
+export function findInFile<Code extends string>(
+  root: string,
+  path: string,
+  find: Finder<Code>,
+): Warning<Code>[] {
   if (!isSource(root, path)) return [];
   if (extensionOf(path) === "md") {
-    return markdownWarnings(path, readFileSync(join(root, path), "utf-8"));
+    return inMarkdown(path, readFileSync(join(root, path), "utf-8"), find);
   }
   const node = fileToNode(root, path);
-  return commentWarnings(path, node.source ?? "", node.comments ?? []);
+  return inComments(path, node.source ?? "", node.comments ?? [], find);
+}
+
+/** One file's warnings. */
+export function fileWarnings(root: string, path: string): Warning[] {
+  return findInFile(root, path, markzFindings);
 }
 
 /** @prose
@@ -140,7 +154,7 @@ export function fileWarnings(root: string, path: string): Warning[] {
  * before `-prose`, and they also hide a file from GitHub's languages. That suits copied-in code,
  * but not a repository's own tests. Outside a git repository, every file is checked.
  */
-function unchecked(repo: string, files: string[]): Set<string> {
+export function unchecked(repo: string, files: string[]): Set<string> {
   const marked = new Set<string>();
   if (files.length === 0) return marked;
   try {

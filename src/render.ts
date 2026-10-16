@@ -18,7 +18,7 @@ import { escapeHtml, highlight, markdownHtml } from "./highlight.js";
 import { type NavItem, renderNav } from "./nav.js";
 import type { ProseComment } from "./parser.js";
 import { extensionOf, type TreeNode } from "./tree.js";
-import { tally, type Warning } from "./warnings.js";
+import type { Warning } from "./warnings.js";
 
 export function renderMarkdown(text: string): string {
   return text.trim() ? markdownHtml(parse(text)) : "";
@@ -156,8 +156,8 @@ export function binaryBody(node: TreeNode): string {
  * reader can't fix the text.
  *
  * It comes after the text, so it never moves it. Each line links to its place in the editor, and
- * the page reloads with the list redone when the file is saved. A page with only notes shows them
- * in the calmer `info` tone, since nothing on it is a fault.
+ * the page reloads with the list redone when the file is saved. Advice on style never shows here,
+ * since a page is for reading ([style.ts](style.ts)).
  */
 export function warningsNotice(warnings: Warning[], link: (w: Warning) => string): string {
   if (warnings.length === 0) return "";
@@ -165,9 +165,8 @@ export function warningsNotice(warnings: Warning[], link: (w: Warning) => string
     const what = renderSummary(`${w.message}${w.instead ? `; write ${w.instead}` : ""}`);
     return `<li><a href="${escapeHtml(link(w))}">line ${w.line ?? 1}</a> ${what} <span class="warning-code">${escapeHtml(w.code)}</span></li>`;
   });
-  const notesOnly = warnings.every((w) => w.level === "note");
-  const kind = notesOnly ? `warnings notes" aria-label="Notes` : `warnings" aria-label="Warnings`;
-  return `<aside class="${kind}"><p>${tally(warnings)} in this file</p><ul>${items.join("")}</ul></aside>`;
+  const count = `${warnings.length} warning${warnings.length === 1 ? "" : "s"}`;
+  return `<aside class="warnings" aria-label="Warnings"><p>${count} in this file</p><ul>${items.join("")}</ul></aside>`;
 }
 
 /** Shown in place of prose on a file that has none, so **Prose only** doesn't leave a bare header. */
