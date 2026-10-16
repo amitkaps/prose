@@ -65,11 +65,12 @@ prose check             # what the text gets wrong, by file and line
 prose check docs        # another folder
 ```
 
-`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It always ends with how many files it read, and how many `.gitattributes` left out.
+`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It always ends with how many files it read, and how many `.gitattributes` left out. A folder's warning, like a missing `README.md`, counts the folder apart from the files.
 
 ```text
 prose: warning: docs/usage.md:12:5: reference-link: reference link; write inline links
-prose: 1 warning in 1 file, of 84 files checked, 12 left out by .gitattributes
+prose: warning: scripts/: no-readme: folder with no `README.md`; write a `README.md` that says what lives there
+prose: 2 warnings in 1 file and 1 folder, of 84 files checked, 12 left out by .gitattributes
 ```
 
 Each warning has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds its own, on how the text is put together ([writing](writing.md)).
