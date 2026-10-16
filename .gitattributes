@@ -3,4 +3,4 @@
 #
 # The fixtures are sample projects the tests read, so prose doesn't hold them to its own rules
 # ([usage](docs/usage.md#warnings)).
-tests/fixtures/** -prose
+tests/fixtures/** prose-unchecked

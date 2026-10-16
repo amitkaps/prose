@@ -46,7 +46,7 @@ describe("files and folders", () => {
         "pkg/.github/workflows/ci.yml": "on: push\n",
         "docs/README.md": "# Docs\n",
         "fixtures/sample.ts": "export const s = 1;\n",
-        ".gitattributes": "# @prose\n# # Attributes\n#\n# Samples.\nfixtures/** -prose\n",
+        ".gitattributes": "# @prose\n# # Attributes\n#\n# Samples.\nfixtures/** prose-unchecked\n",
       }),
     ).toEqual([
       "pkg/ no-readme",

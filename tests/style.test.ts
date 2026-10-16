@@ -65,7 +65,7 @@ describe("styleAdvice", () => {
       "README.md": "# Demo\n\nOne idea; another.\n",
       "src/a.ts": "/** @prose\n * # A\n *\n * One idea; another.\n */\nexport const a = 1;\n",
       "fixtures/b.md": "# B\n\nOne idea; another.\n",
-      ".gitattributes": "fixtures/** -prose\n",
+      ".gitattributes": "fixtures/** prose-unchecked\n",
     };
     for (const [path, text] of Object.entries(files)) {
       mkdirSync(join(root, path, ".."), { recursive: true });
@@ -75,7 +75,7 @@ describe("styleAdvice", () => {
   });
   afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-  it("places advice at the file's own line and column, and skips files .gitattributes marks -prose", () => {
+  it("places advice at the file's own line and column, and skips files .gitattributes marks prose-unchecked", () => {
     expect(styleAdvice(root, projectFiles(root))).toMatchObject([
       { path: "README.md", code: "semicolon", line: 3, column: 9 },
       { path: "src/a.ts", code: "semicolon", line: 4, column: 12 },

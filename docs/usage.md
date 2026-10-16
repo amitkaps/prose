@@ -91,10 +91,10 @@ Each warning has a place, a code, what's wrong and what to write instead. Most c
 
 A Markdown file is prose already, and JSON can't hold a comment, so neither is asked for `@prose`. Nor is HTML, since a hand-written page is served with its comments, prose and all ([writing](writing.md#in-each-language)). What a package ships is read from the `types` paths in its `package.json`, like `./dist/index.d.ts` for `src/index.ts`, through each `export … from`. A link with a scheme, a site path like `/about`, or a path out of the repository isn't checked, since prose can't see where it goes. Neither is a GitHub line, like `#L42`. The last two codes are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
 
-Some files aren't held to the rules, like fixtures, build snapshots or a corpus of other projects' docs. Mark them `-prose` in `.gitattributes`, and `prose check` leaves them out. Their pages still read as any other, and on `prose .` each says it wasn't checked.
+Some files aren't held to the rules, like fixtures, build snapshots or a corpus of other projects' docs. Mark them `prose-unchecked` in `.gitattributes`, and `prose check` leaves them out. Their pages still read as any other, and on `prose .` each says it wasn't checked.
 
 ```text
-tests/fixtures/** -prose
+tests/fixtures/** prose-unchecked
 ```
 
 `linguist-vendored` and `linguist-generated` leave a file out too, as GitHub reads them. They also hide it from the repository's languages on GitHub. So `linguist-vendored` suits copied-in code, and `linguist-generated` a test's build snapshot, whose diff GitHub then folds. Neither suits a repository's own tests.
@@ -123,7 +123,7 @@ It's for the writer of a file, right after writing it. So it isn't part of `pros
 | `colon`         | a colon joins two ideas, with a lowercase clause after it                      |
 | `parenthetical` | a parenthesis holds an aside, not a link, an example or a gloss of a few words |
 
-Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A colon that leads into a list, or labels a list item, as in `- [a.ts](a.ts): what it does`, gets no suggestion. A file that `.gitattributes` marks `-prose` gets no advice, as it gets no warnings ([warnings](#warnings)).
+Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A colon that leads into a list, or labels a list item, as in `- [a.ts](a.ts): what it does`, gets no suggestion. A file that `.gitattributes` marks `prose-unchecked` gets no advice, as it gets no warnings ([warnings](#warnings)).
 
 ## For agents
 
@@ -140,7 +140,7 @@ Link to this section from the project's `AGENTS.md` or `CLAUDE.md`, so it follow
 - State a rule once. If a doc or a tested file owns it, link to it by repo path and keep only how and why this code does it.
 - Decisions made in the chat go into the prose in the same change. One that spans files goes into the doc it changes, and one about a single spot goes into the `@prose` there. Write docs for a reader who wasn't in the chat, since they may be published as they are. When something is ruled out, write down that it's out and why, so it isn't rebuilt.
 - If the project keeps a plan, keep it current, with what's done in one line each and what's next in order.
-- Never mark a file `-prose` in `.gitattributes` to quiet a warning. Fix the text. `-prose` is for files that are wrong on purpose, like fixtures.
+- Never mark a file `prose-unchecked` in `.gitattributes` to quiet a warning. Fix the text. `prose-unchecked` is for files that are wrong on purpose, like fixtures.
 - After writing prose, run `prose style` on the files you changed. Rewrite where a suggestion helps the reader, and leave it where it doesn't. Never split or reword a sentence only to make a suggestion go away.
 - To find your way, `grep -rn -A4 "@prose" src` is the map, and `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet. Add an `--include` for each other language the project writes.
 ```
