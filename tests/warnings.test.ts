@@ -83,7 +83,7 @@ describe("a repository's warnings", () => {
       "src/a.ts": "/** @prose\n * # A\n *\n * A *star*.\n */\nexport const a = 1;\n",
       "src/b.ts": "/** @prose\n * # B\n *\n * One idea; another.\n */\nexport const b = 1;\n",
       ".gitattributes":
-        "# @prose\n# Text that isn't ours; prose leaves it alone.\nvendor/** linguist-vendored\nfixtures/** -prose\n",
+        "# @prose\n# # Attributes\n#\n# Text that isn't ours; prose leaves it alone.\nvendor/** linguist-vendored\nfixtures/** -prose\n",
     };
     for (const [path, text] of Object.entries(files)) {
       mkdirSync(join(root, path, ".."), { recursive: true });
