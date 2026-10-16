@@ -49,6 +49,12 @@
  * in the page's warm ink ([highlight.ts](../highlight.ts)). They don't follow the accent, so a
  * project's colour never changes how its code reads.
  *
+ * Four tones say how worried a reader should be: `--success`, `--warning`, `--danger` and
+ * `--info`. They're nouns on one scale, as most design systems name them, so a page maps its own
+ * states onto them, as a dashboard's held check onto `--warning`. Each has a `-soft` background to
+ * pair with, for a tinted cell or note. Each passes AA on the paper and on its soft background, in
+ * both modes. The live dot is `--success`.
+ *
  * ## Type
  *
  * Five sizes. `--text-s` is for the bar, the rail and code, `--text-xs` for labels, and the
@@ -67,7 +73,14 @@
     --accent: oklch(0.5 0.13 var(--accent-h));
     --link: var(--accent);
     --selection: oklch(0.75 0.13 var(--accent-h) / 0.3);
-    --live: oklch(0.63 0.16 148);
+    --success: oklch(0.5 0.13 148);
+    --success-soft: oklch(0.95 0.03 148);
+    --warning: oklch(0.52 0.11 75);
+    --warning-soft: oklch(0.95 0.035 85);
+    --danger: oklch(0.5 0.17 27);
+    --danger-soft: oklch(0.95 0.025 27);
+    --info: oklch(0.5 0.12 257);
+    --info-soft: oklch(0.95 0.02 257);
     --shade: oklch(0.2 0.01 70 / 0.2);
     --measure: 44rem;
     --rail: 16rem;
@@ -120,7 +133,14 @@
       --rule: oklch(0.32 0.008 75);
       --accent: oklch(0.78 0.1 var(--accent-h));
       --selection: oklch(0.6 0.1 var(--accent-h) / 0.35);
-      --live: oklch(0.7 0.15 148);
+      --success: oklch(0.75 0.14 148);
+      --success-soft: oklch(0.28 0.035 148);
+      --warning: oklch(0.8 0.12 85);
+      --warning-soft: oklch(0.28 0.035 85);
+      --danger: oklch(0.75 0.13 27);
+      --danger-soft: oklch(0.28 0.04 27);
+      --info: oklch(0.75 0.1 257);
+      --info-soft: oklch(0.28 0.035 257);
       --shade: oklch(0 0 0 / 0.45);
       --code-comment: oklch(0.63 0.019 81);
       --code-keyword: oklch(0.74 0.106 52);
@@ -714,7 +734,7 @@
       width: 0.5rem;
       height: 0.5rem;
       border-radius: 50%;
-      background: var(--live);
+      background: var(--success);
       .offline & {
         background: var(--muted);
         opacity: 0.5;
@@ -806,6 +826,10 @@
  * # Prose
  *
  * Headings, lists, tables and quotes in a doc or a prose comment.
+ *
+ * Inline code sits in a light box with a hairline edge, in the text's colour, so it stays apart
+ * from a link. It has no size of its own ([type](#type)). The box pads only its sides, so it
+ * never pushes lines apart, and a box that wraps keeps its edges on both lines.
  */
 @layer components {
   .prose {
@@ -832,8 +856,10 @@
     }
     & :not(pre) > code {
       background: var(--panel);
+      border: 1px solid var(--rule);
       border-radius: var(--radius-s);
-      padding: 0.1em 0.3em;
+      padding: 0 0.3em;
+      box-decoration-break: clone;
     }
   }
 }
