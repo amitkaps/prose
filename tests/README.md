@@ -14,6 +14,7 @@ One test file for each source file that has logic, run with `pnpm run test`. The
 - [structure.test.ts](structure.test.ts): links that reach nothing, headings that skip a level, and prose on the marker's line.
 - [style.test.ts](style.test.ts): the advice `prose style` gives, and what looks like a break but isn't.
 - [stylesheet.test.ts](stylesheet.test.ts): every rule in the stylesheet sits in a layer.
+- [cli.test.ts](cli.test.ts): the command's exit codes, streams, summary and flags, run on the built command.
 - [accent.test.ts](accent.test.ts): a project's colour and tab icon, and the browser's bar in the paper's colour.
 
 Two checks need Chrome, so they run by hand before a release, not with the rest. [axe.ts](axe.ts) is the accessibility audit, `pnpm run axe`. [keyboard.ts](keyboard.ts) reads pages by keyboard, `pnpm run keyboard`. Both build and serve the site through [site.ts](site.ts).

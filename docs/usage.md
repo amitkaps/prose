@@ -65,11 +65,12 @@ prose check             # what the text gets wrong, by file and line
 prose check docs        # another folder
 ```
 
-`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It always ends with how many files it read, and how many `.gitattributes` left out. A folder's warning, like a missing `README.md`, counts the folder apart from the files.
+`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It always ends with how many files it read, and how many `.gitattributes` left out. A folder's warning, like a missing `README.md`, counts the folder apart from the files. With more than one warning, a line before that counts them by code, most first.
 
 ```text
 prose: warning: docs/usage.md:12:5: reference-link: reference link; write inline links
 prose: warning: scripts/: no-readme: folder with no `README.md`; write a `README.md` that says what lives there
+prose: by code: no-readme 1, reference-link 1
 prose: 2 warnings in 1 file and 1 folder, of 84 files checked, 12 left out by .gitattributes
 ```
 
@@ -106,11 +107,14 @@ prose style docs/usage.md src/store.ts   # advice on the files you just wrote
 prose style docs                         # a folder
 ```
 
-`prose style` gives advice on how the files you name read, against [the agent rules](#for-agents). It prints one suggestion a line, like a warning, and always passes. With no path, it reads every file. It ends with how many files it read, as `prose check` does.
+`prose style` gives advice on how the files you name read, against [the agent rules](#for-agents). It prints one suggestion a line, like a warning, and always passes. With no path, it reads every file. It ends with how many files it read, and counts its suggestions by code, as `prose check` does.
 
 ```text
 prose: style: docs/usage.md:20:31: semicolon: semicolon joining two ideas; write two sentences
-prose: 1 suggestion in 1 file, of 12 files read
+prose: style: docs/usage.md:41:12: semicolon: semicolon joining two ideas; write two sentences
+prose: style: src/store.ts:9:24: colon: colon joining two ideas; write two sentences
+prose: by code: semicolon 2, colon 1
+prose: 3 suggestions in 2 files, of 12 files read
 ```
 
 It's for the writer of a file, right after writing it. So it isn't part of `prose check` and never shows on a page. A count of words is only a guess at what's hard to read. In CI or on every page, it would teach an agent to dodge the count.

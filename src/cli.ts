@@ -12,7 +12,8 @@
  * `check` and `style` read the working tree, as `prose .` does, not the commit a build publishes.
  * So `check` never warns about uncommitted changes, or about where a build would go. `check` always
  * ends with how many files it read, and how many `.gitattributes` left out. A skip is never
- * silent, and a wrong folder doesn't pass as clean.
+ * silent, and a wrong folder doesn't pass as clean. Before that, both count what they found by
+ * code, so a reader sees the shape of a long list without tallying it.
  *
  * The flags are only the few a person would reach for. They set the port, skip opening the
  * browser, and say where a build goes ([build.ts](build.ts)). What each page shows is in
@@ -59,6 +60,16 @@ function report(w: Warning): void {
 
 const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+/** `prose: by code: semicolon 3, colon 1`, most first, so a long list reads at a glance without
+ *  counting it. One finding needs no summary. */
+function byCode(found: Warning<string>[]): string {
+  if (found.length < 2) return "";
+  const counts = new Map<string, number>();
+  for (const w of found) counts.set(w.code, (counts.get(w.code) ?? 0) + 1);
+  const ranked = [...counts].sort(([a, m], [b, n]) => n - m || a.localeCompare(b));
+  return `prose: by code: ${ranked.map(([code, n]) => `${code} ${n}`).join(", ")}\n`;
+}
+
 /** @prose
  * # `prose style`
  *
@@ -80,6 +91,7 @@ function style(paths: string[]): void {
   }
   const advice = styleAdvice(root, [...files].sort());
   for (const a of advice) process.stdout.write(`prose: style: ${formatWarning(a)}\n`);
+  process.stdout.write(byCode(advice));
   const read = readCount(root, [...files], "read");
   const where = new Set(advice.map((a) => a.path)).size;
   process.stdout.write(
@@ -162,6 +174,7 @@ async function main(argv: string[]): Promise<void> {
       ]
         .filter(Boolean)
         .join(" and ");
+      process.stderr.write(byCode(warnings));
       process.stderr.write(`prose: ${count(warnings.length, "warning")} in ${where}, of ${read}\n`);
       process.exitCode = 1;
     } else process.stdout.write(`prose: ${read}\n`);
