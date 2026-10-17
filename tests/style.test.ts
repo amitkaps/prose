@@ -38,10 +38,33 @@ describe("textStyle", () => {
 
   it("notes a semicolon, and a colon only before a lowercase clause", () => {
     expect(codes("One idea; another.\n")).toEqual(["semicolon"]);
-    expect(codes("It means one thing: the other follows.\n")).toEqual(["colon"]);
+    expect(codes("It means one thing: the other is true.\n")).toEqual(["colon"]);
     expect(codes("It does this:\n\n- a list\n")).toEqual([]);
     expect(codes("- [a.ts](a.ts): what it does.\n- `b`: what it holds.\n")).toEqual([]);
     expect(codes("- **Stories:** one page, its own design.\n")).toEqual([]);
+    expect(codes("- **spec**: the spec's own text.\n")).toEqual([]);
+    expect(codes("Origin: markz.\n")).toEqual([]);
+  });
+
+  it("notes a colon only when a subject or a verb plainly opens a clause after it", () => {
+    expect(codes("Nothing is rendered: it's the files it wrote, and only them.\n")).toEqual([
+      "colon",
+    ]);
+    expect(codes("It is yours to decide: markz doesn't style it.\n")).toEqual(["colon"]);
+    expect(codes("It reads one way: the parser keeps every line it was given.\n")).toEqual([
+      "colon",
+    ]);
+    expect(codes("It carries attributes: an id, classes and key-value pairs.\n")).toEqual([]);
+    expect(codes("It costs a lot: headings +12%, tables +10%.\n")).toEqual([]);
+    expect(codes("How markz is built: the tree it produces, and how it reads.\n")).toEqual([]);
+    expect(codes("It is safe: no element that runs script, and no handler.\n")).toEqual([]);
+    expect(codes("It is the file: what markz is held to, and what it costs.\n")).toEqual([]);
+  });
+
+  it("doesn't note a semicolon in a list of clauses or in a parenthesis", () => {
+    expect(codes("It reads noise, at random; examples, edited; and documents.\n")).toEqual([]);
+    expect(codes("It reads noise, at random; and examples, edited.\n")).toEqual([]);
+    expect(codes("The rule holds (grammar: table; `table-columns`).\n")).toEqual([]);
   });
 
   it("notes an aside in parentheses, but not a link, an example or a short gloss", () => {
@@ -49,6 +72,12 @@ describe("textStyle", () => {
     expect(codes("It builds ([usage](usage.md)) first.\n")).toEqual([]);
     expect(codes("Some tools (like the formatter and the linter) keep working.\n")).toEqual([]);
     expect(codes("The port (default 1234) is tried first.\n")).toEqual([]);
+  });
+
+  it("doesn't note a citation, a series or code in parentheses", () => {
+    expect(codes("The block is read once (design: Parser foundation, in full).\n")).toEqual([]);
+    expect(codes("Leaves (paragraphs, headings, table cells) go on.\n")).toEqual([]);
+    expect(codes("It's decoded (`&#169;` → `©`, `\\*` → `*`) first.\n")).toEqual([]);
   });
 
   it("reads paragraphs only, not headings, code or tables", () => {
