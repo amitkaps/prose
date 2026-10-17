@@ -4,9 +4,9 @@ Where the project is and what comes next, in order. Finished work gets a line or
 
 ## Where it is
 
-The `@prose` convention and the read-only renderer work. This repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.7.0, on npm as `@amitkaps/prose` and as a GitHub release tarball.
+The `@prose` convention and the read-only renderer work. This repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.7.1, on npm as `@amitkaps/prose` and as a GitHub release tarball.
 
-### Since 0.7.0
+### 0.7.1
 
 - **Style advice is conservative.** `prose style` flags only what a rewrite would improve, so an agent can take every suggestion ([design](design.md#what-it-isnt)). A colon gets one only when a subject or a verb plainly opens a clause after it, so a list or an explanation passes. A semicolon in a list of clauses passes, and so does a citation, a series or code in parentheses ([usage](usage.md#style)). It was tried on markz, ship, pagez, sitez and base first. Colons fell from 316 suggestions to 49, and nearly all of those left join two clauses. In all, markz went from 479 to 233, sitez 109 to 56, pagez 98 to 55, base 37 to 21 and ship 23 to none. Its length advice didn't change.
 
