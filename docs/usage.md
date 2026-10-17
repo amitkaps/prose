@@ -113,27 +113,28 @@ prose: style: docs/usage.md:20:31: semicolon: semicolon joining two ideas; write
 prose: 1 suggestion in 1 file, of 12 files read
 ```
 
-It's for the writer of a file, right after writing it. So it isn't part of `prose check` and never shows on a page. A count of words is only a guess at what's hard to read. In CI or on every page, it would teach an agent to dodge the count. Rewrite where a suggestion helps the reader, not to make it go away.
+It's for the writer of a file, right after writing it. So it isn't part of `prose check` and never shows on a page. A count of words is only a guess at what's hard to read. In CI or on every page, it would teach an agent to dodge the count.
+
+It's conservative, so a suggestion is worth taking. It flags only what it's confident a rewrite would improve, and lets a form that's often fine pass, even when some of that form joins two ideas. A wrong suggestion would have an agent rewrite a good sentence, and learn to pass over the rest. A miss costs less, since [the agent rules](#for-agents) still say how to write. So fix what it finds, and rewrite to help the reader, not to make a suggestion go away.
 
 | Code            | When                                                                           |
 | --------------- | ------------------------------------------------------------------------------ |
 | `long-summary`  | a text's first paragraph is over 60 words, about four lines                    |
 | `long-sentence` | a sentence is over 35 words                                                    |
 | `semicolon`     | a semicolon joins two ideas                                                    |
-| `colon`         | a colon joins two ideas, with a lowercase clause after it                      |
+| `colon`         | a colon joins two ideas, with a clause after it that a subject or verb opens   |
 | `parenthetical` | a parenthesis holds an aside, not a link, an example or a gloss of a few words |
 
 Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A file that `.gitattributes` marks `prose-unchecked` gets no advice, as it gets no warnings ([warnings](#warnings)).
 
-Some forms look like a joined idea or an aside but aren't, so they get no suggestion.
+A colon gets a suggestion only when a clause plainly follows it. That means a subject like "it", "they" or "there" opens what follows, or a verb like "is", "doesn't" or "keeps" comes within its first four words. A verb after "that" or "what" belongs to an inner clause, and doesn't count. So "It never throws: syntax markz doesn't accept stays text" gets one. A list like "three settings: the cooldown, `allowBuilds` and the override" doesn't, and nor does an explanation like "How it's built: the tree it produces". Some colons that join two clauses pass too, and that's the cost of being conservative.
 
-- **A label.** A colon labels a list item, as in `- [a.ts](a.ts): what it does` or `- **spec**: its text`. A colon after a sentence's first word labels it too, like `Origin: markz.`
-- **A list.** A colon leads into a list, written as a list or as a run of short items, like "three settings: the cooldown, `allowBuilds` and the override". A run that opens with "it" or "they" is a clause, and still gets one.
+Other forms look like a joined idea or an aside but aren't, so they get no suggestion.
+
+- **A label.** A colon labels a list item, as in `- [a.ts](a.ts): what it does` or `- **spec**: its text`.
 - **A list of clauses.** Semicolons separate items with commas of their own, when a sentence has two or more, or "and" follows one.
 - **A citation.** A parenthesis opens with a label, like `(grammar: link; brackets)`. Its colon and semicolon are part of it.
 - **An example or a gloss.** A parenthesis holds a run of short items, or is mostly inline code.
-
-A colon that explains, like "How it's built: the tree, and how it's read", still gets a suggestion. Some of them join two clauses, and a count of words can't tell which.
 
 ## For agents
 

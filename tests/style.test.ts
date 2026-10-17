@@ -38,7 +38,7 @@ describe("textStyle", () => {
 
   it("notes a semicolon, and a colon only before a lowercase clause", () => {
     expect(codes("One idea; another.\n")).toEqual(["semicolon"]);
-    expect(codes("It means one thing: the other follows.\n")).toEqual(["colon"]);
+    expect(codes("It means one thing: the other is true.\n")).toEqual(["colon"]);
     expect(codes("It does this:\n\n- a list\n")).toEqual([]);
     expect(codes("- [a.ts](a.ts): what it does.\n- `b`: what it holds.\n")).toEqual([]);
     expect(codes("- **Stories:** one page, its own design.\n")).toEqual([]);
@@ -46,15 +46,19 @@ describe("textStyle", () => {
     expect(codes("Origin: markz.\n")).toEqual([]);
   });
 
-  it("doesn't note a colon before a series, unless a subject opens it", () => {
-    expect(codes("It carries attributes: an id, classes and key-value pairs.\n")).toEqual([]);
-    expect(codes("It costs a lot: headings +12%, tables +10%.\n")).toEqual([]);
+  it("notes a colon only when a subject or a verb plainly opens a clause after it", () => {
     expect(codes("Nothing is rendered: it's the files it wrote, and only them.\n")).toEqual([
       "colon",
     ]);
+    expect(codes("It is yours to decide: markz doesn't style it.\n")).toEqual(["colon"]);
     expect(codes("It reads one way: the parser keeps every line it was given.\n")).toEqual([
       "colon",
     ]);
+    expect(codes("It carries attributes: an id, classes and key-value pairs.\n")).toEqual([]);
+    expect(codes("It costs a lot: headings +12%, tables +10%.\n")).toEqual([]);
+    expect(codes("How markz is built: the tree it produces, and how it reads.\n")).toEqual([]);
+    expect(codes("It is safe: no element that runs script, and no handler.\n")).toEqual([]);
+    expect(codes("It is the file: what markz is held to, and what it costs.\n")).toEqual([]);
   });
 
   it("doesn't note a semicolon in a list of clauses or in a parenthesis", () => {

@@ -9,6 +9,11 @@
  * an agent to dodge the count, which is the cramming the rules are there to stop. So `prose check`
  * leaves it out, and the writer asks for it on the files they just wrote.
  *
+ * It's conservative, so a suggestion is worth taking. An agent acts on what it's shown, and can't
+ * tell a right suggestion from a wrong one. A wrong one makes it rewrite a good sentence, and teaches
+ * it to pass over the rest. A miss costs less, since the agent rules still say how to write. So a
+ * form that's often fine, like a colon before an explanation, gets no advice, though some are joins.
+ *
  * Only paragraphs are read, wherever they sit, like in a list or a quote. Headings, code, tables
  * and metadata aren't sentences. Inline code counts as one word, and a link's text counts as its
  * words.
@@ -113,53 +118,69 @@ function sentences(text: string): { start: number; text: string }[] {
 /** @prose
  * # Joined ideas
  *
- * A semicolon or a colon in a paragraph can join two ideas, and gets advice unless it does
- * something else. A colon gets it only when a lowercase clause follows it in the same paragraph. A
- * colon that leads into a list or a code block ends its paragraph.
+ * A semicolon in a paragraph joins two ideas, and gets advice unless it does something else.
  *
- * - A list item's label. A colon right after a link, code or bold, as in
- *   `- [a.ts](a.ts): what it does` or `- **spec**: its text`, labels what follows. So does one
- *   after a sentence's first word, like `Origin: markz.`
- * - A series. A colon before a run of short items, joined by commas, "and" or "or", leads into a
- *   list, as in "three settings: the cooldown, `allowBuilds` and the override". A run that opens
- *   with a subject like "it" or "they" is a clause, however short.
  * - A list of clauses. A sentence with two or more semicolons, or one with "and" or "or" after it,
  *   separates items that hold commas of their own.
- * - A citation. A colon or semicolon inside a parenthesis is part of it, as in
+ * - A citation. A semicolon inside a parenthesis is part of it, as in
  *   ``(grammar: table; `table-columns`)``.
+ *
+ * A colon more often leads into a list or an explanation than joins two clauses, as in "three
+ * settings: the cooldown, `allowBuilds` and the override". So a colon gets advice only when a
+ * clause plainly follows it in the same sentence. Either a subject opens it, like "it" or "they",
+ * or a verb from a short list comes within its first four words, as in "markz doesn't". A verb
+ * after "that" or "what" is an inner clause's, as in "no element that runs script", and doesn't
+ * count. The list holds the verbs that most often start a clause, and isn't meant to be complete. A colon that
+ * leads into a list or a code block ends its paragraph. One right after a link, code or bold, as in
+ * `- [a.ts](a.ts): what it does`, is a list item's label, and one inside a parenthesis is part of
+ * it.
  *
  * A parenthesis gets advice unless it holds a link, opens with an example word like "like", or is a
  * short gloss. A citation like `(grammar: link)`, a series, or one that is mostly inline code is an
  * example or a gloss too.
- *
- * A colon that explains still gets advice, as in "How it's built: the tree, and how it's read". Most
- * of what's left after these is that kind, and only some join two clauses. Telling them apart needs
- * to know if a verb follows, which counting words can't.
  */
 const EXAMPLE = /^(?:like|e\.g\.|for example|such as|as in|say)\b/i;
 /** A label and its colon, like `grammar:` in `(grammar: link)`. */
 const LABEL = /^[\p{L}\p{N}-]+:\s/u;
-/** A subject that opens a clause, so the words after a colon aren't a list. */
-const SUBJECT = /^(?:it|it['’]s|they|they['’]re|there['’]s|we|you|I)\b/u;
+/** A subject that opens a clause. */
+const SUBJECT = /^(?:it|it['’]s|they|they['’]re|there|there['’]s|we|you|nothing)$/u;
+/** Verbs that, near a clause's start, mark it as one. */
+const VERB =
+  /^(?:is|are|was|were|isn['’]t|aren['’]t|wasn['’]t|doesn['’]t|don['’]t|didn['’]t|can|can['’]t|cannot|will|won['’]t|would|should|must|has|have|had|does|do|did|keeps|reads|makes|stays|takes|gets|needs|runs|fails|goes|comes|means)$/u;
 
-/** A run of short items, joined by commas, "and" or "or", and not a clause. */
+/** A word that opens a clause inside a phrase, as in "no element that runs script". */
+const RELATIVE = /^(?:that|what|which|where|when|who|whose|how|if|whether)$/u;
+
+/** Whether the words after a colon plainly open a clause. A verb after a relative word belongs to
+ *  that inner clause, so the search stops there. */
+function isClause(text: string): boolean {
+  const opening = text
+    .trim()
+    .split(/\s+/)
+    .slice(0, 4)
+    .map((w) => w.replace(/[^\p{L}'’]/gu, "").toLowerCase());
+  if (SUBJECT.test(opening[0] ?? "")) return true;
+  for (const [i, word] of opening.entries()) {
+    if (RELATIVE.test(word)) return false;
+    if (i > 0 && VERB.test(word)) return true;
+  }
+  return false;
+}
+
+/** A run of short items, joined by commas, "and" or "or". */
 function isSeries(text: string): boolean {
   const items = text
     .trim()
     .replace(/[.!?]$/, "")
     .split(/,\s*|\s+(?:and|or)\s+/)
     .filter((item) => item.trim());
-  return (
-    items.length >= 2 &&
-    !SUBJECT.test(text.trim()) &&
-    items.every((item) => words(item) <= SERIES_WORDS)
-  );
+  return items.length >= 2 && items.every((item) => words(item) <= SERIES_WORDS);
 }
 
 /** At least half inline code, like ``(`&#169;` → `©`, `\*` → `*`)``. */
 function isCode(text: string): boolean {
   const count = words(text);
-  return count > 0 && (text.match(//g)?.length ?? 0) * 2 >= count;
+  return count > 0 && (text.match(/\uE000/g)?.length ?? 0) * 2 >= count;
 }
 
 /** Whether each offset is inside a parenthesis, at any depth. */
@@ -231,8 +252,7 @@ function paragraphAdvice(flat: Flat): Advice[] {
   for (const match of text.matchAll(/(?<![\uE000\uE002\uE003]):\s+(?=\p{Ll})/gu)) {
     if (parenthesized[match.index]) continue;
     const sentence = sentenceAt(match.index);
-    if (words(text.slice(sentence.start, match.index)) <= 1) continue;
-    if (isSeries(sentence.text.slice(match.index - sentence.start + 1))) continue;
+    if (!isClause(sentence.text.slice(match.index - sentence.start + 1))) continue;
     advice.push({
       code: "colon",
       message: "colon joining two ideas",
