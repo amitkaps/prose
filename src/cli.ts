@@ -172,6 +172,12 @@ async function main(argv: string[]): Promise<void> {
   if (open) openBrowser(served.url);
 }
 
+// A reader that stops early, like `| head`, closes the pipe. That's done, not a crash.
+process.stdout.on("error", (error: NodeJS.ErrnoException) => {
+  if (error.code === "EPIPE") process.exit(process.exitCode ?? 0);
+  throw error;
+});
+
 main(process.argv.slice(2)).catch((error: unknown) => {
   process.stderr.write(`prose: ${error instanceof Error ? error.message : String(error)}\n`);
   process.exit(1);

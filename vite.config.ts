@@ -94,7 +94,8 @@ export default defineConfig({
    * `src/index.ts` and `src/cli.ts` become `dist/*.js`, with their types.
    *
    * The bundler inlines every package outside `dependencies`. So markz is a dev dependency, and
-   * its code ships inside `dist/`. So the package has no dependencies at all.
+   * its code ships inside `dist/`. So the package has no dependencies at all. `onlyBundle` names
+   * markz as the one package allowed in, so a new import that slips into the bundle is reported.
    *
    * What ships is readable code, without its prose, as the page's files are. A `/*!` banner
    * carries the license, so it stays with the code even when another build bundles prose. It isn't minified, so
@@ -106,6 +107,7 @@ export default defineConfig({
     entry: ["src/index.ts", "src/cli.ts"],
     format: "esm",
     platform: "node",
+    deps: { onlyBundle: ["@amitkaps/markz"] },
     // `type: "module"` already makes `.js` ESM; tsdown's Node default would emit `.mjs`.
     fixedExtension: false,
     dts: { generator: "oxc" },
