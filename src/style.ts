@@ -32,6 +32,8 @@ const SUMMARY_WORDS = 60;
 const SENTENCE_WORDS = 35;
 /** A parenthesis this short names or glosses something, like `(default 1234)`, and isn't an aside. */
 const GLOSS_WORDS = 3;
+/** Items this short, in a run, are a list's, like "an id, classes and key-value pairs". */
+const SERIES_WORDS = 5;
 
 // Stand-ins in a paragraph's flat text: inline code, where a link opens and closes, and where
 // emphasis closes, so a bold label's colon (`**Stories:** one page`) sits apart from what follows.
@@ -111,15 +113,77 @@ function sentences(text: string): { start: number; text: string }[] {
 /** @prose
  * # Joined ideas
  *
- * A semicolon in a paragraph joins two ideas, so it always gets advice. A colon gets it only when
- * a lowercase clause follows it in the same paragraph. A colon that leads into a list or a code
- * block ends its paragraph. One right after a link or code, as in `- [a.ts](a.ts): what it does`,
- * is a list item's label.
+ * A semicolon or a colon in a paragraph can join two ideas, and gets advice unless it does
+ * something else. A colon gets it only when a lowercase clause follows it in the same paragraph. A
+ * colon that leads into a list or a code block ends its paragraph.
+ *
+ * - A list item's label. A colon right after a link, code or bold, as in
+ *   `- [a.ts](a.ts): what it does` or `- **spec**: its text`, labels what follows. So does one
+ *   after a sentence's first word, like `Origin: markz.`
+ * - A series. A colon before a run of short items, joined by commas, "and" or "or", leads into a
+ *   list, as in "three settings: the cooldown, `allowBuilds` and the override". A run that opens
+ *   with a subject like "it" or "they" is a clause, however short.
+ * - A list of clauses. A sentence with two or more semicolons, or one with "and" or "or" after it,
+ *   separates items that hold commas of their own.
+ * - A citation. A colon or semicolon inside a parenthesis is part of it, as in
+ *   ``(grammar: table; `table-columns`)``.
  *
  * A parenthesis gets advice unless it holds a link, opens with an example word like "like", or is a
- * short gloss.
+ * short gloss. A citation like `(grammar: link)`, a series, or one that is mostly inline code is an
+ * example or a gloss too.
+ *
+ * A colon that explains still gets advice, as in "How it's built: the tree, and how it's read". Most
+ * of what's left after these is that kind, and only some join two clauses. Telling them apart needs
+ * to know if a verb follows, which counting words can't.
  */
 const EXAMPLE = /^(?:like|e\.g\.|for example|such as|as in|say)\b/i;
+/** A label and its colon, like `grammar:` in `(grammar: link)`. */
+const LABEL = /^[\p{L}\p{N}-]+:\s/u;
+/** A subject that opens a clause, so the words after a colon aren't a list. */
+const SUBJECT = /^(?:it|it['’]s|they|they['’]re|there['’]s|we|you|I)\b/u;
+
+/** A run of short items, joined by commas, "and" or "or", and not a clause. */
+function isSeries(text: string): boolean {
+  const items = text
+    .trim()
+    .replace(/[.!?]$/, "")
+    .split(/,\s*|\s+(?:and|or)\s+/)
+    .filter((item) => item.trim());
+  return (
+    items.length >= 2 &&
+    !SUBJECT.test(text.trim()) &&
+    items.every((item) => words(item) <= SERIES_WORDS)
+  );
+}
+
+/** At least half inline code, like ``(`&#169;` → `©`, `\*` → `*`)``. */
+function isCode(text: string): boolean {
+  const count = words(text);
+  return count > 0 && (text.match(//g)?.length ?? 0) * 2 >= count;
+}
+
+/** Whether each offset is inside a parenthesis, at any depth. */
+function inParentheses(text: string): boolean[] {
+  const inside: boolean[] = [];
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === ")" && depth > 0) depth--;
+    inside.push(depth > 0);
+    if (text[i] === "(") depth++;
+  }
+  return inside;
+}
+
+function isAside(inside: string): boolean {
+  return (
+    !inside.includes(LINK_OPEN) &&
+    !EXAMPLE.test(inside) &&
+    words(inside) > GLOSS_WORDS &&
+    !LABEL.test(inside) &&
+    !isCode(inside) &&
+    !isSeries(inside)
+  );
+}
 
 function parentheticals(text: string): number[] {
   const found: number[] = [];
@@ -129,10 +193,7 @@ function parentheticals(text: string): number[] {
     if (text[i] === "(") {
       if (depth++ === 0) open = i;
     } else if (text[i] === ")" && depth > 0 && --depth === 0) {
-      const inside = text.slice(open + 1, i).trim();
-      if (!inside.includes(LINK_OPEN) && !EXAMPLE.test(inside) && words(inside) > GLOSS_WORDS) {
-        found.push(open);
-      }
+      if (isAside(text.slice(open + 1, i).trim())) found.push(open);
     }
   }
   return found;
@@ -141,7 +202,10 @@ function parentheticals(text: string): number[] {
 function paragraphAdvice(flat: Flat): Advice[] {
   const advice: Advice[] = [];
   const { text, at } = flat;
-  for (const sentence of sentences(text)) {
+  const spans = sentences(text);
+  const sentenceAt = (i: number) => spans.findLast((sentence) => sentence.start <= i)!;
+  const parenthesized = inParentheses(text);
+  for (const sentence of spans) {
     const count = words(sentence.text);
     if (count > SENTENCE_WORDS) {
       advice.push({
@@ -153,6 +217,10 @@ function paragraphAdvice(flat: Flat): Advice[] {
     }
   }
   for (const match of text.matchAll(/;/g)) {
+    if (parenthesized[match.index]) continue;
+    const sentence = sentenceAt(match.index);
+    const listed = (sentence.text.match(/;/g)?.length ?? 0) >= 2;
+    if (listed || /^\s+(?:and|or)\s/.test(text.slice(match.index + 1))) continue;
     advice.push({
       code: "semicolon",
       message: "semicolon joining two ideas",
@@ -160,7 +228,11 @@ function paragraphAdvice(flat: Flat): Advice[] {
       start: at[match.index]!,
     });
   }
-  for (const match of text.matchAll(/(?<![\uE000\uE002]):\s+(?=\p{Ll})/gu)) {
+  for (const match of text.matchAll(/(?<![\uE000\uE002\uE003]):\s+(?=\p{Ll})/gu)) {
+    if (parenthesized[match.index]) continue;
+    const sentence = sentenceAt(match.index);
+    if (words(text.slice(sentence.start, match.index)) <= 1) continue;
+    if (isSeries(sentence.text.slice(match.index - sentence.start + 1))) continue;
     advice.push({
       code: "colon",
       message: "colon joining two ideas",

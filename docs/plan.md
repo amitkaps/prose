@@ -6,6 +6,10 @@ Where the project is and what comes next, in order. Finished work gets a line or
 
 The `@prose` convention and the read-only renderer work. This repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). The latest release is 0.7.0, on npm as `@amitkaps/prose` and as a GitHub release tarball.
 
+### Since 0.7.0
+
+- **Style advice skips lists, labels and citations.** `prose style` no longer flags a colon before a run of short items, or one after a label like `Origin:` or `**spec**`. It also skips a semicolon in a list of clauses, and a citation, a series or code in parentheses ([usage](usage.md#style)). It was tried on markz, ship, pagez, sitez, base and prose first. Suggestions fell from 479 to 328 in markz, 109 to 80 in sitez, 98 to 78 in pagez, 37 to 26 in base and 23 to 13 in ship. Its length advice didn't change. Every semicolon left in markz joins two sentences, and one series read as a clause, "Nothing is rendered: it's the files…", so a run that opens with a subject like "it" stays advice.
+
 ### 0.7.0
 
 - **`prose-unchecked`, not `-prose`.** The attribute that leaves a file out of `prose check` and `prose style` is now `prose-unchecked`, like `linguist-vendored`. `-prose` read as "no prose", and it's no longer read ([usage](usage.md#warnings)).
@@ -90,4 +94,4 @@ The `@prose` convention and the read-only renderer work. This repository is read
   - Exceptions to [design](design.md#what-it-isnt). prose would become a little of a site generator, and a little part of the app.
   - An iframe is the way to try first, and it needs nothing from prose. markz refuses `{@iframe}`, but an `=html` block passes `<iframe src="/quality.html">` through. The page keeps its own look, and its scripts run in their own document. It has a fixed height, follows the system's theme rather than prose's switch, and needs `target="_top"` on its links. `prose .` may not serve a page the project generates.
   - Revisit it with a third standalone page, or a request from a repository that isn't ours. An element format such as sitez's elementz isn't needed, since a custom element is the browser's own standard.
-- **A colon before a list.** `prose style` flags a colon that introduces a list, like "three settings: the cooldown, `allowBuilds` and the Vite+ override", the same as one that joins two clauses. On its first run in ship, 24 of 42 colons were lists, while its length suggestions were all worth taking. A colon followed by a run of nouns joined by commas could be skipped. Wait until it has run in more repositories, then fix it in one release.
+- **A colon that explains.** `prose style` still flags a colon before an explanation, like "How markz is built" followed by the tree it produces and how offsets map to the source. Most of the colons left in markz, pagez and sitez are this kind, and only some join two clauses. Telling them apart needs to know if a verb follows, which a count of words can't. Either keep the advice, as [usage](usage.md#style) now says, or flag a colon only when a subject and a verb follow it.

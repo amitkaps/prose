@@ -123,7 +123,17 @@ It's for the writer of a file, right after writing it. So it isn't part of `pros
 | `colon`         | a colon joins two ideas, with a lowercase clause after it                      |
 | `parenthetical` | a parenthesis holds an aside, not a link, an example or a gloss of a few words |
 
-Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A colon that leads into a list, or labels a list item, as in `- [a.ts](a.ts): what it does`, gets no suggestion. A file that `.gitattributes` marks `prose-unchecked` gets no advice, as it gets no warnings ([warnings](#warnings)).
+Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A file that `.gitattributes` marks `prose-unchecked` gets no advice, as it gets no warnings ([warnings](#warnings)).
+
+Some forms look like a joined idea or an aside but aren't, so they get no suggestion.
+
+- **A label.** A colon labels a list item, as in `- [a.ts](a.ts): what it does` or `- **spec**: its text`. A colon after a sentence's first word labels it too, like `Origin: markz.`
+- **A list.** A colon leads into a list, written as a list or as a run of short items, like "three settings: the cooldown, `allowBuilds` and the override". A run that opens with "it" or "they" is a clause, and still gets one.
+- **A list of clauses.** Semicolons separate items with commas of their own, when a sentence has two or more, or "and" follows one.
+- **A citation.** A parenthesis opens with a label, like `(grammar: link; brackets)`. Its colon and semicolon are part of it.
+- **An example or a gloss.** A parenthesis holds a run of short items, or is mostly inline code.
+
+A colon that explains, like "How it's built: the tree, and how it's read", still gets a suggestion. Some of them join two clauses, and a count of words can't tell which.
 
 ## For agents
 
