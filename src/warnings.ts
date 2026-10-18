@@ -34,7 +34,7 @@ import { extensionOf, fileToNode, isSource } from "./tree.js";
 const OTHER_CODES = ["nav-missing", "uncommitted", "out-not-ignored"] as const;
 
 /** prose's own codes, each with a row in [usage](../docs/usage.md#warnings) that a test holds it
- * to. markz's are in its reference, and none share a name. */
+ * to. markz exports its own, and a test holds that none share a name. */
 export const PROSE_CODES: readonly ProseCode[] = [
   ...STRUCTURE_CODES,
   ...PRESENCE_CODES,

@@ -125,12 +125,17 @@ describe("prose rules", () => {
     ]);
   });
 
-  it("fails on a code that isn't prose's, and names markz's list", () => {
-    const { status, err } = run(repo(clean), "rules", "reference-link");
+  it("prints a markz code's text, and its rule in markz's syntax", () => {
+    expect(run(repo(clean), "rules", "reference-link").out).toEqual([
+      "reference-link (markz): reference link; write inline links",
+      "  https://markz.amitkaps.com/docs/syntax.md#reference-link",
+    ]);
+  });
+
+  it("fails on a code neither gives", () => {
+    const { status, err } = run(repo(clean), "rules", "nope");
     expect(status).toBe(1);
-    expect(err[0]).toBe(
-      "prose: reference-link isn't one of prose's codes. markz's are at https://markz.amitkaps.com/docs/syntax.md#not-supported",
-    );
+    expect(err[0]).toBe("prose: nope isn't a code prose or markz gives");
   });
 });
 

@@ -10,13 +10,14 @@
  * emits ([tests/codes.test.ts](../tests/codes.test.ts)). Nothing is written twice, since the doc
  * is the source and the build bundles it.
  *
- * markz's codes aren't here. markz keeps its list to itself, and each of its warnings already
- * names the form to write instead. So an unknown code points to markz's syntax.
+ * A markz code, like `reference-link`, prints markz's own text and its rule in markz's syntax,
+ * from the list markz exports. The bundled markz is the one `check` ran, so the text matches.
  */
+import { WARNINGS, type WarningCode } from "@amitkaps/markz";
 import usage from "../docs/usage.md?built";
 
 const SITE = "https://prose.amitkaps.com/docs/usage.md";
-const MARKZ = "https://markz.amitkaps.com/docs/syntax.md#not-supported";
+const MARKZ = "https://markz.amitkaps.com/docs/syntax.md";
 
 /** The block under `## For agents`, as a project copies it. */
 export function agentRules(text: string = usage): string {
@@ -38,12 +39,14 @@ export function codeRules(text: string = usage): Map<string, { kind: string; whe
   return rules;
 }
 
-/** `no-readme (warning): when it's given`, and where the doc says more. A code prose doesn't
- *  have is an error that names markz's list. */
+/** `no-readme (warning): when it's given`, and where the doc says more. A markz code gives what
+ *  it reads and what to write instead. Any other code is an error. */
 export function codeRule(code: string): string {
   const rule = codeRules().get(code);
-  if (!rule) {
-    throw new Error(`${code} isn't one of prose's codes. markz's are at ${MARKZ}`);
+  if (rule) return `${code} (${rule.kind}): ${rule.when}\n  ${SITE}#${code}\n`;
+  if (Object.hasOwn(WARNINGS, code)) {
+    const { message, instead } = WARNINGS[code as WarningCode];
+    return `${code} (markz): ${message}; write ${instead}\n  ${MARKZ}#${code}\n`;
   }
-  return `${code} (${rule.kind}): ${rule.when}\n  ${SITE}#${code}\n`;
+  throw new Error(`${code} isn't a code prose or markz gives`);
 }
