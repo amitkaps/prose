@@ -29,6 +29,9 @@ import { lexJs } from "./src/lexer.js";
  * JS comments are found by the lexer, so a `//` in a string or a regex stays. A removed comment
  * leaves a space, so two tokens can't run together. The bundler and the tests both load the files
  * through this plugin, so the tests check what ships.
+ *
+ * A Markdown file comes through as written, with nothing stripped or formatted. The command
+ * prints [the agent rules](docs/usage.md#for-agents) from it ([rules.ts](src/rules.ts)).
  */
 function stripComments(file: string, text: string): string {
   if (file.endsWith(".html")) return text.replace(/<!--[\s\S]*?-->\n?/g, "");
@@ -63,6 +66,8 @@ const built = {
   async load(id: string) {
     if (!id.startsWith(BUILT)) return null;
     const file = id.slice(BUILT.length, -".built".length);
+    if (file.endsWith(".md"))
+      return `export default ${JSON.stringify(readFileSync(file, "utf8"))};`;
     const { code, errors } = await format(file, stripComments(file, readFileSync(file, "utf8")));
     if (errors.length) throw new Error(`${file}: ${JSON.stringify(errors)}`);
     return `export default ${JSON.stringify(code)};`;
@@ -102,6 +107,7 @@ export default defineConfig({
    * anyone reading it in `node_modules` can follow it. Comments are stripped, but license comments
    * stay, and so do annotations like `@__PURE__`, which help a bundler that takes prose in.
    * There are no sourcemaps. They would carry every source file whole, and the source is on GitHub.
+   * The one doc that ships is [usage](docs/usage.md), inside `dist/cli.js`, for `prose rules`.
    */
   pack: {
     entry: ["src/index.ts", "src/cli.ts"],

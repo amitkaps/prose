@@ -2,7 +2,7 @@
  * # Command tests
  *
  * What the command promises a script or CI: the exit codes, which stream each line goes to, the
- * summary by code and the count it always ends with. Each runs the built command on a small
+ * summary by code, the line that names `prose rules`, and the count it always ends with. Each runs the built command on a small
  * repository, so the file builds it first.
  */
 import { execFileSync, spawnSync } from "node:child_process";
@@ -56,17 +56,19 @@ describe("prose check", () => {
     const { status, out, err } = run(repo(wrong), "check");
     expect(status).toBe(1);
     expect(out).toEqual([""]);
-    expect(err.slice(-2)).toEqual([
+    expect(err.slice(-3)).toEqual([
       "prose: by code: reference-link 2, no-prose 1, no-readme 1",
+      "prose: `prose rules <code>` says what a code asks for",
       "prose: 4 warnings in 2 files and 1 folder, of 3 files checked",
     ]);
-    expect(err.slice(0, -2).every((line) => line.startsWith("prose: warning: "))).toBe(true);
+    expect(err.slice(0, -3).every((line) => line.startsWith("prose: warning: "))).toBe(true);
   });
 
   it("gives one warning no summary", () => {
     const { err } = run(repo({ "README.md": "# Demo\n\nA demo.\n", "src/a.md": "# A\n" }), "check");
     expect(err).toEqual([
       "prose: warning: src/: no-readme: folder with no `README.md`; write a `README.md` that says what lives there",
+      "prose: `prose rules <code>` says what a code asks for",
       "prose: 1 warning in 1 folder, of 2 files checked",
     ]);
   });
@@ -81,6 +83,7 @@ describe("prose style", () => {
       "prose: style: README.md:5:10: semicolon: semicolon joining two ideas; write two sentences",
       "prose: style: README.md:7:16: colon: colon joining two ideas; write two sentences",
       "prose: by code: semicolon 2, colon 1",
+      "prose: `prose rules <code>` says what a code asks for",
       "prose: 3 suggestions in 1 file, of 1 file read",
     ]);
     expect(err).toEqual([""]);
@@ -104,6 +107,30 @@ describe("prose style", () => {
     expect(stdout).toMatch(/^prose: style: README\.md:3:\d+: semicolon: /);
     expect(stderr).toBe("");
     expect(status).toBe(0);
+  });
+});
+
+describe("prose rules", () => {
+  it("prints the agent rules as a project copies them", () => {
+    const { status, out } = run(repo(clean), "rules");
+    expect(status).toBe(0);
+    expect(out[0]).toMatch(/^- Every source file opens with a `@prose` comment/);
+    expect(out.every((line) => line.startsWith("- "))).toBe(true);
+  });
+
+  it("prints one code's row, and where the doc says more", () => {
+    expect(run(repo(clean), "rules", "uncommitted").out).toEqual([
+      "uncommitted (warning): the build leaves out uncommitted changes",
+      "  https://prose.amitkaps.com/docs/usage.md#uncommitted",
+    ]);
+  });
+
+  it("fails on a code that isn't prose's, and names markz's list", () => {
+    const { status, err } = run(repo(clean), "rules", "reference-link");
+    expect(status).toBe(1);
+    expect(err[0]).toBe(
+      "prose: reference-link isn't one of prose's codes. markz's are at https://markz.amitkaps.com/docs/syntax.md#not-supported",
+    );
   });
 });
 

@@ -7,13 +7,15 @@
  * wrong, so CI can stop a merge ([warnings.ts](warnings.ts)). There's no config.
  *
  * `prose style` gives advice on how the files just written read, and always passes
- * ([style.ts](style.ts)).
+ * ([style.ts](style.ts)). `prose rules` prints the rules both read for, from the docs this version
+ * shipped with ([rules.ts](rules.ts)).
  *
  * `check` and `style` read the working tree, as `prose .` does, not the commit a build publishes.
  * So `check` never warns about uncommitted changes, or about where a build would go. `check` always
  * ends with how many files it read, and how many `.gitattributes` left out. A skip is never
  * silent, and a wrong folder doesn't pass as clean. Before that, both count what they found by
- * code, so a reader sees the shape of a long list without tallying it.
+ * code, so a reader sees the shape of a long list without tallying it. Then a line names
+ * `prose rules <code>`, so an agent that meets a code learns where its rule is.
  *
  * The flags are only the few a person would reach for. They set the port, skip opening the
  * browser, and say where a build goes ([build.ts](build.ts)). What each page shows is in
@@ -23,6 +25,7 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { build } from "./build.js";
+import { agentRules, codeRule } from "./rules.js";
 import { serve } from "./server.js";
 import { styleAdvice } from "./style.js";
 import { projectFiles } from "./tree.js";
@@ -32,11 +35,13 @@ const HELP = `Usage: prose [dir] [options]
        prose build [dir] [--out <dir>]
        prose check [dir]
        prose style [path ...]
+       prose rules [code]
 
 Open a repository in the browser as a Markdown-first document. Read-only.
 \`prose build\` writes the same pages as a static site, from the last commit.
 \`prose check\` prints what the text gets wrong, and fails if it finds anything.
 \`prose style\` gives advice on how the files you name read, and always passes.
+\`prose rules\` prints the rules to write prose by, or what one code asks for.
 
 Options:
   --port <n>   Port to try first (default 1234; the next free one if taken)
@@ -70,6 +75,8 @@ function byCode(found: Warning<string>[]): string {
   return `prose: by code: ${ranked.map(([code, n]) => `${code} ${n}`).join(", ")}\n`;
 }
 
+const RULES = "prose: `prose rules <code>` says what a code asks for\n";
+
 /** @prose
  * # `prose style`
  *
@@ -92,6 +99,7 @@ function style(paths: string[]): void {
   const advice = styleAdvice(root, [...files].sort());
   for (const a of advice) process.stdout.write(`prose: style: ${formatWarning(a)}\n`);
   process.stdout.write(byCode(advice));
+  if (advice.length) process.stdout.write(RULES);
   const read = readCount(root, [...files], "read");
   const where = new Set(advice.map((a) => a.path)).size;
   process.stdout.write(
@@ -130,6 +138,13 @@ async function main(argv: string[]): Promise<void> {
     const paths = argv.slice(1);
     if (paths.some((a) => a === "-h" || a === "--help")) return void process.stdout.write(HELP);
     return style(paths);
+  }
+  if (argv[0] === "rules") {
+    const [code, ...rest] = argv.slice(1);
+    if (code === "-h" || code === "--help") return void process.stdout.write(HELP);
+    if (rest.length || code?.startsWith("-"))
+      throw new Error(`prose rules takes one code\n\n${HELP}`);
+    return void process.stdout.write(code ? codeRule(code) : agentRules());
   }
   const command = argv[0] === "build" || argv[0] === "check" ? argv[0] : null;
   const building = command === "build";
@@ -174,7 +189,7 @@ async function main(argv: string[]): Promise<void> {
       ]
         .filter(Boolean)
         .join(" and ");
-      process.stderr.write(byCode(warnings));
+      process.stderr.write(byCode(warnings) + RULES);
       process.stderr.write(`prose: ${count(warnings.length, "warning")} in ${where}, of ${read}\n`);
       process.exitCode = 1;
     } else process.stdout.write(`prose: ${read}\n`);
