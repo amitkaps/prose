@@ -16,7 +16,8 @@ import { lexJs, type Token } from "./lexer.js";
 import { extensionOf, fileToNode, isSource } from "./tree.js";
 import { position, type Warning } from "./warnings.js";
 
-export type PresenceCode = "no-prose" | "no-readme" | "undocumented-export";
+export const PRESENCE_CODES = ["no-prose", "no-readme", "undocumented-export"] as const;
+export type PresenceCode = (typeof PRESENCE_CODES)[number];
 
 /** A source file prose reads that has no prose comment. */
 export function noProse(root: string, path: string): Warning<PresenceCode>[] {

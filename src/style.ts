@@ -21,7 +21,15 @@
 import { NONE, type Document, type NodeId } from "@amitkaps/markz";
 import { findInFile, unchecked, type Found, type Warning } from "./warnings.js";
 
-export type StyleCode = "long-summary" | "long-sentence" | "semicolon" | "colon" | "parenthetical";
+/** Its codes, each with a row in [usage](../docs/usage.md#style) that a test holds it to. */
+export const STYLE_CODES = [
+  "long-summary",
+  "long-sentence",
+  "semicolon",
+  "colon",
+  "parenthetical",
+] as const;
+export type StyleCode = (typeof STYLE_CODES)[number];
 
 /** Advice at an offset in the text it was found in. */
 type Advice = Found<StyleCode> & { instead: string };
