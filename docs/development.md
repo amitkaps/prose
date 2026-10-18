@@ -32,6 +32,12 @@ The package is one bundle with no dependencies, about 200 KB unpacked. It's read
 
 Run `pnpm run axe` and `pnpm run keyboard` first, and fix what they find. The audit runs axe on every page of this site, in both colour schemes, at a desktop and a phone width ([tests/axe.ts](../tests/axe.ts)). The keyboard check reads a page of each kind with Tab, Enter, Space and Esc ([tests/keyboard.ts](../tests/keyboard.ts)). Both need Chrome on the machine, so they aren't in CI yet. Running them in the release workflow could come later.
 
+The review that added them ruled out three things:
+
+- A reason a reader can hear on the disabled switch. A disabled button is out of the tab order, and saying why would be noise on every doc.
+- Labels for a task list's checkboxes. markz writes them as GFM does, and the audit accepts it ([tests/axe.ts](../tests/axe.ts)).
+- Keyboard shortcuts, since single keys clash with a screen reader's. And the ARIA tree pattern, since the rail is navigation, a list of links.
+
 prose releases the way every package does, as [ship's standard](https://ship.amitkaps.com/docs/standard.md#releases) sets out. From ship, open the pull request that bumps `version`. Its description goes above the release's generated notes.
 
 ```sh

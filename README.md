@@ -1,6 +1,6 @@
 # Prose
 
-Keep your mental model while agents write the code. Prose puts the why beside the code. The agent writes the explanation next to the code it explains, and a read-only renderer shows the repository as a document.
+Keep your mental model while agents write the code. Prose puts the why beside the code. The agent writes the explanation next to the code it explains, and reads it again as it works. A read-only command shows the repository as a document.
 
 [prose.amitkaps.com](https://prose.amitkaps.com) is this repository, read with prose. Open [src/parser.ts](https://prose.amitkaps.com/src/parser.ts) to see a source file as one document, with its prose in order and the code between.
 
@@ -16,7 +16,7 @@ The [plan](docs/plan.md) has where it is and what's next, and [lessons](docs/les
 ## Two things
 
 - **`@prose`**, a convention for writing human-oriented meaning into source code. A comment whose first word is `@prose` explains the code around it, in [markz](https://markz.amitkaps.com)'s Markdown. Every other comment stays an ordinary comment.
-- **`prose`**, a read-only renderer that opens any repository in the browser as a Markdown-first document, locally or as a static site. Each file reads as one document, with its prose in order and the code between.
+- **`prose`**, a read-only command. It opens any repository in the browser as a Markdown-first document, locally or as a static site. Each file reads as one document, with its prose in order and the code between. `prose check` warns about form a machine can be sure of, and `prose style` gives advice on sentences.
 
 ```ts
 /** @prose
