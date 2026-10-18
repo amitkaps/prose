@@ -76,6 +76,8 @@ prose: 2 warnings in 1 file and 1 folder, of 84 files checked, 12 left out by .g
 
 Each warning has a place, a code, what's wrong and what to write instead. Most come from [markz](https://markz.amitkaps.com/docs/reference.md#warnings), which reads every Markdown file and every `@prose` comment. prose adds its own, on how the text is put together ([writing](writing.md)).
 
+It reads only form a machine can be sure of, never meaning. It warns about each file, folder or export with no prose, but never prints a coverage percentage. A percentage invites a target, and a target is met with prose written to fill it.
+
 | Code                  | When                                                                                |
 | --------------------- | ----------------------------------------------------------------------------------- |
 | `broken-link`         | a relative link reaches no file or folder in the repository                         |
