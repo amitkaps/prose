@@ -15,7 +15,9 @@ The `@prose` convention and the read-only command work, and this repository is r
 
 - [ ] **The warning codes held to the docs.** Each code `check` and `style` print is a rule, and its row in [usage](usage.md#warnings) is its written id, as ship's `rules.test.ts` holds its rules ([lessons](lessons.md#where-decisions-live)). It's the third instance of the pattern, after ship and markz.
   - Each row opens with its code as a span, like ``[`no-readme`]{#no-readme}``. A test holds the rows to the codes the source emits, both ways, so a code can't ship without a row, and a row can't outlive its code. `broken-anchor` says an id, not a heading, since a span's id passes too. Done ([tests/codes.test.ts](../tests/codes.test.ts)).
-  - Each warning links to its code's row, as ship's `pnpm drift` does.
+  - `prose rules` prints [the agent rules](usage.md#for-agents), and `prose rules <code>` prints one code's row. Both come from usage.md, bundled into `dist/` at build, so an agent reads the rules of the prose it has installed, as raw text, with no fetch. A fetched page goes through a smaller model that drops specifics ([lessons](lessons.md#working-style)). The summary's last line names the command, and a warning carries no link of its own, since it already says what to write instead.
+  - Then each repository's `AGENTS.md` says to run `pnpm prose rules` before writing prose, in place of the link to the site. The wording changes in ship first, and the site stays for humans.
+  - Watch whether agents run it. If they skip it, `prose rules --write` could keep a marked block of the rules in `AGENTS.md`, which agents load every session. That's a copy in every repository, so `prose check` would then warn when the block is stale.
   - Each row names the [agent rule](usage.md#for-agents) its code serves. Every code serves a rule, but most rules are about meaning and have no code, so the test holds only that direction. The snippet itself carries no ids, since every project copies it.
   - Write down what the three instances share ([open questions](#open-questions)).
 - [ ] **Checks for more of the rules.** `prose check` reads more of [the agent rules](usage.md#for-agents), in five steps. Each was run on markz, sitez, ship and pagez first, to see what it finds. The first four are in 0.6.0.
@@ -39,6 +41,8 @@ The `@prose` convention and the read-only command work, and this repository is r
 - [ ] **The file tree on a large repository.** Every page carries the whole tree, so a site's size grows with the square of its file count. It's about 1 KB gzipped here. If it grows too large, the tree could become a shared file too, as long as its open folders still come back before the first paint.
 
 ## Open questions
+
+- **The rules as a skill.** A Markdown skill file in the package, built from the same block in usage.md, would reach agent tools that load skills from installed packages. It's an emerging channel, in addition to `prose rules`, not instead of it. Wait until the tools settle on where they look.
 
 - **Rules a test reads, as a pattern.** ship and markz each state rules in a doc with ids, and a test reads the doc and holds the code to the same ids. Each built its own reader and its own way to write an id. The way to write an id is decided, and prose's warning codes try it first.
   - A rule has a written id, in lowercase kebab case. A rule with a body is a heading, with a `{#id}` line above it. A one-line rule in a list or a table opens with a span, like ``[`no-readme`]{#no-readme}``. markz keeps a written id exactly, so it survives rewording, and it marks what is a rule. On GitHub a span shows as written, and a link lands at the top of the page.
