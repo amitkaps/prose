@@ -16,12 +16,14 @@ import { markdownBody, sourceBody } from "./render.js";
 import { extensionOf, fileToNode, isSource } from "./tree.js";
 import { findInFile, position, type Finder, type Found, type Warning } from "./warnings.js";
 
-export type StructureCode =
-  | "broken-link"
-  | "broken-anchor"
-  | "heading-skip"
-  | "marker-line"
-  | "untitled-summary";
+export const STRUCTURE_CODES = [
+  "broken-link",
+  "broken-anchor",
+  "heading-skip",
+  "marker-line",
+  "untitled-summary",
+] as const;
+export type StructureCode = (typeof STRUCTURE_CODES)[number];
 
 /** One file's structure warnings, against the repository's `files`. */
 export function structureWarnings(
@@ -95,8 +97,8 @@ function links(
         if (!idsOf(root, page, ids).has(id)) {
           found.push({
             code: "broken-anchor",
-            message: `link to \`#${fragment}\`, which no heading in \`${page}\` has`,
-            instead: "a heading's id, as the page's `#` gives it",
+            message: `link to \`#${fragment}\`, which no id in \`${page}\` has`,
+            instead: "a heading's or span's id, as the page's `#` gives it",
             start,
           });
         }

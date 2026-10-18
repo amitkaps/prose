@@ -78,19 +78,19 @@ Each warning has a place, a code, what's wrong and what to write instead. Most c
 
 It reads only form a machine can be sure of, never meaning. It warns about each file, folder or export with no prose, but never prints a coverage percentage. A percentage invites a target, and a target is met with prose written to fill it.
 
-| Code                  | When                                                                                |
-| --------------------- | ----------------------------------------------------------------------------------- |
-| `broken-link`         | a relative link reaches no file or folder in the repository                         |
-| `broken-anchor`       | a link's `#fragment` matches no heading on the page it reaches                      |
-| `heading-skip`        | a heading is two or more levels below the one before it on the page                 |
-| `marker-line`         | prose shares a line with `@prose`, or with the comment's close                      |
-| `untitled-summary`    | a file's first `@prose` comment, its summary, doesn't open with a heading           |
-| `no-prose`            | a file prose reads for prose has no `@prose` comment                                |
-| `no-readme`           | a folder with a file prose reads has no `README.md`, except `.github/`              |
-| `undocumented-export` | a package that isn't private ships types, and an export it ships has no doc comment |
-| `nav-missing`         | `nav` in `docs/README.md` names a file that isn't a doc                             |
-| `uncommitted`         | the build leaves out uncommitted changes                                            |
-| `out-not-ignored`     | the build's folder isn't in `.gitignore`                                            |
+| Code                                          | When                                                                                |
+| --------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [`broken-link`]{#broken-link}                 | a relative link reaches no file or folder in the repository                         |
+| [`broken-anchor`]{#broken-anchor}             | a link's `#fragment` matches no id on the page it reaches, a heading's or a span's  |
+| [`heading-skip`]{#heading-skip}               | a heading is two or more levels below the one before it on the page                 |
+| [`marker-line`]{#marker-line}                 | prose shares a line with `@prose`, or with the comment's close                      |
+| [`untitled-summary`]{#untitled-summary}       | a file's first `@prose` comment, its summary, doesn't open with a heading           |
+| [`no-prose`]{#no-prose}                       | a file prose reads for prose has no `@prose` comment                                |
+| [`no-readme`]{#no-readme}                     | a folder with a file prose reads has no `README.md`, except `.github/`              |
+| [`undocumented-export`]{#undocumented-export} | a package that isn't private ships types, and an export it ships has no doc comment |
+| [`nav-missing`]{#nav-missing}                 | `nav` in `docs/README.md` names a file that isn't a doc                             |
+| [`uncommitted`]{#uncommitted}                 | the build leaves out uncommitted changes                                            |
+| [`out-not-ignored`]{#out-not-ignored}         | the build's folder isn't in `.gitignore`                                            |
 
 A Markdown file is prose already, and JSON can't hold a comment, so neither is asked for `@prose`. Nor is HTML, since a hand-written page is served with its comments, prose and all ([writing](writing.md#in-each-language)). What a package ships is read from the `types` paths in its `package.json`, like `./dist/index.d.ts` for `src/index.ts`, through each `export … from`. A link with a scheme, a site path like `/about`, or a path out of the repository isn't checked, since prose can't see where it goes. Neither is a GitHub line, like `#L42`. The last two codes are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
 
@@ -123,13 +123,13 @@ It's for the writer of a file, right after writing it. So it isn't part of `pros
 
 It's conservative, so a suggestion is worth taking. It flags only what it's confident a rewrite would improve, and lets a form that's often fine pass, even when some of that form joins two ideas. A wrong suggestion would have an agent rewrite a good sentence, and learn to pass over the rest. A miss costs less, since [the agent rules](#for-agents) still say how to write. So fix what it finds, and rewrite to help the reader, not to make a suggestion go away.
 
-| Code            | When                                                                           |
-| --------------- | ------------------------------------------------------------------------------ |
-| `long-summary`  | a text's first paragraph is over 60 words, about four lines                    |
-| `long-sentence` | a sentence is over 35 words                                                    |
-| `semicolon`     | a semicolon joins two ideas                                                    |
-| `colon`         | a colon joins two ideas, with a clause after it that a subject or verb opens   |
-| `parenthetical` | a parenthesis holds an aside, not a link, an example or a gloss of a few words |
+| Code                              | When                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------ |
+| [`long-summary`]{#long-summary}   | a text's first paragraph is over 60 words, about four lines                    |
+| [`long-sentence`]{#long-sentence} | a sentence is over 35 words                                                    |
+| [`semicolon`]{#semicolon}         | a semicolon joins two ideas                                                    |
+| [`colon`]{#colon}                 | a colon joins two ideas, with a clause after it that a subject or verb opens   |
+| [`parenthetical`]{#parenthetical} | a parenthesis holds an aside, not a link, an example or a gloss of a few words |
 
 Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A file that `.gitattributes` marks `prose-unchecked` gets no advice, as it gets no warnings ([warnings](#warnings)).
 

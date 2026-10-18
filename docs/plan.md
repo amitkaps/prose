@@ -13,17 +13,17 @@ The `@prose` convention and the read-only command work, and this repository is r
 
 ## Next, in order
 
+- [ ] **The warning codes held to the docs.** Each code `check` and `style` print is a rule, and its row in [usage](usage.md#warnings) is its written id, as ship's `rules.test.ts` holds its rules ([lessons](lessons.md#where-decisions-live)). It's the third instance of the pattern, after ship and markz.
+  - Each row opens with its code as a span, like ``[`no-readme`]{#no-readme}``. A test holds the rows to the codes the source emits, both ways, so a code can't ship without a row, and a row can't outlive its code. `broken-anchor` says an id, not a heading, since a span's id passes too. Done ([tests/codes.test.ts](../tests/codes.test.ts)).
+  - Each warning links to its code's row, as ship's `pnpm drift` does.
+  - Each row names the [agent rule](usage.md#for-agents) its code serves. Every code serves a rule, but most rules are about meaning and have no code, so the test holds only that direction. The snippet itself carries no ids, since every project copies it.
+  - Write down what the three instances share ([open questions](#open-questions)).
 - [ ] **Checks for more of the rules.** `prose check` reads more of [the agent rules](usage.md#for-agents), in five steps. Each was run on markz, sitez, ship and pagez first, to see what it finds. The first four are in 0.6.0.
   - Advice on style, from `prose style` on the files just written. It's never in CI or on a page. Done ([usage](usage.md#style)).
   - Read `.gitattributes` for prose, and a `prose-unchecked` attribute for text that isn't checked, like fixtures. Done ([usage](usage.md#warnings)).
   - Warnings on structure. A link to a file or heading that isn't there, a heading that skips a level, `@prose` on one line with its text, and a file's summary with no heading. Done ([usage](usage.md#warnings)). A later comment may open with `##` under a `#` before it, since markz nests 84 that way, so only a skip warns.
   - Warnings on what's missing. A source file with no `@prose`, a folder with no `README.md`, and a library's export with no comment. Done ([usage](usage.md#warnings)). A folder of only JSON, like `.vscode/`, isn't asked for a README.
   - One term for each concept, from a short glossary, as a note.
-- [ ] **The warning codes held to the docs.** Each code `check` and `style` print is a rule, and its row in the tables in [usage](usage.md#warnings) gets a written id, like ``[`no-readme`]{#no-readme}``. A test reads those ids and holds them to the codes the source emits, both ways, as ship's `rules.test.ts` does ([lessons](lessons.md#where-decisions-live)). A code can't ship without a row, and a row can't outlive its code.
-  - `broken-anchor` already accepts a span's id, but its message and its row say a heading. Both say an id.
-  - Each warning links to its code's row, as ship's `pnpm drift` does.
-  - Then each row names the [agent rule](usage.md#for-agents) its code serves. Every code serves a rule, but most rules are about meaning and have no code, so the test holds only that direction. The snippet itself carries no ids, since every project copies it.
-  - This is the third instance of the pattern, after ship and markz. Write down what the three share once it lands ([open questions](#open-questions)).
 - [ ] **Use it on base, sitez and markz.**
   - Install the latest release, and remove `prose()` from their Vite configs. Replace the snippet in their `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.
   - Move `prose/` to `docs/` in sitez and markz, with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website, so that moves to `site/` first, with its root scripts, workspace, package name and CI paths.

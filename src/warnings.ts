@@ -24,18 +24,23 @@ import {
   noReadme,
   shippedExports,
   undocumentedExports,
+  PRESENCE_CODES,
   type PresenceCode,
 } from "./presence.js";
-import { structureWarnings, type StructureCode } from "./structure.js";
+import { STRUCTURE_CODES, structureWarnings, type StructureCode } from "./structure.js";
 import { extensionOf, fileToNode, isSource } from "./tree.js";
 
-/** prose's own codes. markz's are in its reference, and none share a name. */
-export type ProseCode =
-  | "nav-missing"
-  | "uncommitted"
-  | "out-not-ignored"
-  | StructureCode
-  | PresenceCode;
+/** prose's other codes, about the docs in the bar and the build. */
+const OTHER_CODES = ["nav-missing", "uncommitted", "out-not-ignored"] as const;
+
+/** prose's own codes, each with a row in [usage](../docs/usage.md#warnings) that a test holds it
+ * to. markz's are in its reference, and none share a name. */
+export const PROSE_CODES: readonly ProseCode[] = [
+  ...STRUCTURE_CODES,
+  ...PRESENCE_CODES,
+  ...OTHER_CODES,
+];
+export type ProseCode = StructureCode | PresenceCode | (typeof OTHER_CODES)[number];
 export type WarningCode = MarkzCode | ProseCode;
 
 /** A finding in a file. `prose style` gives its advice in the same shape, with its own codes. */
