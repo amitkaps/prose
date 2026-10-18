@@ -65,12 +65,13 @@ prose check             # what the text gets wrong, by file and line
 prose check docs        # another folder
 ```
 
-`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It always ends with how many files it read, and how many `.gitattributes` left out. A folder's warning, like a missing `README.md`, counts the folder apart from the files. With more than one warning, a line before that counts them by code, most first.
+`prose check` reads the working tree and prints one warning a line, as a compiler does. It fails when it finds any, so it can run in CI. It always ends with how many files it read, and how many `.gitattributes` left out. A folder's warning, like a missing `README.md`, counts the folder apart from the files. With more than one warning, a line before that counts them by code, most first. Then a line names `prose rules <code>`, which prints a code's row from the table below.
 
 ```text
 prose: warning: docs/usage.md:12:5: reference-link: reference link; write inline links
 prose: warning: scripts/: no-readme: folder with no `README.md`; write a `README.md` that says what lives there
 prose: by code: no-readme 1, reference-link 1
+prose: `prose rules <code>` says what a code asks for
 prose: 2 warnings in 1 file and 1 folder, of 84 files checked, 12 left out by .gitattributes
 ```
 
@@ -116,6 +117,7 @@ prose: style: docs/usage.md:20:31: semicolon: semicolon joining two ideas; write
 prose: style: docs/usage.md:41:12: semicolon: semicolon joining two ideas; write two sentences
 prose: style: src/store.ts:9:24: colon: colon joining two ideas; write two sentences
 prose: by code: semicolon 2, colon 1
+prose: `prose rules <code>` says what a code asks for
 prose: 3 suggestions in 2 files, of 12 files read
 ```
 
@@ -144,7 +146,14 @@ Other forms look like a joined idea or an aside but aren't, so they get no sugge
 
 ## For agents
 
-Link to this section from the project's `AGENTS.md` or `CLAUDE.md`, so it follows the rules as they change. Or copy them in:
+`prose rules` prints the rules below, from the docs of the version installed, and `prose rules <code>` prints one code's row. Have the project's `AGENTS.md` or `CLAUDE.md` say to run it before writing prose. An agent then reads the rules as written, with no fetch, and they change when prose is upgraded. A markz code isn't prose's, and each markz warning already names the form to write instead ([markz](https://markz.amitkaps.com/docs/syntax.md#not-supported)).
+
+```sh
+pnpm prose rules        # the rules, as raw text
+pnpm prose rules colon  # what one code asks for
+```
+
+Or link to this section, or copy the rules in:
 
 ```markdown
 - Every source file opens with a `@prose` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`, except `.github/`, where GitHub would show it in place of the root's.
