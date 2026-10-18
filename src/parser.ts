@@ -24,8 +24,10 @@ const MARKER = "@prose";
 /** @prose
  * # Recognizing a prose comment
  *
- * A comment counts only if its first line, trimmed, starts with `@prose`. Any other comment
- * returns `null` and stays an ordinary comment, like unmarked JSDoc, `//` or a tool pragma.
+ * A comment counts only if its first line with text, trimmed, starts with `@prose`. Any other
+ * comment returns `null` and stays an ordinary comment, like unmarked JSDoc, `//` or a tool
+ * pragma. So `/** @prose` counts, and so does `@prose` on the line after `/**`, where oxfmt's
+ * `jsdoc` option moves it, as JSDoc tooling writes a tag.
  *
  * Each style strips its own gutter before this runs. That's JS's ` * `, YAML's `# `, and for HTML the
  * indent its lines share. Blank lines at either edge of the body are dropped, and a CRLF file's
@@ -33,13 +35,14 @@ const MARKER = "@prose";
  */
 function extractMarkedFromLines(rawLines: string[]): string | null {
   const lines = rawLines.map((line) => line.replace(/\r$/, ""));
-  const trimmedFirst = lines[0]!.trim();
+  const first = lines.findIndex((line) => line.trim());
+  const trimmedFirst = first === -1 ? "" : lines[first]!.trim();
   if (!trimmedFirst.startsWith(MARKER)) return null;
   let rest = trimmedFirst.slice(MARKER.length);
   if (rest.startsWith(" ")) rest = rest.slice(1);
   const out: string[] = [];
   if (rest.length > 0) out.push(rest);
-  for (let i = 1; i < lines.length; i++) out.push(lines[i]!);
+  for (let i = first + 1; i < lines.length; i++) out.push(lines[i]!);
   while (out.length && out[0]!.trim() === "") out.shift();
   while (out.length && out.at(-1)!.trim() === "") out.pop();
   return out.join("\n");

@@ -190,7 +190,8 @@ function markers(path: string, source: string, comments: ProseComment[]): Warnin
     const at = comment.start + Math.max(0, text.indexOf("@prose"));
     const place = { path, ...position(source, at) };
     const lines = text.split("\n");
-    const opening = lines[0]!.slice(lines[0]!.indexOf("@prose") + "@prose".length).trim();
+    const marker = lines.find((line) => line.includes("@prose")) ?? "";
+    const opening = marker.slice(marker.indexOf("@prose") + "@prose".length).trim();
     const close = /(\*\/|-->)\s*$/.exec(text);
     const closing = close
       ? lines
