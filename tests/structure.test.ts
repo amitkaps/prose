@@ -46,6 +46,9 @@ describe("structure warnings", () => {
         comment("# Next", "", "x") +
         comment("### Skips", "", "x"),
       "src/c.ts": comment("What c is, with no title.") + "export const c = 3;\n",
+      "src/d.ts":
+        "/**\n * @prose\n * # D\n *\n * Its marker on the line after.\n */\n" +
+        "/**\n * @prose Text on the marker's line.\n */\n",
       "config.yaml": "# @prose Prose on the marker's line.\nkey: value\n",
     };
     for (const [path, text] of Object.entries(files)) {
@@ -71,11 +74,12 @@ describe("structure warnings", () => {
     expect(found).not.toContain("src/a.ts:13 heading-skip");
   });
 
-  it("warns about prose on the marker's line or the closing line", () => {
+  it("warns about prose on the marker's line or the closing line, wherever the marker sits", () => {
     expect(found.filter((w) => w.endsWith("marker-line"))).toEqual([
       "config.yaml:1 marker-line",
       "src/a.ts:22 marker-line",
       "src/a.ts:24 marker-line",
+      "src/d.ts:8 marker-line",
     ]);
   });
 

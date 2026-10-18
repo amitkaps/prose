@@ -31,6 +31,16 @@ describe("parseFile: JS/TS/CSS (/** @prose */)", () => {
     expect(parseFile(source, "js")).toEqual([]);
   });
 
+  it("reads `@prose` on the line after `/**`, where JSDoc formatting moves a tag", () => {
+    expect(bodies("/**\n * @prose\n * # Heading\n *\n * Text.\n */\nconst a = 1;\n", "ts")).toEqual(
+      ["# Heading\n\nText."],
+    );
+  });
+
+  it("ignores a JSDoc whose first line with text isn't `@prose`, even with `@prose` later", () => {
+    expect(parseFile("/**\n * Description.\n * @prose\n */\nconst a = 1;\n", "ts")).toEqual([]);
+  });
+
   it("strips the leading ` * ` gutter from continuation lines", () => {
     expect(bodies(`/** @prose\n * Line one.\n * Line two.\n */\n`, "js")).toEqual([
       "Line one.\nLine two.",
