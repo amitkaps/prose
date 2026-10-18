@@ -9,7 +9,7 @@
  * agent rules from the bundled doc, so it's held to them here too.
  */
 import { readFileSync } from "node:fs";
-import { html, parse } from "@amitkaps/markz";
+import { html, parse, WARNINGS } from "@amitkaps/markz";
 import { expect, test } from "vite-plus/test";
 import { agentRules, codeRules } from "../src/rules.js";
 import { STYLE_CODES } from "../src/style.js";
@@ -49,4 +49,9 @@ test("prose rules prints the agent rules block, from the doc as it is", () => {
   const lines = agentRules().trimEnd().split("\n");
   expect(agentRules()).toEqual(agentRules(source));
   expect(lines.every((line) => line.startsWith("- "))).toBe(true);
+});
+
+test("no prose code shares a name with a markz code, so `prose rules` reads each one way", () => {
+  const markz = new Set(Object.keys(WARNINGS));
+  expect([...PROSE_CODES, ...STYLE_CODES].filter((code) => markz.has(code))).toEqual([]);
 });
