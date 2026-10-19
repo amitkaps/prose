@@ -25,9 +25,9 @@ import { findInFile, unchecked, type Found, type Warning } from "./warnings.js";
 export const STYLE_CODES = [
   "long-summary",
   "long-sentence",
-  "semicolon",
-  "colon",
-  "parenthetical",
+  "joining-semicolon",
+  "joining-colon",
+  "parenthetical-aside",
 ] as const;
 export type StyleCode = (typeof STYLE_CODES)[number];
 
@@ -251,7 +251,7 @@ function paragraphAdvice(flat: Flat): Advice[] {
     const listed = (sentence.text.match(/;/g)?.length ?? 0) >= 2;
     if (listed || /^\s+(?:and|or)\s/.test(text.slice(match.index + 1))) continue;
     advice.push({
-      code: "semicolon",
+      code: "joining-semicolon",
       message: "semicolon joining two ideas",
       instead: "two sentences",
       start: at[match.index]!,
@@ -262,7 +262,7 @@ function paragraphAdvice(flat: Flat): Advice[] {
     const sentence = sentenceAt(match.index);
     if (!isClause(sentence.text.slice(match.index - sentence.start + 1))) continue;
     advice.push({
-      code: "colon",
+      code: "joining-colon",
       message: "colon joining two ideas",
       instead: "two sentences",
       start: at[match.index]!,
@@ -270,7 +270,7 @@ function paragraphAdvice(flat: Flat): Advice[] {
   }
   for (const open of parentheticals(text)) {
     advice.push({
-      code: "parenthetical",
+      code: "parenthetical-aside",
       message: "aside in parentheses",
       instead: "its own sentence, or cut it",
       start: at[open]!,

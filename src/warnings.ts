@@ -31,7 +31,7 @@ import { STRUCTURE_CODES, structureWarnings, type StructureCode } from "./struct
 import { extensionOf, fileToNode, isSource } from "./tree.js";
 
 /** prose's other codes, about the docs in the bar and the build. */
-const OTHER_CODES = ["nav-missing", "uncommitted", "out-not-ignored"] as const;
+const OTHER_CODES = ["nav-missing", "uncommitted-changes", "unignored-build"] as const;
 
 /** prose's own codes, each with a row in [usage](../docs/usage.md#warnings) that a test holds it
  * to. markz exports its own, and a test holds that none share a name. */

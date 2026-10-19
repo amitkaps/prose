@@ -79,10 +79,10 @@ describe("prose style", () => {
     const { status, out, err } = run(repo(joined), "style");
     expect(status).toBe(0);
     expect(out).toEqual([
-      "prose: style: README.md:3:9: semicolon: semicolon joining two ideas; write two sentences",
-      "prose: style: README.md:5:10: semicolon: semicolon joining two ideas; write two sentences",
-      "prose: style: README.md:7:16: colon: colon joining two ideas; write two sentences",
-      "prose: by code: semicolon 2, colon 1",
+      "prose: style: README.md:3:9: joining-semicolon: semicolon joining two ideas; write two sentences",
+      "prose: style: README.md:5:10: joining-semicolon: semicolon joining two ideas; write two sentences",
+      "prose: style: README.md:7:16: joining-colon: colon joining two ideas; write two sentences",
+      "prose: by code: joining-semicolon 2, joining-colon 1",
       "prose: `prose rules <code>` says what a code asks for",
       "prose: 3 suggestions in 1 file, of 1 file read",
     ]);
@@ -104,32 +104,53 @@ describe("prose style", () => {
       ["-c", `node "${cli}" style | head -1; exit "\${PIPESTATUS[0]}"`],
       { cwd: root, encoding: "utf8" },
     );
-    expect(stdout).toMatch(/^prose: style: README\.md:3:\d+: semicolon: /);
+    expect(stdout).toMatch(/^prose: style: README\.md:3:\d+: joining-semicolon: /);
     expect(stderr).toBe("");
     expect(status).toBe(0);
   });
 });
 
 describe("prose rules", () => {
-  it("prints the agent rules as a project copies them", () => {
+  it("prints the agent rules under their groups, each with the codes that check it", () => {
     const { status, out } = run(repo(clean), "rules");
     expect(status).toBe(0);
-    expect(out[0]).toMatch(/^- Every source file opens with a `@prose` comment/);
-    expect(out.every((line) => line.startsWith("- "))).toBe(true);
+    expect(out.slice(0, 4)).toEqual([
+      "## Where prose goes",
+      "",
+      expect.stringMatching(
+        /^- \*\*Every file\.\*\* Every source file opens with a `@prose` comment/,
+      ),
+      "  Checked by `no-prose` and `no-readme`.",
+    ]);
+    expect(out).toContain("## Keeping it true");
+    expect(out).toContain("  Checked by markz's warnings, `heading-skip` and `marker-line`.");
   });
 
-  it("prints one code's row, and where the doc says more", () => {
-    expect(run(repo(clean), "rules", "uncommitted").out).toEqual([
-      "uncommitted (warning): the build leaves out uncommitted changes",
-      "  https://prose.amitkaps.com/docs/usage.md#uncommitted",
+  it("prints one code's row, then the rule it serves", () => {
+    const out = run(repo(clean), "rules", "joining-semicolon").out;
+    expect(out.slice(0, 3)).toEqual([
+      "joining-semicolon (style): a semicolon joins two ideas",
+      "  https://prose.amitkaps.com/docs/usage.md#joining-semicolon",
+      "",
+    ]);
+    expect(out[3]).toMatch(/^- \*\*Plain sentences\.\*\* /);
+  });
+
+  it("prints a build code's row alone, since it serves no rule", () => {
+    expect(run(repo(clean), "rules", "uncommitted-changes").out).toEqual([
+      "uncommitted-changes (warning): the build leaves out uncommitted changes",
+      "  https://prose.amitkaps.com/docs/usage.md#uncommitted-changes",
     ]);
   });
 
-  it("prints a markz code's text, and its rule in markz's syntax", () => {
-    expect(run(repo(clean), "rules", "reference-link").out).toEqual([
+  it("prints a markz code's text, its rule in markz's syntax, and the rule it serves", () => {
+    const out = run(repo(clean), "rules", "reference-link").out;
+    expect(out.slice(0, 3)).toEqual([
       "reference-link (markz): reference link; write inline links",
       "  https://markz.amitkaps.com/docs/syntax.md#reference-link",
+      "",
     ]);
+    expect(out[3]).toMatch(/^- \*\*markz's Markdown\.\*\* /);
   });
 
   it("fails on a code neither gives", () => {

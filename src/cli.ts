@@ -25,7 +25,7 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { build } from "./build.js";
-import { agentRules, codeRule } from "./rules.js";
+import { codeRule, printRules } from "./rules.js";
 import { serve } from "./server.js";
 import { styleAdvice } from "./style.js";
 import { projectFiles } from "./tree.js";
@@ -65,8 +65,8 @@ function report(w: Warning): void {
 
 const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-/** `prose: by code: semicolon 3, colon 1`, most first, so a long list reads at a glance without
- *  counting it. One finding needs no summary. */
+/** `prose: by code: joining-semicolon 3, joining-colon 1`, most first, so a long list reads at a
+ *  glance without counting it. One finding needs no summary. */
 function byCode(found: Warning<string>[]): string {
   if (found.length < 2) return "";
   const counts = new Map<string, number>();
@@ -144,7 +144,7 @@ async function main(argv: string[]): Promise<void> {
     if (code === "-h" || code === "--help") return void process.stdout.write(HELP);
     if (rest.length || code?.startsWith("-"))
       throw new Error(`prose rules takes one code\n\n${HELP}`);
-    return void process.stdout.write(code ? codeRule(code) : agentRules());
+    return void process.stdout.write(code ? codeRule(code) : printRules());
   }
   const command = argv[0] === "build" || argv[0] === "check" ? argv[0] : null;
   const building = command === "build";
