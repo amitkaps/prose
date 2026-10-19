@@ -41,7 +41,7 @@
     "gone": "node scripts/gone.ts"
   },
   "devDependencies": {
-    "@amitkaps/markz": "0.4.3",
+    "@amitkaps/markz": "0.5.0",
     "@cloudflare/vite-plugin": "2.0.0-beta.v.1",
     "@types/node": "^26.6.5",
     "axe-core": "^4.14.0",

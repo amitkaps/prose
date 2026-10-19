@@ -77,7 +77,7 @@ describe("a repository's warnings", () => {
     const files: Record<string, string> = {
       "README.md": "# Demo\n\nSome __strong__ text.\n",
       "docs/README.md": "---\nnav: [usage.md, gone.md]\n---\n# Docs\n",
-      "docs/usage.md": "# Usage\n\n## Checks\n\n{@section #checks}\n{/section}\n",
+      "docs/usage.md": "# Usage\n\n## Checks\n\n{@section #checks}\n\n{/section}\n",
       "vendor/theirs.md": "# Theirs\n\n[ref][x]\n",
       "fixtures/sample.md": "# Sample\n\nSome __strong__ text.\n",
       "src/README.md": "# Source\n",
