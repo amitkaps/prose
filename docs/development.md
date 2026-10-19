@@ -18,7 +18,7 @@ The build and server tests run against the committed [`tests/fixtures/simple`](.
 
 ## What ships
 
-The package is one bundle with no dependencies, about 200 KB unpacked. It's readable code without its prose, the same choice the page's own files follow.
+The package is one bundle with no dependencies, about 250 KB unpacked. It's readable code without its prose, the same choice the page's own files follow.
 
 - **Bundled.** markz is inside `dist/`, so installing prose fetches one package. A fix in markz reaches prose's users with prose's next release.
 - **Not minified.** A bundler that takes prose in minifies it for its own app, and anyone reading `node_modules` can follow the code.
