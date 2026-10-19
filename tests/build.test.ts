@@ -180,8 +180,8 @@ describe("build: a repository", () => {
       expect(built.out).toBe(join(root, ".prose"));
       expect(existsSync(join(built.out, "scratch.ts.html"))).toBe(false);
       expect(readFileSync(join(built.out, "src/a.ts.html"), "utf-8")).toContain("Does a.");
-      expect(built.warnings.map((w) => w.code)).toContain("uncommitted");
-      expect(built.warnings.map((w) => w.code)).not.toContain("out-not-ignored");
+      expect(built.warnings.map((w) => w.code)).toContain("uncommitted-changes");
+      expect(built.warnings.map((w) => w.code)).not.toContain("unignored-build");
     } finally {
       rmSync(join(root, "scratch.ts"));
       git(root, "checkout", "--", "src/a.ts");
@@ -214,7 +214,7 @@ describe("build: a repository", () => {
     writeFileSync(join(built.out, "stale.html"), "old\n");
     const again = await build(root, { out: "site" });
     expect(existsSync(join(again.out, "stale.html"))).toBe(false);
-    expect(again.warnings.map((w) => w.code)).toContain("out-not-ignored");
+    expect(again.warnings.map((w) => w.code)).toContain("unignored-build");
     rmSync(again.out, { recursive: true });
   });
 

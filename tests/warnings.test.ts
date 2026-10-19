@@ -33,8 +33,8 @@ describe("formatWarning", () => {
         column: 5,
       }),
     ).toBe("docs/x.md:3:5: reference-link: reference link; write inline links");
-    expect(formatWarning({ code: "uncommitted", message: "not in the build" })).toBe(
-      "uncommitted: not in the build",
+    expect(formatWarning({ code: "uncommitted-changes", message: "not in the build" })).toBe(
+      "uncommitted-changes: not in the build",
     );
   });
 });

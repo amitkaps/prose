@@ -135,7 +135,7 @@ function prepareOut(root: string, out: string, warnings: Warning[]): void {
   // A path inside it: `.prose/` in `.gitignore` matches a folder, which may not exist yet.
   if (inside && tryGit(root, ["check-ignore", "-q", "--no-index", join(out, MARKER)]) === null) {
     warnings.push({
-      code: "out-not-ignored",
+      code: "unignored-build",
       message: `${relative(root, out)} isn't in .gitignore, so the site would show as untracked files`,
       instead: `\`${relative(root, out).split(sep)[0]}/\` in .gitignore`,
     });
@@ -159,7 +159,7 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
   const warnings: Warning[] = [];
   if (git(root, ["status", "--porcelain", "--", "."])) {
     warnings.push({
-      code: "uncommitted",
+      code: "uncommitted-changes",
       message: `uncommitted changes aren't in the build, which is ${commit}`,
     });
   }

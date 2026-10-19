@@ -37,8 +37,8 @@ describe("textStyle", () => {
   });
 
   it("notes a semicolon, and a colon only before a lowercase clause", () => {
-    expect(codes("One idea; another.\n")).toEqual(["semicolon"]);
-    expect(codes("It means one thing: the other is true.\n")).toEqual(["colon"]);
+    expect(codes("One idea; another.\n")).toEqual(["joining-semicolon"]);
+    expect(codes("It means one thing: the other is true.\n")).toEqual(["joining-colon"]);
     expect(codes("It does this:\n\n- a list\n")).toEqual([]);
     expect(codes("- [a.ts](a.ts): what it does.\n- `b`: what it holds.\n")).toEqual([]);
     expect(codes("- **Stories:** one page, its own design.\n")).toEqual([]);
@@ -48,11 +48,11 @@ describe("textStyle", () => {
 
   it("notes a colon only when a subject or a verb plainly opens a clause after it", () => {
     expect(codes("Nothing is rendered: it's the files it wrote, and only them.\n")).toEqual([
-      "colon",
+      "joining-colon",
     ]);
-    expect(codes("It is yours to decide: markz doesn't style it.\n")).toEqual(["colon"]);
+    expect(codes("It is yours to decide: markz doesn't style it.\n")).toEqual(["joining-colon"]);
     expect(codes("It reads one way: the parser keeps every line it was given.\n")).toEqual([
-      "colon",
+      "joining-colon",
     ]);
     expect(codes("It carries attributes: an id, classes and key-value pairs.\n")).toEqual([]);
     expect(codes("It costs a lot: headings +12%, tables +10%.\n")).toEqual([]);
@@ -68,7 +68,9 @@ describe("textStyle", () => {
   });
 
   it("notes an aside in parentheses, but not a link, an example or a short gloss", () => {
-    expect(codes("It builds (which takes a while to finish) first.\n")).toEqual(["parenthetical"]);
+    expect(codes("It builds (which takes a while to finish) first.\n")).toEqual([
+      "parenthetical-aside",
+    ]);
     expect(codes("It builds ([usage](usage.md)) first.\n")).toEqual([]);
     expect(codes("Some tools (like the formatter and the linter) keep working.\n")).toEqual([]);
     expect(codes("The port (default 1234) is tried first.\n")).toEqual([]);
@@ -106,8 +108,8 @@ describe("styleAdvice", () => {
 
   it("places advice at the file's own line and column, and skips files .gitattributes marks prose-unchecked", () => {
     expect(styleAdvice(root, projectFiles(root))).toMatchObject([
-      { path: "README.md", code: "semicolon", line: 3, column: 9 },
-      { path: "src/a.ts", code: "semicolon", line: 4, column: 12 },
+      { path: "README.md", code: "joining-semicolon", line: 3, column: 9 },
+      { path: "src/a.ts", code: "joining-semicolon", line: 4, column: 12 },
     ]);
   });
 });
