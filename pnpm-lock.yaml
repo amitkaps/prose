@@ -170,7 +170,7 @@ importers:
   .:
     devDependencies:
       '@amitkaps/markz':
-        specifier: 0.6.0
+        specifier: ^0.6.0
         version: 0.6.0
       '@cloudflare/vite-plugin':
         specifier: 2.0.0-beta.v.1
