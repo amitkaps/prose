@@ -22,7 +22,7 @@ The `@prose` convention and the read-only command work, and this repository is r
   - Then ship moves its versions of prose and markz, and each repository's `AGENTS.md` says to run `pnpm prose rules` before writing prose, in place of the link to the site. The wording changes in ship first, and the site stays for humans. No repository had blank lines to add. Done.
   - Watch whether agents run it. If they skip it, `prose rules --write` could keep a marked block of the rules in `AGENTS.md`, which agents load every session. That's a copy in every repository, so `prose check` would then warn when the block is stale.
   - ship writes its rule ids as spans, like ``[`toolchain-lint`]{#toolchain-lint}``, since an id can't hold a dot. A link to a ship rule lands on it, and `broken-anchor` checks it. The rename dropped every rule from ship's survey, which picked them by a dotted prefix, and no test noticed, so one now holds the survey to every rule. Done.
-  - Write down what the three instances share ([open questions](#open-questions)).
+  - Write down what the three instances share, as [rules a test reads](writing.md#rules-a-test-reads). Done.
 - [ ] **Use it on base, sitez and markz.**
   - Install the latest release, and remove `prose()` from their Vite configs. Replace the snippet in their `AGENTS.md` with [the agent rules](usage.md#for-agents), and fold sitez's open `@note` (`src/site.ts`) into its prose.
   - Move `prose/` to `docs/` in sitez and markz, with their links. sitez reads its content folder by name (`src/check.ts`), so it learns `docs/`. markz's `docs/` is its website, so that moves to `site/` first, with its root scripts, workspace, package name and CI paths.
@@ -41,10 +41,7 @@ The `@prose` convention and the read-only command work, and this repository is r
 
 - **The rules as a skill.** A Markdown skill file in the package, built from the same block in usage.md, would reach agent tools that load skills from installed packages. It's an emerging channel, in addition to `prose rules`, not instead of it. Wait until the tools settle on where they look.
 
-- **Rules a test reads, as a pattern.** ship, markz and prose each state rules in a doc with ids, and a test reads the doc and holds the code to the same ids, both ways. Each built its own reader. All three now write an id the same way, as a span. The pattern goes into [writing](writing.md) as how to write a rule a test reads.
-  - A rule has a written id, in lowercase kebab case. A rule with a body is a heading, with a `{#id}` line above it. A one-line rule in a list or a table opens with a span, like ``[`no-readme`]{#no-readme}``. markz keeps a written id exactly, so it survives rewording, and it marks what is a rule. On GitHub a span shows as written, and a link lands at the top of the page.
-  - A `@prose` link to a rule is then checked by `broken-anchor`. The test keeps the ids true, and the link is for the reader.
-  - What reads it is still open. prose's codes test and markz's syntax harness each read spans with their own regex. A function that returns each rule's id, text and heading could live in markz. The test that says what must match stays in each repository.
+- **A reader for rules.** prose's codes test, markz's syntax harness and ship's rules each read [rules a test reads](writing.md#rules-a-test-reads) with their own regex. A function that returns each rule's id, text and heading could live in markz. Wait for a fourth reader, or for the three to drift.
 
 - **Comment links on GitHub.** `src/store.ts#adding` works in the renderer, but GitHub scrolls only to a line, like `#L42`. Either accept it, or let whatever publishes the docs map links to lines.
 - **A map command.** `prose outline` could print every first paragraph, if the grep in [the agent rules](usage.md#for-agents) proves too noisy for agents.

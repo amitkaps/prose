@@ -63,6 +63,17 @@ A prose comment's link is its first heading's id, made the way GitHub makes one 
 
 **State a rule once, and link to it.** When a doc or a tested file owns a rule, like a grammar, a schema or a contract, a prose comment links to it. It keeps only how and why this code follows the rule. A rule restated in several places is tested in only one of them, and the other copies drift.
 
+## Rules a test reads
+
+Some docs state rules that a test holds the code to, like prose's [warning codes](usage.md#warnings), markz's [syntax](https://markz.amitkaps.com/docs/syntax.md) and ship's [standard](https://ship.amitkaps.com/docs/standard.md). Each rule in such a doc has an id. The test reads the ids from the doc and from the code, and fails when one has an id the other doesn't. So a rule can't be stated without its check, and a check can't run without its rule.
+
+- An id is written out, in lowercase kebab case, like `no-readme`. It can't hold a dot. A heading's id changes when its words do, but a written id survives a reword. It also marks which text is a rule.
+- A one-line rule, in a list or a table, opens with its id as a span, like ``[`no-readme`]{#no-readme}``.
+- A rule with a body is a heading, with a `{#id}` line above it.
+- A link to a rule uses its id, like `usage.md#no-readme`, so `broken-anchor` checks it. In the renderer the link lands on the rule. On GitHub it lands at the top of the page, and the span shows as written.
+
+Each repository's test reads the doc with its own pattern, since what must match is its own.
+
 ## In each language
 
 This is reference, for when something surprises you. The rule is the same everywhere. A prose comment's first word is `@prose`, and the comment starts its own line, at any depth. So a class can read method by method. A comment that shares its line with code, like `call(/** @prose … */ x)`, is an ordinary comment.
