@@ -14,6 +14,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { defineConfig } from "vite-plus";
+import { craftz } from "@amitkaps/craftz";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { format } from "vite-plus/fmt";
 import { lexJs } from "./src/lexer.js";
@@ -75,20 +76,13 @@ const built = {
 };
 
 export default defineConfig({
-  // The site: `vp build` hands the folder `prose build` writes to Cloudflare, assets only, for
-  // `cf deploy --prebuilt`. It's ship's prose site: https://ship.amitkaps.com/docs/standard.md
-  publicDir: ".prose",
-  plugins: [built, cloudflare({ assetsOnly: true })],
+  // craftz() sets the format and lint rules, and the site: `vp build` hands the folder
+  // `prose build` writes to Cloudflare, assets only.
+  plugins: [craftz(), built, cloudflare({ assetsOnly: true })],
 
-  // oxfmt's defaults, with each paragraph on one line, as the editor has them.
-  fmt: { proseWrap: "never", ignorePatterns: ["tests/fixtures/**"] },
-
-  lint: {
-    plugins: ["typescript", "unicorn", "import"],
-    categories: { correctness: "error" },
-    options: { typeAware: true, typeCheck: true },
-    ignorePatterns: ["tests/fixtures/**"],
-  },
+  // Oxfmt and Oxlint leave the fixtures as they're written.
+  fmt: { ignorePatterns: ["tests/fixtures/**"] },
+  lint: { ignorePatterns: ["tests/fixtures/**"] },
 
   /** @prose
    * # The build
