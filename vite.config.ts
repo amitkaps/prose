@@ -80,10 +80,8 @@ export default defineConfig({
   publicDir: ".prose",
   plugins: [built, cloudflare({ assetsOnly: true })],
 
-  // oxfmt's defaults, as the editor has them.
-  fmt: {
-    ignorePatterns: ["tests/fixtures/**"],
-  },
+  // oxfmt's defaults, with each paragraph on one line, as the editor has them.
+  fmt: { proseWrap: "never", ignorePatterns: ["tests/fixtures/**"] },
 
   lint: {
     plugins: ["typescript", "unicorn", "import"],
