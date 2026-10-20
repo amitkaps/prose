@@ -14,3 +14,4 @@ dist/
 vite.config.ts.timestamp-*
 .prose/
 .cloudflare/
+.wrangler/

@@ -65,7 +65,7 @@ A prose comment's link is its first heading's id, made the way GitHub makes one 
 
 ## Rules a test reads
 
-Some docs state rules that a test holds the code to, like prose's [warning codes](usage.md#warnings), markz's [syntax](https://markz.amitkaps.com/docs/syntax.md) and ship's [standard](https://ship.amitkaps.com/docs/standard.md). Each rule in such a doc has an id. The test reads the ids from the doc and from the code, and fails when one has an id the other doesn't. So a rule can't be stated without its check, and a check can't run without its rule.
+Some docs state rules that a test holds the code to, like prose's [warning codes](usage.md#warnings), markz's [syntax](https://markz.amitkaps.com/docs/syntax.md) and craftz's [rules](https://craftz.amitkaps.com/docs/rules.md). Each rule in such a doc has an id. The test reads the ids from the doc and from the code, and fails when one has an id the other doesn't. So a rule can't be stated without its check, and a check can't run without its rule.
 
 - An id is written out, in lowercase kebab case, like `no-readme`. It can't hold a dot. A heading's id changes when its words do, but a written id survives a reword. It also marks which text is a rule.
 - A one-line rule, in a list or a table, opens with its id as a span, like ``[`no-readme`]{#no-readme}``.
