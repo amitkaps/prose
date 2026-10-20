@@ -16,7 +16,7 @@ allowBuilds:
 
 # @prose
 # Vite+ ships its own build of Vite, and every `vite` in the tree is pointed at it. Bump this
-# alongside the `vite-plus` devDependency, in every repository at once (ship's standard).
+# alongside the `vite-plus` devDependency, in every repository at once (craftz's rules).
 overrides:
   "vite@*": "npm:@voidzero-dev/vite-plus-core@1.3.0"
 

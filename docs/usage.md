@@ -176,6 +176,6 @@ The rules fall in four groups: where prose goes, how it reads, what it says, and
 ### Keeping it true
 
 - [**Kept current.**]{#kept-current} Keep prose current in the same change as the code. Rewrite it where it has drifted, and don't append. A change that only tunes code, with the same behaviour and the same stated costs, needn't touch prose.
-- [**Current plan.**]{#current-plan} If the project keeps a plan, keep it current, with what's done in one line each and what's next in order.
+- [**Current plan.**]{#current-plan} If the project keeps a plan, keep it current: what's next first, in order, then what works now, one line for each thing it does, rewritten in place rather than added to with each release.
 - [**After writing.**]{#after-writing} After writing prose, run `prose style` on the files you changed. Rewrite where a suggestion helps the reader, and leave it where it doesn't. Never split or reword a sentence only to make a suggestion go away.
 - [**No quieting.**]{#no-quieting} Never mark a file `prose-unchecked` in `.gitattributes` to quiet a warning. Fix the text. `prose-unchecked` is for files that are wrong on purpose, like fixtures.
