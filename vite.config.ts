@@ -80,6 +80,9 @@ export default defineConfig({
   // `prose build` writes to Cloudflare, assets only.
   plugins: [craftz(), built, cloudflare({ assetsOnly: true })],
 
+  // The site is the folder `prose build` writes.
+  publicDir: ".prose",
+
   // Oxfmt and Oxlint leave the fixtures as they're written.
   fmt: { ignorePatterns: ["tests/fixtures/**"] },
   lint: { ignorePatterns: ["tests/fixtures/**"] },
