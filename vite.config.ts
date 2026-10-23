@@ -15,7 +15,6 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { defineConfig } from "vite-plus";
 import { craftz } from "@amitkaps/craftz";
-import { cloudflare } from "@cloudflare/vite-plugin";
 import { format } from "vite-plus/fmt";
 import { lexJs } from "./src/lexer.js";
 
@@ -78,10 +77,7 @@ const built = {
 export default defineConfig({
   // craftz() sets the format and lint rules, and the site: `vp build` hands the folder
   // `prose build` writes to Cloudflare, assets only.
-  plugins: [craftz(), built, cloudflare({ assetsOnly: true })],
-
-  // The site is the folder `prose build` writes.
-  publicDir: ".prose",
+  plugins: [craftz(), built],
 
   // Oxfmt and Oxlint leave the fixtures as they're written.
   fmt: { ignorePatterns: ["tests/fixtures/**"] },
