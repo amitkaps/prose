@@ -2,8 +2,9 @@
  * # Structure tests
  *
  * prose's warnings on how a text is put together. That's links that reach nothing, headings that
- * skip a level, `@prose` sharing its line, and a summary with no title. Each is run on a small repository,
- * with the near misses that must not warn beside it.
+ * skip a level, `@prose` sharing its line, a summary with no title, and a written id that isn't
+ * kebab case or is stated on two pages. Each is run on a small repository, with the near misses
+ * that must not warn beside it.
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -50,6 +51,9 @@ describe("structure warnings", () => {
         "/**\n * @prose\n * # D\n *\n * Its marker on the line after.\n */\n" +
         "/**\n * @prose Text on the marker's line.\n */\n",
       "config.yaml": "# @prose Prose on the marker's line.\nkey: value\n",
+      "docs/ids.md":
+        "# Ids\n\n{#shared}\n## Shared\n\n- [`one-id`]{#one-id}: Stated here.\n- [Bad]{#Bad_Id}: Not kebab case.\n",
+      "docs/later.md": "# Later\n\n{#shared}\n## Shared\n\nThe [`one-id`]{#one-id} again.\n",
     };
     for (const [path, text] of Object.entries(files)) {
       mkdirSync(join(root, path, ".."), { recursive: true });
@@ -87,6 +91,13 @@ describe("structure warnings", () => {
     expect(found.filter((w) => w.endsWith("untitled-summary"))).toEqual([
       "config.yaml:1 untitled-summary",
       "src/c.ts:1 untitled-summary",
+    ]);
+  });
+
+  it("warns about a span's id that isn't kebab case, or that another page states, but not a heading's", () => {
+    expect(found.filter((w) => /id-(case|twice)$/.test(w))).toEqual([
+      "docs/ids.md:7 id-case",
+      "docs/later.md:6 id-twice",
     ]);
   });
 });

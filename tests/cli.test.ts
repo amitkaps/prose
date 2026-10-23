@@ -79,9 +79,9 @@ describe("prose style", () => {
     const { status, out, err } = run(repo(joined), "style");
     expect(status).toBe(0);
     expect(out).toEqual([
-      "prose: style: README.md:3:9: joining-semicolon: semicolon joining two ideas; write two sentences",
-      "prose: style: README.md:5:10: joining-semicolon: semicolon joining two ideas; write two sentences",
-      "prose: style: README.md:7:16: joining-colon: colon joining two ideas; write two sentences",
+      "prose: note: README.md:3:9: joining-semicolon: semicolon joining two ideas; write two sentences",
+      "prose: note: README.md:5:10: joining-semicolon: semicolon joining two ideas; write two sentences",
+      "prose: note: README.md:7:16: joining-colon: colon joining two ideas; write two sentences",
       "prose: by code: joining-semicolon 2, joining-colon 1",
       "prose: `prose rules <code>` says what a code asks for",
       "prose: 3 suggestions in 1 file, of 1 file read",
@@ -104,17 +104,19 @@ describe("prose style", () => {
       ["-c", `node "${cli}" style | head -1; exit "\${PIPESTATUS[0]}"`],
       { cwd: root, encoding: "utf8" },
     );
-    expect(stdout).toMatch(/^prose: style: README\.md:3:\d+: joining-semicolon: /);
+    expect(stdout).toMatch(/^prose: note: README\.md:3:\d+: joining-semicolon: /);
     expect(stderr).toBe("");
     expect(status).toBe(0);
   });
 });
 
 describe("prose rules", () => {
-  it("prints the agent rules under their groups, each with the codes that check it", () => {
+  it("prints prose's rules under their groups, each with the codes that check it, then markz's", () => {
     const { status, out } = run(repo(clean), "rules");
     expect(status).toBe(0);
-    expect(out.slice(0, 4)).toEqual([
+    expect(out.slice(0, 6)).toEqual([
+      "# prose",
+      "",
       "## Where prose goes",
       "",
       expect.stringMatching(
@@ -123,13 +125,15 @@ describe("prose rules", () => {
       "  Checked by `no-prose` and `no-readme`.",
     ]);
     expect(out).toContain("## Keeping it true");
-    expect(out).toContain("  Checked by markz's warnings, `heading-skip` and `marker-line`.");
+    expect(out).toContain("  Checked by `heading-skip` and `marker-line`.");
+    const markz = out.indexOf("# markz");
+    expect(out.slice(markz, markz + 3)).toEqual(["# markz", "", "## Metadata"]);
   });
 
   it("prints one code's row, then the rule it serves", () => {
     const out = run(repo(clean), "rules", "joining-semicolon").out;
     expect(out.slice(0, 3)).toEqual([
-      "joining-semicolon (style): a semicolon joins two ideas",
+      "joining-semicolon (note): a semicolon joins two ideas; write two sentences",
       "  https://prose.amitkaps.com/docs/usage.md#joining-semicolon",
       "",
     ]);
@@ -138,25 +142,25 @@ describe("prose rules", () => {
 
   it("prints a build code's row alone, since it serves no rule", () => {
     expect(run(repo(clean), "rules", "uncommitted-changes").out).toEqual([
-      "uncommitted-changes (warning): the build leaves out uncommitted changes",
+      "uncommitted-changes (warning): the build leaves out uncommitted changes; write a commit first",
       "  https://prose.amitkaps.com/docs/usage.md#uncommitted-changes",
     ]);
   });
 
-  it("prints a markz code's text, its rule in markz's syntax, and the rule it serves", () => {
+  it("prints a markz code's text and address, and the markz rule it serves", () => {
     const out = run(repo(clean), "rules", "reference-link").out;
     expect(out.slice(0, 3)).toEqual([
-      "reference-link (markz): reference link; write inline links",
+      "reference-link (warning): reference link; write inline links",
       "  https://markz.amitkaps.com/docs/syntax.md#reference-link",
       "",
     ]);
-    expect(out[3]).toMatch(/^- \*\*markz's Markdown\.\*\* /);
+    expect(out[3]).toMatch(/^- `link-inline`: /);
   });
 
   it("fails on a code neither gives", () => {
     const { status, err } = run(repo(clean), "rules", "nope");
     expect(status).toBe(1);
-    expect(err[0]).toBe("prose: nope isn't a code prose or markz gives");
+    expect(err[0]).toBe("prose: error: prose and markz state no `nope`");
   });
 });
 
@@ -171,9 +175,9 @@ describe("flags", () => {
     const root = repo(clean);
     const unknown = run(root, "--nope");
     expect(unknown.status).toBe(1);
-    expect(unknown.err[0]).toBe("prose: Unknown option --nope");
+    expect(unknown.err[0]).toBe("prose: error: Unknown option --nope");
     const port = run(root, "--port", "x");
     expect(port.status).toBe(1);
-    expect(port.err[0]).toBe("prose: --port needs a number from 0 to 65535, not x");
+    expect(port.err[0]).toBe("prose: error: --port needs a number from 0 to 65535, not x");
   });
 });

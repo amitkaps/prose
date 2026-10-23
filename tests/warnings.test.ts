@@ -22,7 +22,7 @@ import {
 } from "../src/warnings.js";
 
 describe("formatWarning", () => {
-  it("writes the place, the code, the message and what to write instead, as a compiler does", () => {
+  it("writes the level, the place, the code, the message and what to write instead, as a compiler does", () => {
     expect(
       formatWarning({
         code: "reference-link",
@@ -32,9 +32,9 @@ describe("formatWarning", () => {
         line: 3,
         column: 5,
       }),
-    ).toBe("docs/x.md:3:5: reference-link: reference link; write inline links");
-    expect(formatWarning({ code: "uncommitted-changes", message: "not in the build" })).toBe(
-      "uncommitted-changes: not in the build",
+    ).toBe("prose: warning: docs/x.md:3:5: reference-link: reference link; write inline links");
+    expect(formatWarning({ code: "long-sentence", message: "m" }, "note")).toBe(
+      "prose: note: long-sentence: m",
     );
   });
 });

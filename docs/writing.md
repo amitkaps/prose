@@ -63,16 +63,17 @@ A prose comment's link is its first heading's id, made the way GitHub makes one 
 
 **State a rule once, and link to it.** When a doc or a tested file owns a rule, like a grammar, a schema or a contract, a prose comment links to it. It keeps only how and why this code follows the rule. A rule restated in several places is tested in only one of them, and the other copies drift.
 
-## Rules a test reads
+## A tool's rules
 
-Some docs state rules that a test holds the code to, like prose's [warning codes](usage.md#warnings), markz's [syntax](https://markz.amitkaps.com/docs/syntax.md) and craftz's [rules](https://craftz.amitkaps.com/docs/rules.md). Each rule in such a doc has an id. The test reads the ids from the doc and from the code, and fails when one has an id the other doesn't. So a rule can't be stated without its check, and a check can't run without its rule.
+A tool whose users follow rules states them in its docs, like prose's [agent rules](usage.md#for-agents), markz's [rules](https://markz.amitkaps.com/docs/usage.md#for-agents) and craftz's [rules](https://craftz.amitkaps.com/docs/rules.md). Each rule is worded once, and a test holds the code to it. So a rule can't be stated without its check, and a check can't run without its rule.
 
-- An id is written out, in lowercase kebab case, like `no-readme`. It can't hold a dot. A heading's id changes when its words do, but a written id survives a reword. It also marks which text is a rule.
-- A one-line rule, in a list or a table, opens with its id as a span, like ``[`no-readme`]{#no-readme}``.
-- A rule with a body is a heading, with a `{#id}` line above it.
-- A link to a rule uses its id, like `usage.md#no-readme`, so `broken-anchor` checks it. In the renderer the link lands on the rule. On GitHub it lands at the top of the page, and the span shows as written.
+- A rule says what to write. It's a list item that opens with its id as a span, like ``[`metadata-block`]{#metadata-block}:`` or `[**Name.**]{#id}`, under a heading for its group.
+- A code says what a check found. It's a table row that opens with its id as a span, with when it's given, what to write instead, and a link to the rule it serves. Its table's heading gives its level, a warning or a note.
+- A link to a rule or a code uses its id, like `usage.md#no-readme`, so `broken-anchor` checks it. In the renderer the link lands on it. On GitHub it lands at the top of the page, and the span shows as written.
 
-Each repository's test reads the doc with its own pattern, since what must match is its own.
+The tool reads both with markz's [`rules`](https://markz.amitkaps.com/docs/reference.md#rules), so no repository keeps its own pattern. `<tool> rules` prints them, after the rules of what the tool builds on, and `<tool> rules <id>` prints one. `<tool> check` prints each finding in markz's line, like `prose: warning: docs/x.md:3:5: no-readme: …; write …`.
+
+**Write an id for what others name.** A rule, a code or a claim that other places link to is stated once, as a span with an id ([written ids](usage.md#written-ids)). An id is written out, in lowercase kebab case, like `no-readme`, and can't hold a dot. A heading's id changes when its words do, but a written id survives a reword, and it marks which text is the claim. An id is stated on one page of a repository, since `<tool> rules <id>` finds it without its page, and `prose check` warns on one stated twice.
 
 ## In each language
 

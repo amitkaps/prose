@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`prose's rules print as they did 1`] = `
+"## Where prose goes
+
+- **Every file.** Every source file opens with a \`@prose\` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a \`README.md\`, except \`.github/\`, where GitHub would show it in place of the root's.
+  Checked by \`no-prose\` and \`no-readme\`.
+- **Every export.** A library ships the comment above each export in its types, as that export's documentation. So give every export a comment, and a one-line JSDoc is enough. Put a section's prose above the declaration it describes.
+  Checked by \`undocumented-export\`.
+- **Prose map.** To find your way, \`grep -rn -A4 "@prose" src\` is the map, and \`grep -rL "@prose" src --include="*.ts"\` lists files with no prose yet. Add an \`--include\` for each other language the project writes.
+
+## How it reads
+
+- **Summary first.** Every prose comment, README and doc begins with a short first paragraph, its summary for the human, in about three lines. A file's summary opens with a heading, its title. The paragraph says what the file or section means, not what its code does. Detail goes below it. When a change alters a file's role, rewrite that paragraph in the same change.
+  Checked by \`untitled-summary\` and \`long-summary\`.
+- **Plain sentences.** Write plain sentences. Each one holds one idea, in about 25 words at most, in the active voice with a named subject. If a point doesn't fit, give it its own sentence or cut it. Don't join ideas with semicolons or colons, and keep parentheses for links and examples. Use one term for each concept, the one the docs already use.
+  Checked by \`long-sentence\`, \`joining-semicolon\`, \`joining-colon\` and \`parenthetical-aside\`.
+- **markz's Markdown.** Prose goes in \`@prose\` comments, written in [markz's Markdown](https://markz.amitkaps.com/docs/usage.md#for-agents), whose rules \`prose rules\` prints after these. \`@prose\` and the comment's close each sit on their own line, and headings step down one level at a time. Ordinary comments stay for code-level notes.
+  Checked by \`heading-skip\` and \`marker-line\`.
+
+## What it says
+
+- **Beyond code.** Prose says what the code can't. That's why it exists, what it promises, what was decided and what was ruled out. It doesn't retell what reading the code shows, and it doesn't replace ordinary comments.
+- **Stated once.** State a rule once. If a doc or a tested file owns it, link to it by repo path and keep only how and why this code does it. A link reaches a file that exists, and a heading or span on it.
+  Checked by \`broken-link\`, \`broken-anchor\` and \`nav-missing\`.
+- **Written ids.** A rule, a code or a claim that other places name is stated once, as a span with an id, and the others link to it. So a removed or renamed one breaks a link. Write the id in lowercase kebab case, like \`no-readme\`, and state it on one page of the repository, since \`prose rules <id>\` finds an id without its page.
+  Checked by \`id-case\` and \`id-twice\`.
+- **Chat decisions.** Decisions made in the chat go into the prose in the same change. One that spans files goes into the doc it changes, and one about a single spot goes into the \`@prose\` there. Write docs for a reader who wasn't in the chat, since they may be published as they are. When something is ruled out, write down that it's out and why, so it isn't rebuilt.
+
+## Keeping it true
+
+- **Kept current.** Keep prose current in the same change as the code. Rewrite it where it has drifted, and don't append. A change that only tunes code, with the same behaviour and the same stated costs, needn't touch prose.
+- **Current plan.** If the project keeps a plan, keep it current: what's next first, in order, then what works now, one line for each thing it does, rewritten in place rather than added to with each release.
+- **After writing.** After writing prose, run \`prose style\` on the files you changed. Rewrite where a suggestion helps the reader, and leave it where it doesn't. Never split or reword a sentence only to make a suggestion go away.
+- **No quieting.** Never mark a file \`prose-unchecked\` in \`.gitattributes\` to quiet a warning. Fix the text. \`prose-unchecked\` is for files that are wrong on purpose, like fixtures.
+"
+`;
