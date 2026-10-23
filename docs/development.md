@@ -38,13 +38,13 @@ The review that added them ruled out three things:
 - Labels for a task list's checkboxes. markz writes them as GFM does, and the audit accepts it ([tests/axe.ts](../tests/axe.ts)).
 - Keyboard shortcuts, since single keys clash with a screen reader's. And the ARIA tree pattern, since the rail is navigation, a list of links.
 
-prose releases the way every package does, as [craftz's rules](https://craftz.amitkaps.com/docs/rules.md#releases) sets out. From craftz, `pnpm release prose X.Y.Z` opens the pull request that bumps `version`. Its description goes above the release's generated notes.
+prose releases the way every package does, as [craftz's rules](https://craftz.amitkaps.com/docs/rules.md#releases) sets out. From this folder, `pnpm craftz release X.Y.Z` opens the pull request that bumps `version`. Its description goes above the release's generated notes.
 
 ```sh
-pnpm release prose 0.5.0 --notes "What changed for users …"
+pnpm craftz release 0.9.0 --notes "What changed for users …"
 ```
 
-Merging it is the release, and the `release` workflow does the rest. The notes are generated from the pull requests' labels (`.github/release.yml`), so there's no changelog file to keep. The site needs no step of its own, because Cloudflare builds it from `main` ([the site](#the-site)).
+Merging it is the release, and the `release` workflow does the rest. Then approve the staged version on npmjs.com. The notes are generated from the pull requests' labels (`.github/release.yml`), so there's no changelog file to keep. The site needs no step of its own, because Cloudflare builds it from `main` ([the site](#the-site)).
 
 ## The site
 
