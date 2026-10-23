@@ -17,6 +17,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse, type Document, type WarningCode as MarkzCode } from "@amitkaps/markz";
+import { finding, type Level } from "@amitkaps/markz/rules";
 import { docsNav } from "./nav.js";
 import type { ProseComment } from "./parser.js";
 import {
@@ -55,13 +56,12 @@ export interface Warning<Code extends string = WarningCode> {
   column?: number;
 }
 
-/** `docs/x.md:3:5: reference-link: reference link; write inline links`, one warning a line, as a
- *  compiler writes it, so an editor's terminal links the place. */
-export function formatWarning(w: Warning<string>): string {
-  const place = w.path
-    ? `${w.path}${w.line ? `:${w.line}${w.column ? `:${w.column}` : ""}` : ""}: `
-    : "";
-  return `${place}${w.code}: ${w.message}${w.instead ? `; write ${w.instead}` : ""}`;
+/** `prose: warning: docs/x.md:3:5: reference-link: reference link; write inline links`, one
+ *  finding a line, as a compiler writes it, so an editor's terminal links the place. The line is
+ *  markz's, so every tool built on it prints the same. */
+export function formatWarning(w: Warning<string>, level: Level = "warning"): string {
+  const { path: file, ...rest } = w;
+  return finding({ tool: "prose", level, file, ...rest });
 }
 
 /** The 1-based line and column of `offset` in `text`. */
@@ -160,15 +160,17 @@ export function findInFile<Code extends string>(
 }
 
 /** What one run of the check knows of the repository: its files, each linked page's heading
- *  ids, and the exports its package ships, each read once. */
+ *  ids, the page each written id was first stated on, and the exports its package ships, each
+ *  read once. */
 export interface Run {
   files: Set<string>;
   ids: Map<string, Set<string>>;
+  stated: Map<string, string>;
   shipped?: Map<string, Map<string, number>>;
 }
 
 export function newRun(files: string[]): Run {
-  return { files: new Set(files), ids: new Map() };
+  return { files: new Set(files), ids: new Map(), stated: new Map() };
 }
 
 /** One file's warnings, markz's and prose's own, in the file's order. */
@@ -177,7 +179,7 @@ export function fileWarnings(root: string, path: string, run: Run): Warning[] {
   return [
     ...noProse(root, path),
     ...findInFile(root, path, markzFindings),
-    ...structureWarnings(root, path, run.files, run.ids),
+    ...structureWarnings(root, path, run.files, run.ids, run.stated),
     ...undocumentedExports(path, run.shipped, root),
   ].sort((a, b) => (a.line ?? 0) - (b.line ?? 0) || (a.column ?? 0) - (b.column ?? 0));
 }

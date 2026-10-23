@@ -1,16 +1,18 @@
 /** @prose
  * # Structure
  *
- * prose's warnings on how a text is put together, as [writing](../docs/writing.md) asks. A link
- * reaches a file and a heading that are there, headings never skip a level, `@prose` sits on its
- * own line, and a file's summary opens with its title. Each is exact, so a warning is always
- * something to fix ([usage](../docs/usage.md#warnings)).
+ * prose's warnings on how a text is put together, as [writing](../docs/writing.md) asks. Each is
+ * exact, so a warning is always something to fix ([usage](../docs/usage.md#warnings)).
+ *
+ * A link reaches a file and a heading that are there. Headings never skip a level, and `@prose`
+ * sits on its own line. A file's summary opens with its title. A written id is kebab case, and
+ * stated on one page.
  *
  * They're found in the same texts as markz's warnings, and placed the same way
  * ([warnings.ts](warnings.ts)).
  */
 import { dirname, posix } from "node:path";
-import { headings, walk, type Document } from "@amitkaps/markz";
+import { headings, ids as idsIn, walk, type Document } from "@amitkaps/markz";
 import type { ProseComment } from "./parser.js";
 import { markdownBody, sourceBody } from "./render.js";
 import { extensionOf, fileToNode, isSource } from "./tree.js";
@@ -22,20 +24,25 @@ export const STRUCTURE_CODES = [
   "heading-skip",
   "marker-line",
   "untitled-summary",
+  "id-case",
+  "id-twice",
 ] as const;
 export type StructureCode = (typeof STRUCTURE_CODES)[number];
 
-/** One file's structure warnings, against the repository's `files`. */
+/** One file's structure warnings, against the repository's `files`. `stated` holds the page
+ *  each written id was first stated on, across the run. */
 export function structureWarnings(
   root: string,
   path: string,
   files: Set<string>,
   ids: Map<string, Set<string>>,
+  stated: Map<string, string>,
 ): Warning<StructureCode>[] {
   if (!isSource(root, path)) return [];
   const found = [
     ...findInFile(root, path, links(root, path, files, ids)),
     ...findInFile(root, path, headingLevels()),
+    ...findInFile(root, path, writtenIds(path, stated)),
   ];
   if (extensionOf(path) !== "md") {
     const node = fileToNode(root, path);
@@ -170,6 +177,46 @@ function headingLevels(): Finder<StructureCode> {
         });
       }
       last = level;
+    }
+    return found;
+  };
+}
+
+/** @prose
+ * # Written ids
+ *
+ * A span's written id, like `` [`no-readme`]{#no-readme} ``, names a rule, a code or a claim that
+ * other places link to ([usage](../docs/usage.md#written-ids)). It's lowercase kebab case, so it
+ * reads the same in a link, a command and a code. It's stated on one page of the repository,
+ * since `prose rules <id>` and a tool's own rules find an id without its page.
+ *
+ * The first page the run reads keeps the id, and a later one is warned. Headings aren't counted,
+ * since a heading's id is the page's outline, and two pages can each have an Install section.
+ */
+function writtenIds(path: string, stated: Map<string, string>): Finder<StructureCode> {
+  return (doc) => {
+    const found: Found<StructureCode>[] = [];
+    for (const { id, node, written } of idsIn(doc)) {
+      if (!written || doc.type(node) !== "element") continue;
+      const start = doc.start(node);
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id)) {
+        found.push({
+          code: "id-case",
+          message: `span id \`${id}\` isn't lowercase kebab case`,
+          instead: "the id in lowercase kebab case, like `no-readme`",
+          start,
+        });
+      }
+      const first = stated.get(id);
+      if (first === undefined) stated.set(id, path);
+      else if (first !== path) {
+        found.push({
+          code: "id-twice",
+          message: `span id \`${id}\`, which \`${first}\` states too`,
+          instead: "a link to the page that states it",
+          start,
+        });
+      }
     }
     return found;
   };

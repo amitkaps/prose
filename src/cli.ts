@@ -25,7 +25,8 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { build } from "./build.js";
-import { codeRule, printRules } from "./rules.js";
+import { finding, printOne, printRules } from "@amitkaps/markz/rules";
+import { sets } from "./rules.js";
 import { serve } from "./server.js";
 import { styleAdvice } from "./style.js";
 import { projectFiles } from "./tree.js";
@@ -60,7 +61,7 @@ function version(): string {
 
 /** `prose: warning: docs/x.md:3:5: reference-link: …`, on stderr. */
 function report(w: Warning): void {
-  process.stderr.write(`prose: warning: ${formatWarning(w)}\n`);
+  process.stderr.write(`${formatWarning(w)}\n`);
 }
 
 const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -97,7 +98,7 @@ function style(paths: string[]): void {
     for (const f of found) files.add(f);
   }
   const advice = styleAdvice(root, [...files].sort());
-  for (const a of advice) process.stdout.write(`prose: style: ${formatWarning(a)}\n`);
+  for (const a of advice) process.stdout.write(`${formatWarning(a, "note")}\n`);
   process.stdout.write(byCode(advice));
   if (advice.length) process.stdout.write(RULES);
   const read = readCount(root, [...files], "read");
@@ -144,7 +145,9 @@ async function main(argv: string[]): Promise<void> {
     if (code === "-h" || code === "--help") return void process.stdout.write(HELP);
     if (rest.length || code?.startsWith("-"))
       throw new Error(`prose rules takes one code\n\n${HELP}`);
-    return void process.stdout.write(code ? codeRule(code) : printRules());
+    const printed = code ? printOne(sets, code) : printRules(sets);
+    if (printed === undefined) throw new Error(`prose and markz state no \`${code}\``);
+    return void process.stdout.write(printed);
   }
   const command = argv[0] === "build" || argv[0] === "check" ? argv[0] : null;
   const building = command === "build";
@@ -207,6 +210,7 @@ process.stdout.on("error", (error: NodeJS.ErrnoException) => {
 });
 
 main(process.argv.slice(2)).catch((error: unknown) => {
-  process.stderr.write(`prose: ${error instanceof Error ? error.message : String(error)}\n`);
+  const message = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`${finding({ tool: "prose", level: "error", message })}\n`);
   process.exit(1);
 });

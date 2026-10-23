@@ -79,19 +79,21 @@ Each warning has a place, a code, what's wrong and what to write instead. Most c
 
 It reads only form a machine can be sure of, never meaning. It warns about each file, folder or export with no prose, but never prints a coverage percentage. A percentage invites a target, and a target is met with prose written to fill it.
 
-| Code | When | Rule |
-| --- | --- | --- |
-| [`broken-link`]{#broken-link} | a relative link reaches no file or folder in the repository | [Stated once](#stated-once) |
-| [`broken-anchor`]{#broken-anchor} | a link's `#fragment` matches no id on the page it reaches, a heading's or a span's | [Stated once](#stated-once) |
-| [`heading-skip`]{#heading-skip} | a heading is two or more levels below the one before it on the page | [markz's Markdown](#markz-markdown) |
-| [`marker-line`]{#marker-line} | prose shares a line with `@prose`, or with the comment's close | [markz's Markdown](#markz-markdown) |
-| [`untitled-summary`]{#untitled-summary} | a file's first `@prose` comment, its summary, doesn't open with a heading | [Summary first](#summary-first) |
-| [`no-prose`]{#no-prose} | a file prose reads for prose has no `@prose` comment | [Every file](#every-file) |
-| [`no-readme`]{#no-readme} | a folder with a file prose reads has no `README.md`, except `.github/` | [Every file](#every-file) |
-| [`undocumented-export`]{#undocumented-export} | a package that isn't private ships types, and an export it ships has no doc comment | [Every export](#every-export) |
-| [`nav-missing`]{#nav-missing} | `nav` in `docs/README.md` names a file that isn't a doc | [Stated once](#stated-once) |
-| [`uncommitted-changes`]{#uncommitted-changes} | the build leaves out uncommitted changes |  |
-| [`unignored-build`]{#unignored-build} | the build's folder isn't in `.gitignore` |  |
+| Code | When | Write instead | Rule |
+| --- | --- | --- | --- |
+| [`broken-link`]{#broken-link} | a relative link reaches no file or folder in the repository | a path from this file | [Stated once](#stated-once) |
+| [`broken-anchor`]{#broken-anchor} | a link's `#fragment` matches no id on the page it reaches, a heading's or a span's | a heading's or span's id, as the page's `#` gives it | [Stated once](#stated-once) |
+| [`heading-skip`]{#heading-skip} | a heading is two or more levels below the one before it on the page | one level below | [markz's Markdown](#markz-markdown) |
+| [`marker-line`]{#marker-line} | prose shares a line with `@prose`, or with the comment's close | `@prose` and the close each on their own line | [markz's Markdown](#markz-markdown) |
+| [`untitled-summary`]{#untitled-summary} | a file's first `@prose` comment, its summary, doesn't open with a heading | a `# Title` line first, which is the page's title | [Summary first](#summary-first) |
+| [`no-prose`]{#no-prose} | a file prose reads for prose has no `@prose` comment | its summary in a `@prose` comment at the top | [Every file](#every-file) |
+| [`no-readme`]{#no-readme} | a folder with a file prose reads has no `README.md`, except `.github/` | a `README.md` that says what lives there | [Every file](#every-file) |
+| [`undocumented-export`]{#undocumented-export} | a package that isn't private ships types, and an export it ships has no doc comment | a `/** … */` comment above it, and one line is enough | [Every export](#every-export) |
+| [`nav-missing`]{#nav-missing} | `nav` in `docs/README.md` names a file that isn't a doc | a doc's name in docs/ | [Stated once](#stated-once) |
+| [`id-case`]{#id-case} | a span's written id isn't lowercase kebab case | the id in lowercase kebab case, like `no-readme` | [Written ids](#written-ids) |
+| [`id-twice`]{#id-twice} | a span's written id is stated on another page of the repository too | a link to the page that states it | [Written ids](#written-ids) |
+| [`uncommitted-changes`]{#uncommitted-changes} | the build leaves out uncommitted changes | a commit first |  |
+| [`unignored-build`]{#unignored-build} | the build's folder isn't in `.gitignore` | the build's folder in `.gitignore` |  |
 
 A Markdown file is prose already, and JSON can't hold a comment, so neither is asked for `@prose`. Nor is HTML, since a hand-written page is served with its comments, prose and all ([writing](writing.md#in-each-language)). What a package ships is read from the `types` paths in its `package.json`, like `./dist/index.d.ts` for `src/index.ts`, through each `export … from`. A link with a scheme, a site path like `/about`, or a path out of the repository isn't checked, since prose can't see where it goes. Neither is a GitHub line, like `#L42`. The last two codes are about a build, so only `prose build` prints them. `prose .` shows a page's own warnings at its foot, each linked to its line in the editor. A published page never does.
 
@@ -113,9 +115,9 @@ prose style docs                         # a folder
 `prose style` gives advice on how the files you name read, against [the agent rules](#for-agents). It prints one suggestion a line, like a warning, and always passes. With no path, it reads every file. It ends with how many files it read, and counts its suggestions by code, as `prose check` does.
 
 ```text
-prose: style: docs/usage.md:20:31: joining-semicolon: semicolon joining two ideas; write two sentences
-prose: style: docs/usage.md:41:12: joining-semicolon: semicolon joining two ideas; write two sentences
-prose: style: src/store.ts:9:24: joining-colon: colon joining two ideas; write two sentences
+prose: note: docs/usage.md:20:31: joining-semicolon: semicolon joining two ideas; write two sentences
+prose: note: docs/usage.md:41:12: joining-semicolon: semicolon joining two ideas; write two sentences
+prose: note: src/store.ts:9:24: joining-colon: colon joining two ideas; write two sentences
 prose: by code: joining-semicolon 2, joining-colon 1
 prose: `prose rules <code>` says what a code asks for
 prose: 3 suggestions in 2 files, of 12 files read
@@ -125,13 +127,13 @@ It's for the writer of a file, right after writing it. So it isn't part of `pros
 
 It's conservative, so a suggestion is worth taking. It flags only what it's confident a rewrite would improve, and lets a form that's often fine pass, even when some of that form joins two ideas. A wrong suggestion would have an agent rewrite a good sentence, and learn to pass over the rest. A miss costs less, since [the agent rules](#for-agents) still say how to write. So fix what it finds, and rewrite to help the reader, not to make a suggestion go away.
 
-| Code | When | Rule |
-| --- | --- | --- |
-| [`long-summary`]{#long-summary} | a text's first paragraph is over 60 words, about four lines | [Summary first](#summary-first) |
-| [`long-sentence`]{#long-sentence} | a sentence is over 35 words | [Plain sentences](#plain-sentences) |
-| [`joining-semicolon`]{#joining-semicolon} | a semicolon joins two ideas | [Plain sentences](#plain-sentences) |
-| [`joining-colon`]{#joining-colon} | a colon joins two ideas, with a clause after it that a subject or verb opens | [Plain sentences](#plain-sentences) |
-| [`parenthetical-aside`]{#parenthetical-aside} | a parenthesis holds an aside, not a link, an example or a gloss of a few words | [Plain sentences](#plain-sentences) |
+| Code | When | Write instead | Rule |
+| --- | --- | --- | --- |
+| [`long-summary`]{#long-summary} | a text's first paragraph is over 60 words, about four lines | a summary of about three lines, with detail below it | [Summary first](#summary-first) |
+| [`long-sentence`]{#long-sentence} | a sentence is over 35 words | one idea a sentence, in about 25 words | [Plain sentences](#plain-sentences) |
+| [`joining-semicolon`]{#joining-semicolon} | a semicolon joins two ideas | two sentences | [Plain sentences](#plain-sentences) |
+| [`joining-colon`]{#joining-colon} | a colon joins two ideas, with a clause after it that a subject or verb opens | two sentences | [Plain sentences](#plain-sentences) |
+| [`parenthetical-aside`]{#parenthetical-aside} | a parenthesis holds an aside, not a link, an example or a gloss of a few words | its own sentence, or cut it | [Plain sentences](#plain-sentences) |
 
 Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A file that `.gitattributes` marks `prose-unchecked` gets no advice, as it gets no warnings ([warnings](#warnings)).
 
@@ -153,7 +155,7 @@ pnpm prose rules                # the rules, as raw text
 pnpm prose rules joining-colon  # what one code asks for
 ```
 
-The rules fall in four groups: where prose goes, how it reads, what it says, and keeping it true. Each rule has a name, and each code in [warnings](#warnings) and [style](#style) names the rule it serves. So `prose rules` prints each rule with the codes that check it, and a test holds the two to each other. A code can't ship without a rule to say what to write, though most rules are about meaning and no code checks them. Every markz code serves [markz's Markdown](#markz-markdown), and prints markz's text for it with a link to its rule in [markz's syntax](https://markz.amitkaps.com/docs/syntax.md#not-supported). The codes about a build, `uncommitted-changes` and `unignored-build`, serve none, since they aren't about the writing.
+The rules fall in four groups: where prose goes, how it reads, what it says, and keeping it true. Each rule has a name, and each code in [warnings](#warnings) and [style](#style) names the rule it serves. So `prose rules` prints each rule with the codes that check it, and a test holds the two to each other. A code can't ship without a rule to say what to write, though most rules are about meaning and no code checks them. markz's rules print after prose's, from the markz prose bundles, and each markz code serves one of them. The codes about a build, `uncommitted-changes` and `unignored-build`, serve none, since they aren't about the writing.
 
 ### Where prose goes
 
@@ -165,12 +167,13 @@ The rules fall in four groups: where prose goes, how it reads, what it says, and
 
 - [**Summary first.**]{#summary-first} Every prose comment, README and doc begins with a short first paragraph, its summary for the human, in about three lines. A file's summary opens with a heading, its title. The paragraph says what the file or section means, not what its code does. Detail goes below it. When a change alters a file's role, rewrite that paragraph in the same change.
 - [**Plain sentences.**]{#plain-sentences} Write plain sentences. Each one holds one idea, in about 25 words at most, in the active voice with a named subject. If a point doesn't fit, give it its own sentence or cut it. Don't join ideas with semicolons or colons, and keep parentheses for links and examples. Use one term for each concept, the one the docs already use.
-- [**markz's Markdown.**]{#markz-markdown} Prose goes in `@prose` comments, written in [markz's Markdown](https://markz.amitkaps.com/docs/syntax.md). Write `_emphasis_`, never `*emphasis*`, and no raw HTML. Put a blank line before and after each `{@name}`, `{/name}` or `{#id .class}` line, so a formatter can't join it to the text. `@prose` and the comment's close each sit on their own line, and headings step down one level at a time. Ordinary comments stay for code-level notes.
+- [**markz's Markdown.**]{#markz-markdown} Prose goes in `@prose` comments, written in [markz's Markdown](https://markz.amitkaps.com/docs/usage.md#for-agents), whose rules `prose rules` prints after these. `@prose` and the comment's close each sit on their own line, and headings step down one level at a time. Ordinary comments stay for code-level notes.
 
 ### What it says
 
 - [**Beyond code.**]{#beyond-code} Prose says what the code can't. That's why it exists, what it promises, what was decided and what was ruled out. It doesn't retell what reading the code shows, and it doesn't replace ordinary comments.
 - [**Stated once.**]{#stated-once} State a rule once. If a doc or a tested file owns it, link to it by repo path and keep only how and why this code does it. A link reaches a file that exists, and a heading or span on it.
+- [**Written ids.**]{#written-ids} A rule, a code or a claim that other places name is stated once, as a span with an id, and the others link to it. So a removed or renamed one breaks a link. Write the id in lowercase kebab case, like `no-readme`, and state it on one page of the repository, since `prose rules <id>` finds an id without its page.
 - [**Chat decisions.**]{#chat-decisions} Decisions made in the chat go into the prose in the same change. One that spans files goes into the doc it changes, and one about a single spot goes into the `@prose` there. Write docs for a reader who wasn't in the chat, since they may be published as they are. When something is ruled out, write down that it's out and why, so it isn't rebuilt.
 
 ### Keeping it true
