@@ -5,12 +5,13 @@ The `@prose` convention and the read-only command work, and this repository is r
 ## Next, in order
 
 - [ ] **Watch whether agents run `prose rules`.** If they skip it, `prose rules --write` could keep a marked block of the rules in `AGENTS.md`, which agents load every session. That's a copy in every repository, so `prose check` would then warn when the block is stale.
+  - **2026-10-23, craftz.** An agent deleted code under `@prose` comments without reading the rules, since `AGENTS.md` said to run them only before writing prose. It now names changing code too. Rules read early were also lost when the session was summarized, while `AGENTS.md` is loaded again. That's the case `--write` is for, but one miss doesn't pay for a copy in every repository, so watch the wider pointer first.
 
 ## Where it is
 
 - **Reading.** `prose .` and `prose build` show a repository as documents, with a file tree, the docs in the bar and a table of contents ([reading](reading.md)). Its pages are the user docs for this repository and for markz.
 - **Checks and advice.** `prose check` warns about form a machine can be sure of, and runs in CI. `prose style` gives advice an agent can take every time ([usage](usage.md#warnings)). Each code names the [agent rule](usage.md#for-agents) it serves, and a test holds the codes, the rows and the rules to each other ([writing](writing.md#rules-a-test-reads)).
-- **Rules without a fetch.** `prose rules` prints the agent rules for the installed version, each with the codes that check it, and `prose rules <code>` one code and its rule. Every repository's `AGENTS.md` says to run it before writing prose.
+- **Rules without a fetch.** `prose rules` prints the agent rules for the installed version, each with the codes that check it, and `prose rules <code>` one code and its rule. Every repository's `AGENTS.md` says to run it before writing prose, or changing code a `@prose` comment explains.
 - **One small package.** prose has no dependencies, bundles markz, and ships at about 250 KB ([development](development.md#what-ships)).
 - **Used across the repositories.** markz, sitez, pagez, base and craftz each run `prose check` in CI, through craftz's rules. Its first version was a larger tool, cut back to the parts that got read ([lessons](lessons.md#what-use-taught)).
 

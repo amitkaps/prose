@@ -146,7 +146,7 @@ Other forms look like a joined idea or an aside but aren't, so they get no sugge
 
 ## For agents
 
-`prose rules` prints the rules below, from the docs of the version installed, and `prose rules <code>` prints one code's row with the rule it serves. Have the project's `AGENTS.md` or `CLAUDE.md` say to run it before writing prose. An agent then reads the rules as written, with no fetch, and they change when prose is upgraded.
+`prose rules` prints the rules below, from the docs of the version installed, and `prose rules <code>` prints one code's row with the rule it serves. Have the project's `AGENTS.md` or `CLAUDE.md` say to run it before writing prose, or changing code a `@prose` comment explains. An agent then reads the rules as written, with no fetch, and they change when prose is upgraded.
 
 ```sh
 pnpm prose rules                # the rules, as raw text
