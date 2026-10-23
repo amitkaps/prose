@@ -6,11 +6,14 @@
  * view, it's scrolled to the middle. The rail saves its state as the page is left.
  */
 {
-  const rail = document.querySelector(".rail");
+  const rail = /** @type {HTMLElement} */ (document.querySelector(".rail"));
   try {
     const saved = JSON.parse(sessionStorage.getItem("prose:rail") || "null");
     if (saved) {
-      for (const d of rail.querySelectorAll("details[data-folder]")) {
+      const folders = /** @type {NodeListOf<HTMLDetailsElement>} */ (
+        rail.querySelectorAll("details[data-folder]")
+      );
+      for (const d of folders) {
         if (saved.open.includes(d.dataset.folder)) d.open = true;
       }
       rail.scrollTop = saved.scroll;
@@ -27,9 +30,10 @@
   }
   addEventListener("pagehide", () => {
     try {
-      const open = [...rail.querySelectorAll("details[data-folder][open]")].map(
-        (d) => d.dataset.folder,
+      const opened = /** @type {NodeListOf<HTMLDetailsElement>} */ (
+        rail.querySelectorAll("details[data-folder][open]")
       );
+      const open = [...opened].map((d) => d.dataset.folder);
       sessionStorage.setItem("prose:rail", JSON.stringify({ open, scroll: rail.scrollTop }));
     } catch {}
   });

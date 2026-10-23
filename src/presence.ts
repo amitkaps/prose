@@ -128,10 +128,12 @@ interface Export {
 /** The exports of each JS or TS module, read once a run from its tokens. */
 class Modules {
   #read = new Map<string, { source: string; exports: Export[]; star: string[] }>();
-  constructor(
-    private root: string,
-    private files: Set<string>,
-  ) {}
+  private root: string;
+  private files: Set<string>;
+  constructor(root: string, files: Set<string>) {
+    this.root = root;
+    this.files = files;
+  }
 
   /** Adds `names` of `module`, or all its exports, to `shipped` at their declarations. */
   ship(

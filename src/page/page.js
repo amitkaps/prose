@@ -18,21 +18,29 @@
  */
 {
   const root = document.documentElement;
-  const runs = [...document.querySelectorAll(".code")];
+  const runs = [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".code"))];
+  /** @param {HTMLElement} run */
   const isOpen = (run) =>
     root.classList.contains("prose-only")
       ? run.classList.contains("opened")
       : !run.classList.contains("closed");
   const sync = () => {
     const proseOnly = root.classList.contains("prose-only");
-    for (const b of document.querySelectorAll("[data-mode]")) {
+    for (const b of /** @type {NodeListOf<HTMLElement>} */ (
+      document.querySelectorAll("[data-mode]")
+    )) {
       b.setAttribute("aria-pressed", String((b.dataset.mode === "prose") === proseOnly));
     }
     for (const run of runs) {
-      run.querySelector(".code-head").setAttribute("aria-expanded", String(isOpen(run)));
+      /** @type {HTMLElement} */ (run.querySelector(".code-head")).setAttribute(
+        "aria-expanded",
+        String(isOpen(run)),
+      );
     }
   };
-  for (const b of document.querySelectorAll("[data-mode]")) {
+  for (const b of /** @type {NodeListOf<HTMLElement>} */ (
+    document.querySelectorAll("[data-mode]")
+  )) {
     b.addEventListener("click", () => {
       const proseOnly = b.dataset.mode === "prose";
       root.classList.toggle("prose-only", proseOnly);
@@ -44,7 +52,7 @@
     });
   }
   for (const run of runs) {
-    run.querySelector(".code-head").addEventListener("click", () => {
+    /** @type {HTMLElement} */ (run.querySelector(".code-head")).addEventListener("click", () => {
       run.classList.toggle(root.classList.contains("prose-only") ? "opened" : "closed");
       sync();
     });
@@ -75,19 +83,24 @@
  * docked tree if it's closed. Choosing a heading from the popover closes it, so the text shows.
  */
 {
-  const links = [...document.querySelectorAll(".toc a")];
-  const section = document.querySelector(".where .section");
-  const rail = document.getElementById("rail");
-  const pane = rail.querySelector(".toc-rail");
+  const links = [
+    .../** @type {NodeListOf<HTMLAnchorElement>} */ (document.querySelectorAll(".toc a")),
+  ];
+  const section = /** @type {HTMLElement | null} */ (document.querySelector(".where .section"));
+  const rail = /** @type {HTMLElement} */ (document.getElementById("rail"));
+  const pane = /** @type {HTMLElement | null} */ (rail.querySelector(".toc-rail"));
+  /** @type {string | undefined} */
   let shown;
+  /** @param {HTMLAnchorElement} a */
   const idOf = (a) => decodeURIComponent(a.hash.slice(1));
   const targets = [...new Set(links.map(idOf))]
     .map((id) => document.getElementById(id))
-    .filter(Boolean);
+    .filter((t) => t !== null);
   let frame = 0;
   const mark = () => {
     frame = 0;
-    const line = document.querySelector(".bar").offsetHeight + innerHeight * 0.15;
+    const line =
+      /** @type {HTMLElement} */ (document.querySelector(".bar")).offsetHeight + innerHeight * 0.15;
     let current = targets[0]?.id;
     for (const t of targets) {
       if (t.getBoundingClientRect().top > line) break;
@@ -95,8 +108,8 @@
     }
     for (const a of links) a.classList.toggle("here", idOf(a) === current);
     // The rail's contents scroll on their own, so its mark is kept in view there, not the page's.
-    const marked = pane?.querySelector("a.here");
-    if (marked && current !== shown) {
+    const marked = /** @type {HTMLElement | null | undefined} */ (pane?.querySelector("a.here"));
+    if (pane && marked && current !== shown) {
       shown = current;
       const { offsetTop: top, offsetHeight: height } = marked;
       if (top < pane.scrollTop || top + height > pane.scrollTop + pane.clientHeight) {
@@ -104,10 +117,13 @@
       }
     }
     if (section) {
-      const reached = targets[0].getBoundingClientRect().top <= line;
+      const reached = (targets[0]?.getBoundingClientRect().top ?? Infinity) <= line;
       section.hidden = !reached;
       const named = links.find((a) => idOf(a) === current);
-      if (reached && named) section.querySelector("button").textContent = named.textContent;
+      if (reached && named) {
+        /** @type {HTMLButtonElement} */ (section.querySelector("button")).textContent =
+          named.textContent;
+      }
     }
   };
   if (targets.length) {
@@ -120,10 +136,11 @@
     );
     mark();
   }
-  section?.querySelector("button").addEventListener("click", () => {
+  section?.querySelector("button")?.addEventListener("click", () => {
     if (matchMedia("(max-width: 62rem)").matches) rail.showPopover();
-    else document.getElementById("dock").checked = false;
-    (pane.querySelector("a.here") ?? pane.querySelector("a")).focus();
+    else /** @type {HTMLInputElement} */ (document.getElementById("dock")).checked = false;
+    const link = pane?.querySelector("a.here") ?? pane?.querySelector("a");
+    /** @type {HTMLElement | null | undefined} */ (link)?.focus();
   });
   for (const a of rail.querySelectorAll(".toc-rail a")) {
     a.addEventListener("click", () => {

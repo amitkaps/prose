@@ -1,27 +1,27 @@
 # @prose
 # # CI
 #
-# Runs on every pull request and every push to `main`. The `ci` job runs `verify`: format, lint
-# and types, the tests, the build with publint, then the site. Branch protection requires that
-# exact check name.
-
-name: ci
+# Checks every pull request and every push to `main` with `pnpm run verify`, the script a
+# site's deploy and a package's release run first too. It doesn't deploy or release, and it's
+# the same in every repository, so what a repository adds goes in `verify`. The job is named
+# `ci`, the check that branch protection requires.
+name: CI
 
 on:
-  pull_request:
   push:
     branches: [main]
-
-permissions:
-  contents: read
+  pull_request:
+    branches: [main]
 
 # A new push cancels the run before it.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  # One job, named `ci`: branch protection requires this exact check name.
   ci:
     runs-on: ubuntu-latest
     steps:
@@ -30,9 +30,10 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
-          node-version: 26
+          node-version-file: package.json
           cache: pnpm
+
       - run: pnpm install --frozen-lockfile
-      # The same script Cloudflare runs before each deploy: format, lint and types, the tests, the
-      # library with publint, then the site.
-      - run: pnpm run verify
+
+      - name: Verify
+        run: pnpm run verify

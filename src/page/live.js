@@ -13,10 +13,18 @@
   const since = document.body.dataset.rendered;
   // `page.js` reads this key after the reload and scrolls back.
   const key = "prose:scroll:" + location.pathname;
+  /** @type {EventSource | null} */
   let events = null;
   const connect = () => {
-    if (events || document.hidden || document.prerendering) return;
-    events = new EventSource("/.prose/events?path=" + encodeURIComponent(here) + "&since=" + since);
+    if (
+      events ||
+      document.hidden ||
+      /** @type {Document & { prerendering?: boolean }} */ (document).prerendering
+    )
+      return;
+    events = new EventSource(
+      "/.prose/events?path=" + encodeURIComponent(here ?? "") + "&since=" + since,
+    );
     events.onopen = () => document.body.classList.remove("offline");
     events.onerror = () => document.body.classList.add("offline");
     events.onmessage = () => {
