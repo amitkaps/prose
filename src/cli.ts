@@ -8,7 +8,8 @@
  *
  * `prose style` gives advice on how the files just written read, and always passes
  * ([style.ts](style.ts)). `prose rules` prints the rules both read for, from the docs this version
- * shipped with ([rules.ts](rules.ts)).
+ * shipped with ([rules.ts](rules.ts)). `prose help` prints the commands from the same docs, where
+ * each is stated once, and a test holds each command below to it.
  *
  * `check` and `style` read the working tree, as `prose .` does, not the commit a build publishes.
  * So `check` never warns about uncommitted changes, or about where a build would go. `check` always
@@ -25,32 +26,14 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { build } from "./build.js";
-import { finding, printOne, printRules } from "@amitkaps/markz/rules";
-import { sets } from "./rules.js";
+import { finding, printHelp, printOne, printRules } from "@amitkaps/markz/rules";
+import { proseCommands, sets } from "./rules.js";
 import { serve } from "./server.js";
 import { styleAdvice } from "./style.js";
 import { projectFiles } from "./tree.js";
 import { checkedCount, contentWarnings, formatWarning, type Warning } from "./warnings.js";
 
-const HELP = `Usage: prose [dir] [options]
-       prose build [dir] [--out <dir>]
-       prose check [dir]
-       prose style [path ...]
-       prose rules [code]
-
-Open a repository in the browser as a Markdown-first document. Read-only.
-\`prose build\` writes the same pages as a static site, from the last commit.
-\`prose check\` prints what the text gets wrong, and fails if it finds anything.
-\`prose style\` gives advice on how the files you name read, and always passes.
-\`prose rules\` prints the rules to write prose by, or what one code asks for.
-
-Options:
-  --port <n>   Port to try first (default 1234; the next free one if taken)
-  --no-open    Don't open the browser
-  --out <dir>  Where \`prose build\` writes (default .prose)
-  -h, --help   Show this help
-  -v, --version
-`;
+const help = (): string => printHelp(proseCommands())!;
 
 function version(): string {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8")) as {
@@ -137,14 +120,21 @@ async function main(argv: string[]): Promise<void> {
   let out: string | undefined;
   if (argv[0] === "style") {
     const paths = argv.slice(1);
-    if (paths.some((a) => a === "-h" || a === "--help")) return void process.stdout.write(HELP);
+    if (paths.some((a) => a === "-h" || a === "--help")) return void process.stdout.write(help());
     return style(paths);
+  }
+  if (argv[0] === "help") {
+    const [name, ...rest] = argv.slice(1);
+    const printed = rest.length ? undefined : printHelp(proseCommands(), name);
+    if (printed === undefined)
+      throw new Error(`prose has no command \`${argv.slice(1).join(" ")}\``);
+    return void process.stdout.write(printed);
   }
   if (argv[0] === "rules") {
     const [code, ...rest] = argv.slice(1);
-    if (code === "-h" || code === "--help") return void process.stdout.write(HELP);
+    if (code === "-h" || code === "--help") return void process.stdout.write(help());
     if (rest.length || code?.startsWith("-"))
-      throw new Error(`prose rules takes one code\n\n${HELP}`);
+      throw new Error(`prose rules takes one code\n\n${help()}`);
     const printed = code ? printOne(sets, code) : printRules(sets);
     if (printed === undefined) throw new Error(`prose and markz state no \`${code}\``);
     return void process.stdout.write(printed);
@@ -154,7 +144,7 @@ async function main(argv: string[]): Promise<void> {
   if (command) argv = argv.slice(1);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
-    if (arg === "-h" || arg === "--help") return void process.stdout.write(HELP);
+    if (arg === "-h" || arg === "--help") return void process.stdout.write(help());
     if (arg === "-v" || arg === "--version") return void process.stdout.write(`${version()}\n`);
     const value = () => (arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : argv[++i]);
     if (arg === "--no-open") open = false;
@@ -167,7 +157,7 @@ async function main(argv: string[]): Promise<void> {
       if (!Number.isInteger(port) || port < 0 || port > 65535) {
         throw new Error(`--port needs a number from 0 to 65535, not ${given ?? "nothing"}`);
       }
-    } else if (arg.startsWith("-")) throw new Error(`Unknown option ${arg}\n\n${HELP}`);
+    } else if (arg.startsWith("-")) throw new Error(`Unknown option ${arg}\n\n${help()}`);
     else dir = arg;
   }
   if (building) {

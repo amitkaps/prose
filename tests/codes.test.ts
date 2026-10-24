@@ -46,7 +46,7 @@ test("the warnings table states every code prose check prints, and only those", 
 });
 
 test("the style table states every code prose style prints, and only those", () => {
-  expect(stated("style").sort()).toEqual([...STYLE_CODES].sort());
+  expect(stated("advice-on-style").sort()).toEqual([...STYLE_CODES].sort());
 });
 
 test("prose rules reads every code's row, with its level, from the doc as it is", () => {

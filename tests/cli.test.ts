@@ -4,12 +4,17 @@
  * What the command promises a script or CI: the exit codes, which stream each line goes to, the
  * summary by code, the line that names `prose rules`, and the count it always ends with. Each runs the built command on a small
  * repository, so the file builds it first.
+ *
+ * Each command is stated once, in usage, so the ones `main` runs have to be the ones usage states,
+ * both ways, and `prose help` prints one's section. The command with no name, which serves, is the
+ * one id `main` has no test for.
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
+import { proseCommands } from "../src/rules.js";
 
 const cli = resolve("dist/cli.js");
 const roots: string[] = [];
@@ -164,10 +169,28 @@ describe("prose rules", () => {
   });
 });
 
+describe("prose help", () => {
+  it("states each command main runs in usage, and no other", () => {
+    const main = readFileSync("src/cli.ts", "utf8");
+    const run = [...main.matchAll(/argv\[0\] === "([a-z]+)"/g)].map((m) => m[1]);
+    const stated = proseCommands().commands.map((c) => c.id);
+    expect(new Set([...run, "serve"])).toEqual(new Set(stated));
+  });
+
+  it("prints one command's section, and fails on one usage doesn't state", () => {
+    const root = repo(clean);
+    expect(run(root, "help", "style").out[0]).toBe("## Advice on style");
+    const none = run(root, "help", "nope");
+    expect([none.status, none.err[0]]).toEqual([1, "prose: error: prose has no command `nope`"]);
+  });
+});
+
 describe("flags", () => {
   it("prints help and the version", () => {
     const root = repo(clean);
-    expect(run(root, "--help").out[0]).toBe("Usage: prose [dir] [options]");
+    expect(run(root, "--help").out[0]).toBe(
+      "Usage: prose <command>, and prose help <command> says more",
+    );
     expect(run(root, "--version").out[0]).toMatch(/^\d+\.\d+\.\d+/);
   });
 
