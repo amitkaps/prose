@@ -1,6 +1,6 @@
 # Using prose
 
-Install it, read a repository with it, write `@prose` as you build, and publish the pages as a site. Why it works this way is in [design.md](design.md), and the rules for the comment are in [writing.md](writing.md).
+Install it, read a repository with it, write `@prose` as you build, and publish the pages as a site. Each command is stated once, as the list item that opens its section, and `prose help` prints them from the version installed. Why it works this way is in [design.md](design.md), and the rules for the comment are in [writing.md](writing.md).
 
 ## Install
 
@@ -11,9 +11,11 @@ pnpm add -D @amitkaps/prose
 npm install -g @amitkaps/prose
 ```
 
-To read a repository once without installing, run `npx @amitkaps/prose .` or `pnpm dlx @amitkaps/prose .`.
+To read a repository once without installing, run `npx @amitkaps/prose .` or `pnpm dlx @amitkaps/prose .`. `prose --version` prints the version installed.
 
 ## Read a repository
+
+- [`prose [dir] [--port <n>] [--no-open]`]{#serve}: serves a repository and opens it in the browser.
 
 ```sh
 prose .                 # serve it at http://127.0.0.1:1234/ and open the browser
@@ -42,7 +44,9 @@ export function addTodo(text: string) {
 
 The first `@prose` in a file is its summary, and a folder's page shows its first paragraph. Writing that spans files goes in Markdown, and the bar links the docs in `docs/`. [writing.md](writing.md) has what to write, the links and the details for each language.
 
-## Build
+## Publish a site
+
+- [`prose build [dir] [--out <dir>]`]{#build}: writes the same pages as a static site, from the last commit.
 
 ```sh
 prose build             # the same pages as static files, in .prose
@@ -59,6 +63,8 @@ The folder is plain static files, and any static host can serve it. Point the ho
 The build also writes a `_headers` file, which Cloudflare and Netlify read. It caches the shared stylesheet and script in `/assets/` for good. Deploying is the host's job, and prose has no command for it. This repository's own site, on Cloudflare, is set up in [development.md](development.md#the-site).
 
 ## Warnings
+
+- [`prose check [dir]`]{#check}: prints what the text gets wrong, and fails if it finds anything.
 
 ```sh
 prose check             # what the text gets wrong, by file and line
@@ -105,7 +111,9 @@ tests/fixtures/** prose-unchecked
 
 `linguist-vendored` and `linguist-generated` leave a file out too, as GitHub reads them. They also hide it from the repository's languages on GitHub. So `linguist-vendored` suits copied-in code, and `linguist-generated` a test's build snapshot, whose diff GitHub then folds. Neither suits a repository's own tests.
 
-## Style
+## Advice on style
+
+- [`prose style [path ...]`]{#style}: gives advice on how the files you name read, and always passes.
 
 ```sh
 prose style docs/usage.md src/store.ts   # advice on the files you just wrote
@@ -145,6 +153,18 @@ Other forms look like a joined idea or an aside but aren't, so they get no sugge
 - **A list of clauses.** Semicolons separate items with commas of their own, when a sentence has two or more, or "and" follows one.
 - **A citation.** A parenthesis opens with a label, like `(grammar: link; brackets)`. Its colon and semicolon are part of it.
 - **An example or a gloss.** A parenthesis holds a run of short items, or is mostly inline code.
+
+## Rules and help
+
+- [`prose rules [code]`]{#rules}: prints the rules to write prose by, or what one code asks for.
+- [`prose help [command]`]{#help}: lists the commands, or prints what one does.
+
+```sh
+pnpm prose help        # every command, with how it's run
+pnpm prose help style  # what one does, from this page
+```
+
+`prose rules` is for an agent, as [For agents](#for-agents) says.
 
 ## For agents
 

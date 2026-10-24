@@ -42,4 +42,4 @@ prose rules        # the rules to write prose by, for an agent
 
 Or without installing: `npx @amitkaps/prose .`.
 
-`prose check` fails when it finds anything, so it can run in CI. `prose style` is for the writer of a file, right after writing it, and always passes ([usage](docs/usage.md#style)). `prose rules` prints the rules from the docs of the version installed ([usage](docs/usage.md#for-agents)).
+`prose check` fails when it finds anything, so it can run in CI. `prose style` is for the writer of a file, right after writing it, and always passes ([usage](docs/usage.md#style)). `prose rules` prints the rules from the docs of the version installed ([usage](docs/usage.md#for-agents)). `prose help` lists every command ([usage](docs/usage.md#help)).

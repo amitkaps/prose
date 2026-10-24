@@ -13,24 +13,35 @@
  * bundles it. A test holds the rows, the rules and the codes the source emits to each other
  * ([tests/codes.test.ts](../tests/codes.test.ts)).
  *
+ * The commands are in the same doc, each the list item that opens its section, so the rules are
+ * read only from under For agents, and the commands from the rest. `prose help` prints them.
+ *
  * markz's rules print after prose's, from the markz prose bundles, which is the one `check` ran.
  * So `prose rules reference-link` prints markz's own text, and the markz rule it serves.
  */
 import { headings, ids, parse, walk, type NodeId } from "@amitkaps/markz";
-import { compose, markz, readRules, type Code, type Rules } from "@amitkaps/markz/rules";
+import {
+  compose,
+  markz,
+  readCommands,
+  readRules,
+  type Code,
+  type Commands,
+  type Rules,
+} from "@amitkaps/markz/rules";
 import usage from "../docs/usage.md?built";
 
 const SITE = "https://prose.amitkaps.com/docs/usage.md";
 
 /** The level of each table's codes: `check`'s warnings, and `style`'s notes. */
-const LEVELS: Record<string, Code["level"]> = { Warnings: "warning", Style: "note" };
+const LEVELS: Record<string, Code["level"]> = { Warnings: "warning", "Advice on style": "note" };
 
 /** prose's rules and codes, from a usage doc. Each code row's link to its rule is added to that
  *  rule's links, so `codesOf` finds it. */
 export function proseRules(source: string = usage): Rules {
   const doc = parse(source);
   const outline = headings(doc);
-  const rules = readRules(source, SITE);
+  const rules = readRules(source, SITE, "for-agents");
   const codes: Code[] = [];
   const text = (node: NodeId) => source.slice(doc.start(node), doc.end(node)).trim();
   for (const { id, node, written } of ids(doc)) {
@@ -61,3 +72,10 @@ export function proseRules(source: string = usage): Rules {
 
 /** prose's rules, then markz's, as `prose rules` prints them. */
 export const sets: Rules[] = compose(proseRules(), markz);
+
+/** prose's commands, from a usage doc: the list items that open with an id, outside For agents. */
+export function proseCommands(source: string = usage): Commands {
+  const rules = new Set(readRules(source, SITE, "for-agents").map((r) => r.id));
+  const all = readCommands("prose", source, SITE);
+  return { ...all, commands: all.commands.filter((c) => !rules.has(c.id)) };
+}

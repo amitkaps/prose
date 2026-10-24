@@ -66,6 +66,7 @@ These were found by dogfooding on prose's own source and on real repositories. R
 
 - **An address built from position isn't stable, whatever the spec calls it.** The spec promised `#addTodo`, but the code produced `top-chunk-2`, which moves when a block is inserted above. Derive anchors from content ([writing](writing.md#links)).
 - **The heading is the anchor the reader already sees.** Anchors were once a heading's slug, then the first name the code declared, then `chunk-N`. That took an AST walk and its own tests, for links nobody wrote. A comment's link is now its heading's id, as markz makes it, the same rule GitHub uses for docs.
+- **A command's id can take a heading's place.** `prose build` and `prose style` wanted the ids `build` and `style`, which the headings Build and Style already had. Renaming the headings and opening each section with its command kept every link to `usage.md#build` and `#style` landing in the same place, now on the command itself.
 
 ### Rendering
 
