@@ -145,7 +145,7 @@ It's conservative, so a suggestion is worth taking. It flags only what it's conf
 
 Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A file that `.gitattributes` marks `prose-unchecked` gets no advice, as it gets no warnings ([warnings](#warnings)).
 
-A colon gets a suggestion only when a clause plainly follows it. That means a subject like "it", "they" or "there" opens what follows, or a verb like "is", "doesn't" or "keeps" comes within its first four words. A verb after "that" or "what" belongs to an inner clause, and doesn't count. So "It never throws: syntax markz doesn't accept stays text" gets one. A list like "three settings: the cooldown, `allowBuilds` and the override" doesn't, and nor does an explanation like "How it's built: the tree it produces". Some colons that join two clauses pass too, and that's the cost of being conservative.
+A colon gets a suggestion only when a clause plainly follows it. That means a subject like "it", "they" or "there" opens what follows, or a verb like "is", "doesn't" or "keeps" comes within its first four words. A verb after "that" or "what" belongs to an inner clause, and doesn't count. So `It never throws: syntax markz doesn't accept stays text` gets one. A list like `three settings: the cooldown, allowBuilds and the override` doesn't, and nor does an explanation like `How it's built: the tree it produces`. Some colons that join two clauses pass too, and that's the cost of being conservative.
 
 Other forms look like a joined idea or an aside but aren't, so they get no suggestion.
 
