@@ -3,7 +3,7 @@
 exports[`prose's rules print as they did 1`] = `
 "## Where prose goes
 
-- **Every file.** Every source file opens with a \`@prose\` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a \`README.md\`, except \`.github/\`, where GitHub would show it in place of the root's, and a skill's folder, whose \`SKILL.md\` says what it is.
+- **Every file.** Every source file opens with a \`@prose\` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a \`README.md\`, except \`.github/\`, where GitHub would show it in place of the root's.
   Checked by \`no-prose\` and \`no-readme\`.
 - **Every export.** A library ships the comment above each export in its types, as that export's documentation. So give every export a comment, and a one-line JSDoc is enough. Put a section's prose above the declaration it describes.
   Checked by \`undocumented-export\`.

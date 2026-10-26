@@ -93,7 +93,7 @@ It reads only form a machine can be sure of, never meaning. It warns about each 
 | [`marker-line`]{#marker-line} | prose shares a line with `@prose`, or with the comment's close | `@prose` and the close each on their own line | [markz's Markdown](#markz-markdown) |
 | [`untitled-summary`]{#untitled-summary} | a file's first `@prose` comment, its summary, doesn't open with a heading | a `# Title` line first, which is the page's title | [Summary first](#summary-first) |
 | [`no-prose`]{#no-prose} | a file prose reads for prose has no `@prose` comment | its summary in a `@prose` comment at the top | [Every file](#every-file) |
-| [`no-readme`]{#no-readme} | a folder with a file prose reads has no `README.md`, except `.github/` and a skill's folder | a `README.md` that says what lives there | [Every file](#every-file) |
+| [`no-readme`]{#no-readme} | a folder with a file prose reads has no `README.md`, except `.github/` | a `README.md` that says what lives there | [Every file](#every-file) |
 | [`undocumented-export`]{#undocumented-export} | a package that isn't private ships types, and an export it ships has no doc comment | a `/** … */` comment above it, and one line is enough | [Every export](#every-export) |
 | [`nav-missing`]{#nav-missing} | `nav` in `docs/README.md` names a file that isn't a doc | a doc's name in docs/ | [Stated once](#stated-once) |
 | [`id-case`]{#id-case} | a span's written id isn't lowercase kebab case | the id in lowercase kebab case, like `no-readme` | [Written ids](#written-ids) |
@@ -164,21 +164,6 @@ pnpm prose outline   # writes outline.md at the root
 
 The outline is the repository as a tree, with the first paragraph of each file's prose, and a folder's from its `README.md`. It leaves out what `.gitattributes` marks `prose-unchecked`, like fixtures. An agent reads it to find its way, so have `AGENTS.md` import it, as `@outline.md` does in Claude Code. Put `outline.md` in `.gitignore`, and have `verify` run `prose outline` after `prose check`. It's then current wherever the work is checked, and two pull requests never conflict over it.
 
-## A skill for agents
-
-prose ships a skill, `skills/prose/SKILL.md`, that tells a coding agent when to run `prose rules`, `prose outline`, `prose style` and `prose check`. It names the commands and copies none of the rules, so it says the same whatever version is installed. pnpm links it into each agent's folder once a repository approves it in `pnpm-workspace.yaml` ([pnpm](https://pnpm.io/agent-skills)).
-
-```yaml
-permissions:
-  "@amitkaps/prose":
-    skills: true
-skills:
-  dirs:
-    - .claude/skills
-```
-
-Set `skills.dirs`. pnpm makes an agent's folder only when that agent's variable is set, like `CLAUDECODE`, and an approved skill with no folder to go to fails `pnpm install`. CI sets none of them, so without `skills.dirs` it fails. pnpm writes a `.gitignore` in the folder for its links, so they're never committed.
-
 ## Rules and help
 
 - [`prose rules [code]`]{#rules}: prints the rules to write prose by, or what one code asks for.
@@ -204,7 +189,7 @@ The rules fall in four groups: where prose goes, how it reads, what it says, and
 
 ### Where prose goes
 
-- [**Every file.**]{#every-file} Every source file opens with a `@prose` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`, except `.github/`, where GitHub would show it in place of the root's, and a skill's folder, whose `SKILL.md` says what it is.
+- [**Every file.**]{#every-file} Every source file opens with a `@prose` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`, except `.github/`, where GitHub would show it in place of the root's.
 - [**Every export.**]{#every-export} A library ships the comment above each export in its types, as that export's documentation. So give every export a comment, and a one-line JSDoc is enough. Put a section's prose above the declaration it describes.
 - [**Prose map.**]{#prose-map} To find your way, read `outline.md`, which `prose outline` writes, or run it when there's none. `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet. Add an `--include` for each other language the project writes.
 
