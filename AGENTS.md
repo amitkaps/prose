@@ -38,10 +38,6 @@ For this repository that means:
 - Every folder has a `README.md`, except `.github/`. Its workflows carry their own prose, and [development](docs/development.md) covers them. `src/` and `tests/` say what lives there and how it's organised.
 - Tests carry file prose too. It says what the file covers, in a line or two.
 
-The map of every file and its summary is `outline.md`, which `pnpm run verify` writes and git ignores, so run `pnpm prose outline` when there's none. Claude Code reads it here.
-
-@outline.md
-
 ## Commands
 
 ```sh
