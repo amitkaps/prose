@@ -28,6 +28,7 @@ Besides this repository, prose has been used on markz, sitez, ship, pagez and ba
 - **Prose's share of the lines sorts nothing.** Across six repositories, prose ran to 0.19–0.32 lines for each line of code. Both ends held good files and bad. One summary over a long file was fine where `//` comments gave each part its reason, and prose near the code's length was fine where it held decisions about how a page looks. So length shows where to read, and reading the outliers found what was wrong. It isn't a check.
 - **The drift no check sees is across files.** craftz's command summary said what `status` reads, as four other places did, and two had missed a line the rest had. `prose check` and `prose style` read one file at a time, so each sentence passed. The fix was a summary that names each part and links the file that explains it, as prose's own command does.
 - **Old blocks get edited around, not rewritten.** base's content loading kept wording from before the rules through four changes. Its blocks retold the code, and nothing flagged it until its length stood out.
+- **A sample found no drift, which shows the habit, not the help.** 40 random `@prose` sections across craftz, markz, prose and pagez made 22 claims that could be checked against the code, and all held. `@prose` names about six times as much code per block as JSDoc, and none of its names were gone. Agents are told to keep it current, so this shows they do, not that it helps them. One section said its code should already be deleted, which is how the dead code was found.
 
 ### Checks and advice
 
