@@ -59,7 +59,7 @@ docs/architecture.md            a doc
 docs/architecture.md#sessions   a section of it, by its heading
 ```
 
-A prose comment's link is its first heading's id, made the way GitHub makes one for a doc. A second `# Adding` in the same file becomes `#adding-1`. A comment without a heading has no link. In the renderer, the `#` in the margin beside the heading gives it.
+A prose comment's link is its first heading's id, made the way GitHub makes one for a doc. A second `# Adding` in the same file becomes `#adding-1`. A comment without a heading has no link. In the renderer, the `#` in the margin beside the heading gives it. On GitHub, a link to a comment lands at the top of the file, since GitHub scrolls a source file only to a line. That's accepted, because nothing in a comment can change it.
 
 **State a rule once, and link to it.** When a doc or a tested file owns a rule, like a grammar, a schema or a contract, a prose comment links to it. It keeps only how and why this code follows the rule. A rule restated in several places is tested in only one of them, and the other copies drift.
 
