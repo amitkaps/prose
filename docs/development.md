@@ -24,6 +24,7 @@ The package is one bundle with no dependencies, about 250 KB unpacked. It's read
 - **Not minified.** A bundler that takes prose in minifies it for its own app, and anyone reading `node_modules` can follow the code.
 - **No comments, but a license.** The build strips comments from the code, but keeps license comments and annotations like `@__PURE__` ([vite.config.ts](../vite.config.ts)). A `/*!` banner names the license, so it stays with the code if another build bundles prose.
 - **Types with their documentation.** `dist/index.d.ts` keeps the comment above each export, `@prose` included, so an editor shows it on hover. Nothing strips it. Each export's comment is written for that use ([writing](writing.md#in-each-language)).
+- **A skill.** `skills/` ships beside `dist/`, so pnpm can link it into an agent's folder ([usage](usage.md#a-skill-for-agents)).
 - **No sourcemaps.** They would carry every source file whole, prose included, at twice the size of the code. The source is on GitHub.
 
 `vp pack` runs [publint](https://publint.dev) on the package, and fails the build on a problem. It checks `exports`, `files` and the types. arethetypeswrong was ruled out, because it tests old Node resolution that an ESM package for Node 26 doesn't support.
