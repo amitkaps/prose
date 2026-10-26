@@ -191,7 +191,7 @@ The rules fall in four groups: where prose goes, how it reads, what it says, and
 
 - [**Every file.**]{#every-file} Every source file opens with a `@prose` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`, except `.github/`, where GitHub would show it in place of the root's.
 - [**Every export.**]{#every-export} A library ships the comment above each export in its types, as that export's documentation. So give every export a comment, and a one-line JSDoc is enough. Put a section's prose above the declaration it describes.
-- [**Prose map.**]{#prose-map} To find your way, read `outline.md`, which `prose outline` writes, or run it when there's none. `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet. Add an `--include` for each other language the project writes.
+- [**Outline first.**]{#outline-first} To find your way, read `outline.md` before searching, which `prose outline` writes, or run it when there's none. `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet. Add an `--include` for each other language the project writes.
 
 ### How it reads
 
