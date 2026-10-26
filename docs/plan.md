@@ -4,8 +4,11 @@ The `@prose` convention and the read-only command work, and this repository is r
 
 ## Next, in order
 
-- [ ] **Watch whether agents run `prose rules`.** If they skip it, `prose rules --write` could keep a marked block of the rules in `AGENTS.md`, which agents load every session. That's a copy in every repository, so `prose check` would then warn when the block is stale.
-  - **2026-10-23, craftz.** An agent deleted code under `@prose` comments without reading the rules, since `AGENTS.md` said to run them only before writing prose. It now names changing code too. Rules read early were also lost when the session was summarized, while `AGENTS.md` is loaded again. That's the case `--write` is for, but one miss doesn't pay for a copy in every repository, so watch the wider pointer first.
+- [ ] **A skill and an outline, so agents find the rules and the code.** Agents ran the commands they were made to run and skipped the ones they were only told about. In 30 sessions across the repositories, `pnpm run verify` or `pnpm pr` ran 818 times, and `prose style` ran in 16 of the 23 sessions that wrote prose. `prose rules` was read before the first prose edit in only 8 of those 23, and the map grep in [the agent rules](usage.md#for-agents) never ran. So the rules need a way in that fits the task, and the map needs to be in context already.
+  - **A skill per tool.** pnpm links a package's `skills/<name>/SKILL.md` into each agent's folder, such as `.claude/skills`, once a repository approves it in `pnpm-workspace.yaml` ([pnpm](https://pnpm.io/agent-skills)). prose ships a thin skill whose description says when it applies, before writing a `@prose` comment or changing code one explains. Its body says to run `prose rules`, so the command stays the one source and the skill always matches the version installed. craftz and pagez ship one the same way, and craftz's reference workspace approves them.
+  - **A generated `outline.md`.** `prose outline` writes every file's first paragraph to `outline.md` at the root, and `AGENTS.md` imports it, so it's loaded every session and again after a summary. For a repository's `src`, docs and README it's about 2.5k tokens. It's committed, and `prose check` warns when it's stale. It would be the first file prose writes.
+  - **First in prose.** Try both here before craftz takes them into its rules. An approved skill with no folder to link into fails `pnpm install`, so CI must still install, through a committed folder or `skills.dirs`. Then count again whether agents read the rules before their first prose edit.
+  - **Ruled out.** A marked copy of the rules in every `AGENTS.md`, kept by `prose rules --write`. The skill reaches the same agents without a copy in every repository.
 
 ## Where it is
 
@@ -26,8 +29,6 @@ The `@prose` convention and the read-only command work, and this repository is r
 
 ## Open questions
 
-- **The rules as a skill.** A Markdown skill file in the package, built from the same block in usage.md, would reach agent tools that load skills from installed packages. It's an emerging channel, in addition to `prose rules`, not instead of it. Wait until the tools settle on where they look.
 - **Comment links on GitHub.** `src/store.ts#adding` works in the renderer, but GitHub scrolls only to a line, like `#L42`. Either accept it, or let whatever publishes the docs map links to lines.
-- **A map command.** `prose outline` could print every first paragraph, if the grep in [the agent rules](usage.md#for-agents) proves too noisy for agents.
 - **The tones as a promise.** A project's own page, like craftz's dashboard, could use `--success` and the other tones instead of its own colours. That makes the names public, so renaming one would break someone's page. Either list them in [reading](reading.md#around-the-page) as tokens a page may use, or keep them prose's own. It waits for a page that needs them.
 - **A project's own pages as elements.** A doc could hold a standalone page, like markz's Quality page or craftz's drift tables, as a Markz element that prose defines, so the page sits in prose's frame. It needs a place for the scripts, a way in for generated data, and the project's code running in the browser, each an exception to [design](design.md#what-it-isnt). An iframe in an `=html` block needs nothing from prose, so try that first. Revisit with a third standalone page, or a request from a repository that isn't ours.
