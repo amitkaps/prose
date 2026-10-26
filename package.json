@@ -12,8 +12,7 @@
     "prose": "./dist/cli.js"
   },
   "files": [
-    "dist",
-    "skills"
+    "dist"
   ],
   "type": "module",
   "exports": {

@@ -45,13 +45,11 @@ describe("files and folders", () => {
         ".vscode/settings.json": "{}\n",
         "pkg/.github/workflows/ci.yml": "on: push\n",
         "docs/README.md": "# Docs\n",
-        "skills/demo/SKILL.md": "---\nname: demo\ndescription: A demo.\n---\n\n# Demo\n",
         "fixtures/sample.ts": "export const s = 1;\n",
         ".gitattributes": "# @prose\n# # Attributes\n#\n# Samples.\nfixtures/** prose-unchecked\n",
       }),
     ).toEqual([
       "pkg/ no-readme",
-      "skills/ no-readme",
       "src/ no-readme",
       "config.yaml:1 no-prose",
       "pkg/.github/workflows/ci.yml:1 no-prose",
