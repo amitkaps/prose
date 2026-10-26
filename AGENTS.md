@@ -1,6 +1,6 @@
 # Agents
 
-How to work in this repository. It covers craftz's and prose's rules, which every repository shares, how this one applies them, then its commands and workflow.
+How to work in this repository. It covers craftz's and prose's rules, which every repository shares, how this one applies them, then its commands.
 
 ## craftz
 
@@ -50,7 +50,3 @@ pnpm run prose         # read this repository with the command build wrote
 ```
 
 `tests/build.test.ts` and `tests/server.test.ts` run against the committed `tests/fixtures/simple`, since `prose build` reads `HEAD`. Commit a change to the fixture before testing it.
-
-## Workflow
-
-Branch, commit, push, `gh pr create`, then `gh pr merge --auto --squash`. Run `pnpm run check` and `pnpm run test` first. Land stacked PRs one at a time, bottom-up, waiting for each to merge before branching the next.
