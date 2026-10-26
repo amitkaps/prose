@@ -154,6 +154,16 @@ Other forms look like a joined idea or an aside but aren't, so they get no sugge
 - **A citation.** A parenthesis opens with a label, like `(grammar: link; brackets)`. Its colon and semicolon are part of it.
 - **An example or a gloss.** A parenthesis holds a run of short items, or is mostly inline code.
 
+## An outline for agents
+
+- [`prose outline [dir]`]{#outline}: writes `outline.md`, every file in the repository with its summary.
+
+```sh
+pnpm prose outline   # writes outline.md at the root
+```
+
+The outline is the repository as a tree, with the first paragraph of each file's prose, and a folder's from its `README.md`. It leaves out what `.gitattributes` marks `prose-unchecked`, like fixtures. An agent reads it to find its way, so have `AGENTS.md` import it, as `@outline.md` does in Claude Code. Put `outline.md` in `.gitignore`, and have `verify` run `prose outline` after `prose check`. It's then current wherever the work is checked, and two pull requests never conflict over it.
+
 ## Rules and help
 
 - [`prose rules [code]`]{#rules}: prints the rules to write prose by, or what one code asks for.
@@ -181,7 +191,7 @@ The rules fall in four groups: where prose goes, how it reads, what it says, and
 
 - [**Every file.**]{#every-file} Every source file opens with a `@prose` comment, its summary. Add more wherever the reader needs the why, like a design choice or an edge that's easy to get wrong. Trivial declarations, types, constants and mechanical helpers don't need one. A paragraph written only to satisfy this rule is noise the human has to read. Folders have a `README.md`, except `.github/`, where GitHub would show it in place of the root's.
 - [**Every export.**]{#every-export} A library ships the comment above each export in its types, as that export's documentation. So give every export a comment, and a one-line JSDoc is enough. Put a section's prose above the declaration it describes.
-- [**Prose map.**]{#prose-map} To find your way, `grep -rn -A4 "@prose" src` is the map, and `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet. Add an `--include` for each other language the project writes.
+- [**Prose map.**]{#prose-map} To find your way, read `outline.md`, which `prose outline` writes, or run it when there's none. `grep -rL "@prose" src --include="*.ts"` lists files with no prose yet. Add an `--include` for each other language the project writes.
 
 ### How it reads
 

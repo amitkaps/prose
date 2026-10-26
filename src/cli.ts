@@ -8,7 +8,8 @@
  *
  * `prose style` gives advice on how the files just written read, and always passes
  * ([style.ts](style.ts)). `prose rules` prints the rules both read for, from the docs this version
- * shipped with ([rules.ts](rules.ts)). `prose help` prints the commands from the same docs, where
+ * shipped with ([rules.ts](rules.ts)). `prose outline` writes the repository's map for agents
+ * ([outline.ts](outline.ts)). `prose help` prints the commands from the same docs, where
  * each is stated once, and a test holds each command below to it.
  *
  * `check` and `style` read the working tree, as `prose .` does, not the commit a build publishes.
@@ -27,6 +28,7 @@ import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { build } from "./build.js";
 import { finding, printHelp, printOne, printRules } from "@amitkaps/markz/rules";
+import { OUTLINE, writeOutline } from "./outline.js";
 import { proseCommands, sets } from "./rules.js";
 import { serve } from "./server.js";
 import { styleAdvice } from "./style.js";
@@ -129,6 +131,14 @@ async function main(argv: string[]): Promise<void> {
     if (printed === undefined)
       throw new Error(`prose has no command \`${argv.slice(1).join(" ")}\``);
     return void process.stdout.write(printed);
+  }
+  if (argv[0] === "outline") {
+    const [given, ...rest] = argv.slice(1);
+    if (given === "-h" || given === "--help") return void process.stdout.write(help());
+    if (rest.length || given?.startsWith("-"))
+      throw new Error(`prose outline takes one folder\n\n${help()}`);
+    const files = writeOutline(resolve(given ?? "."));
+    return void process.stdout.write(`prose: ${count(files, "file")} in ${OUTLINE}\n`);
   }
   if (argv[0] === "rules") {
     const [code, ...rest] = argv.slice(1);
