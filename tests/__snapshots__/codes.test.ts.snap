@@ -7,7 +7,7 @@ exports[`prose's rules print as they did 1`] = `
   Checked by \`no-prose\` and \`no-readme\`.
 - **Every export.** A library ships the comment above each export in its types, as that export's documentation. So give every export a comment, and a one-line JSDoc is enough. Put a section's prose above the declaration it describes.
   Checked by \`undocumented-export\`.
-- **Prose map.** To find your way, read \`outline.md\`, which \`prose outline\` writes, or run it when there's none. \`grep -rL "@prose" src --include="*.ts"\` lists files with no prose yet. Add an \`--include\` for each other language the project writes.
+- **Outline first.** Read \`outline.md\` before searching, to find your way. \`prose outline\` writes it, so run that when there's none. \`grep -rL "@prose" src --include="*.ts"\` lists files with no prose yet. Add an \`--include\` for each other language the project writes.
 
 ## How it reads
 
