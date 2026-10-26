@@ -40,8 +40,11 @@ export function noProse(root: string, path: string): Warning<PresenceCode>[] {
  *
  * Every folder that holds a file prose reads, and checks, has a `README.md`, which is its page's
  * prose. A folder of settings in JSON, like `.vscode/`, or of files `.gitattributes` leaves out,
- * isn't asked. `.github/` is the exception at any depth, since GitHub would show its README in
- * place of the root's.
+ * isn't asked.
+ *
+ * `.github/` is the exception at any depth, since GitHub would show its README in place of the
+ * root's. So is a skill's folder, whose `SKILL.md` says what it is, and which an agent's tools
+ * load whole.
  */
 export function noReadme(
   root: string,
@@ -55,7 +58,7 @@ export function noReadme(
   }
   return [...folders]
     .filter((dir) => !dir.split("/").includes(".github"))
-    .filter((dir) => !files.has(`${dir}/README.md`))
+    .filter((dir) => !files.has(`${dir}/README.md`) && !files.has(`${dir}/SKILL.md`))
     .sort()
     .map((dir) => ({
       code: "no-readme",

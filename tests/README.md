@@ -16,6 +16,7 @@ One test file for each source file that has logic, run with `pnpm run test`. The
 - [codes.test.ts](codes.test.ts): every code `check` and `style` print has a row in the docs, and every row a code. `prose rules` reads the same rows.
 - [stylesheet.test.ts](stylesheet.test.ts): every rule in the stylesheet sits in a layer.
 - [outline.test.ts](outline.test.ts): the map `prose outline` writes, its links and what it leaves out.
+- [skills.test.ts](skills.test.ts): the skills ship, load, and name only commands prose has.
 - [cli.test.ts](cli.test.ts): the command's exit codes, streams, summary and flags, run on the built command.
 - [accent.test.ts](accent.test.ts): a project's colour and tab icon, and the browser's bar in the paper's colour.
 
