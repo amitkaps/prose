@@ -5,20 +5,31 @@
  * summary by code, the line that names `prose rules`, and the count it always ends with. Each runs the built command on a small
  * repository, so the file builds it first.
  *
+ * It packs into a folder of its own, not `dist/`, since `verify` runs `build` beside the tests,
+ * and two packs into one folder clean each other's files. The folder holds a copy of
+ * `package.json`, where the command reads its version.
+ *
  * Each command is stated once, in usage, so the ones `main` runs have to be the ones usage states,
  * both ways, and `prose help` prints one's section. The command with no name, which serves, is the
  * one id `main` has no test for.
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { proseCommands } from "../src/rules.js";
 
-const cli = resolve("dist/cli.js");
-const roots: string[] = [];
-beforeAll(() => void execFileSync("pnpm", ["run", "build"], { stdio: "ignore" }), 60_000);
+const packed = mkdtempSync(join(tmpdir(), "prose-packed-"));
+const cli = join(packed, "dist/cli.js");
+const roots: string[] = [packed];
+beforeAll(() => {
+  const out = join(packed, "dist");
+  execFileSync("pnpm", ["exec", "vp", "pack", "--out-dir", out, "--no-publint"], {
+    stdio: "ignore",
+  });
+  copyFileSync("package.json", join(packed, "package.json"));
+}, 60_000);
 afterAll(() => roots.forEach((root) => rmSync(root, { recursive: true, force: true })));
 
 /** A repository of `files`, in a fresh folder. */
