@@ -14,7 +14,6 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { defineConfig } from "vite-plus";
-import { craftz } from "@amitkaps/craftz";
 import { format } from "vite-plus/fmt";
 import { lexJs } from "./src/lexer.js";
 
@@ -77,11 +76,16 @@ const built = {
 export default defineConfig({
   // craftz() sets the format and lint rules, and the site: `vp build` hands the folder
   // `prose build` writes to Cloudflare, assets only.
-  plugins: [craftz(), built],
+  plugins: [built],
 
   // Oxfmt and Oxlint leave the fixtures as they're written.
-  fmt: { ignorePatterns: ["tests/fixtures/**"] },
-  lint: { ignorePatterns: ["tests/fixtures/**"] },
+  fmt: { ignorePatterns: ["tests/fixtures/**"], proseWrap: "never" },
+  lint: {
+    ignorePatterns: ["tests/fixtures/**"],
+    plugins: ["typescript", "unicorn", "import"],
+    categories: { correctness: "error" },
+    options: { typeAware: true, typeCheck: true },
+  },
 
   /** @prose
    * # The build
@@ -120,5 +124,22 @@ export default defineConfig({
     expect: { requireAssertions: true },
     environment: "node",
     include: ["tests/**/*.test.ts"],
+  },
+
+  /** @prose
+   * # Verify
+   *
+   * `verify` runs `all`, whose tasks run side by side, as
+   * [craftz's rules](https://craftz.amitkaps.com/docs/rules.md#scripts-verify) say. This
+   * repository reads itself with the command `build` writes, so `docs`, its prose check, and
+   * `site`, its prose build, wait for `build`. They're tasks, not scripts, so each can.
+   */
+  run: {
+    cache: false,
+    tasks: {
+      docs: { command: "pnpm prose check", dependsOn: ["build"] },
+      site: { command: "pnpm prose build", dependsOn: ["build"] },
+      all: { command: "true", dependsOn: ["check", "test", "build", "docs", "site"] },
+    },
   },
 });

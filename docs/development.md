@@ -50,6 +50,6 @@ Merging it is the release, and the `release` workflow does the rest. Then approv
 
 [prose.amitkaps.com](https://prose.amitkaps.com) is this repository read with prose, on a Cloudflare Worker with static assets. It builds from `main`, so its configuration is a file in the repository, [cloudflare.config.ts](../cloudflare.config.ts). Every merge deploys it.
 
-The `prose` Worker has the build settings every Worker has, in [craftz's rules](https://craftz.amitkaps.com/docs/rules.md#cloudflare). `verify` reads the repository into `.prose` and ends with `vp build`, which hands the folder to Cloudflare, as [craftz's rules](https://craftz.amitkaps.com/docs/rules.md#a-prose-site) has it. `ship` runs `cf deploy --prebuilt` on that.
+The `prose` Worker has the build settings every Worker has, in [craftz's rules](https://craftz.amitkaps.com/docs/rules.md#cloudflare). `verify` reads the repository into `.prose`, once `build` has written the command it reads with, as [craftz's rules](https://craftz.amitkaps.com/docs/rules.md#a-prose-site) has it. `ship` uploads that folder, through `craftz deploy`.
 
 `cloudflare.config.ts` names the domain, `prose.amitkaps.com`, which needs the `amitkaps.com` zone on the same Cloudflare account. It also sets up the two things [usage](usage.md#build) asks of a host. It serves `404.html` for a missing address, and serves `/src/store.ts` from `src/store.ts.html`.

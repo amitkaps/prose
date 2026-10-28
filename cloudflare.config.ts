@@ -9,16 +9,20 @@
  * which runs `cf deploy --prebuilt`. This file names the domain, so a deploy can't drop it. The
  * steps are in [development](docs/development.md#the-site).
  */
-import { site } from "@amitkaps/craftz/cloudflare";
 
-export default site({
-  name: "prose",
-  domains: ["prose.amitkaps.com"],
-  assets: {
-    directory: ".prose",
-    // Serve the site's own 404.html for any missing address.
-    notFoundHandling: "404-page",
-    // Serve /src/store.ts from src/store.ts.html, with no redirect.
-    htmlHandling: "auto-trailing-slash",
+export default {
+  worker: {
+    name: "prose",
+    domains: ["prose.amitkaps.com"],
+    assets: {
+      directory: ".prose",
+      // Serve the site's own 404.html for any missing address.
+      notFoundHandling: "404-page",
+      // Serve /src/store.ts from src/store.ts.html, with no redirect.
+      htmlHandling: "auto-trailing-slash",
+    },
+    compatibilityDate: "2026-10-19",
+    workersDev: false,
+    previewUrls: false,
   },
-});
+};
