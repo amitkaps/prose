@@ -28,19 +28,19 @@ A comment whose first token is `@prose` explains the code below it, in Markdown.
 
 [`prose check`](usage.md#check) warns about form a machine can be sure of. That's a file with no summary, a folder with no README, a link or an anchor that reaches nothing, or an export with no comment. It fails on any warning, so it runs in CI, where nobody has to remember it. It doesn't check meaning ([below](#what-it-isnt)).
 
-**Evidence.** Each warning ran on real repositories before it landed, and found real gaps there ([lessons](lessons.md#checks-and-advice)). A warning is never a matter of taste. That shows the checks find what they look for, not that what they look for is enough.
+**Evidence.** Each warning ran on real repositories before it landed, and found real gaps there ([lessons](lessons.md#try-it-on-the-real-thing)). A warning is never a matter of taste. That shows the checks find what they look for, not that what they look for is enough.
 
 ### Rules as code
 
 A rule is a list item in a doc that opens with its id, like [`summary-first`](usage.md#summary-first). Each warning names the rule it serves. [`prose rules`](usage.md#rules) prints the rules, and `prose rules <code>` prints one. So the doc is also the help, a warning points into it, and a renamed id breaks a link.
 
-**Evidence.** A rule stated in three places drifted, and a rule in a doc that drives its check didn't ([lessons](lessons.md#where-decisions-live)). Linking each code to its rule found five rules nobody had written. craftz, markz and pagez now print their rules the same way.
+**Evidence.** A rule stated in three places drifted, and a rule in a doc that drives its check didn't ([lessons](lessons.md#state-it-once)). Linking each code to its rule found five rules nobody had written. craftz, markz and pagez now print their rules the same way.
 
 ### Advice on style
 
 [`prose style`](usage.md#style) gives advice on sentences that are long, summaries that run on, and semicolons, colons and parentheses that join two ideas. It always passes, so it's advice, not a check. Each suggestion is tried on real repositories and narrowed until it's rarely wrong, since wrong advice teaches agents to ignore all of it.
 
-**Evidence.** The colon advice first flagged every colon, and most of those read fine. It now fires only when a clause follows ([lessons](lessons.md#checks-and-advice)).
+**Evidence.** The colon advice first flagged every colon, and most of those read fine. It now fires only when a clause follows ([lessons](lessons.md#silence-is-the-failure)).
 
 ### The outline
 
@@ -52,7 +52,7 @@ A rule is a list item in a doc that opens with its id, like [`summary-first`](us
 
 `prose .` shows a repository in the browser, each source file as one document, with its prose in order and its code between. [`prose build`](usage.md#build) writes the same pages as a static site ([reading.md](reading.md)). The repository is the source of truth, so the renderer edits nothing and keeps no state. Every page carries the whole file tree, so its open folders show before the first paint. That makes a site grow with the square of its file count, and the [plan](plan.md#later) says what changes if it grows too large.
 
-**Evidence.** Its published pages are the docs for prose and markz, with nothing written twice ([lessons](lessons.md#what-gets-read)). Nothing measures whether anyone reads them.
+**Evidence.** Its published pages are the docs for prose and markz, with nothing written twice ([lessons](lessons.md#build-only-what-gets-used)). Nothing measures whether anyone reads them.
 
 ### What's shown, and what isn't
 
@@ -70,9 +70,9 @@ The items below follow from these costs.
 
 Prose leaves some jobs to other tools. Each item names one, says why in a line, and links to what use taught about it.
 
-- **Not an editor.** The human's editor and the agent change the repository. So prose has no editing, no notes in the source and no review of changes. Discussion happens in the chat, and the prose says what the code means now ([lessons](lessons.md#where-decisions-live)).
+- **Not an editor.** The human's editor and the agent change the repository. So prose has no editing, no notes in the source and no review of changes. Discussion happens in the chat, and the prose says what the code means now ([lessons](lessons.md#build-only-what-gets-used)).
 - **Not a checker of meaning.** The one real drift found in use was about meaning, which no mechanical check catches. So there are no staleness checks, coverage percentages or LLM summaries ([lessons](lessons.md#keeping-prose-true), [usage](usage.md#warnings)).
-- **Not something agents look up.** Agents don't go looking for a map or a skill. So the outline and the rules reach them through `AGENTS.md`, and pnpm's agent skills were ruled out ([lessons](lessons.md#checks-and-advice)).
+- **Not something agents look up.** Agents don't go looking for a map or a skill. So the outline and the rules reach them through `AGENTS.md`, and pnpm's agent skills were ruled out ([lessons](lessons.md#build-only-what-gets-used)).
 - **Not a new file format or a toolchain.** No `.ts.md`, no tangling and no compiler, which would break `tsc`, the language server, formatters and linters. `@prose` is a comment, like JSDoc, and the outline is plain Markdown, so every standard tool keeps working.
-- **Not a site generator or a host.** Navigation stops at the bar's links to the docs. A site with its own navigation and design needs a static site generator ([writing.md](writing.md#folders-and-docs)). Deploying, and each host's config, belong to the project ([lessons](lessons.md#publishing), [usage.md](usage.md#build)).
-- **Not part of the app.** No dev route in the app's server, no build plugin and no custom dev tools. The renderer reads any repository without the app running ([lessons](lessons.md#what-gets-read)).
+- **Not a site generator or a host.** Navigation stops at the bar's links to the docs. A site with its own navigation and design needs a static site generator ([writing.md](writing.md#folders-and-docs)). Deploying, and each host's config, belong to the project ([lessons](lessons.md#build-only-what-gets-used), [usage.md](usage.md#build)).
+- **Not part of the app.** No dev route in the app's server, no build plugin and no custom dev tools. The renderer reads any repository without the app running ([lessons](lessons.md#build-only-what-gets-used)).

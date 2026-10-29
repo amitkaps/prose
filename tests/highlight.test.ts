@@ -4,7 +4,7 @@
  * The HTML the highlighter writes, and cases in each language with the colours shiki gave them.
  *
  * The cases were taken from a comparison with shiki, before shiki went
- * ([lessons](../docs/lessons.md#rendering)). Each lists its coloured runs, one per line as
+ * ([lessons](../docs/lessons.md#measure-before-changing)). Each lists its coloured runs, one per line as
  * `colour text`, and everything else is plain. So the highlighter keeps colouring code as shiki
  * did, without shiki. A change that breaks one should be a deliberate choice, made here.
  */

@@ -3,7 +3,7 @@
  *
  * The rules an agent writes prose to, read from [usage](../docs/usage.md) as it shipped with this
  * version. The command prints them as raw text, so an agent needs no fetch, and a fetched page
- * goes through a smaller model that drops specifics ([lessons](../docs/lessons.md#working-style)).
+ * goes through a smaller model that drops specifics ([lessons](../docs/lessons.md#read-whats-live)).
  *
  * The doc drives both halves, read with markz's reader, as every tool built on markz reads its
  * rules. Each of [the agent rules](../docs/usage.md#for-agents) is a list item that opens with its

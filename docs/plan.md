@@ -8,7 +8,7 @@ The `@prose` convention and the read-only command work, and this repository is r
 - [ ] **Count whether agents now find the code and the rules.** Before the outline, `prose rules` was read before the first prose edit in only 8 of 23 sessions that wrote prose, and the map grep in the agent rules never ran. Now `outline.md` is in every agent's context, and craftz's shared `AGENTS.md` says when to read the rules. Once a couple of weeks of sessions have run, count both again. The outline works if agents search less before their first edit, and open the right file sooner ([design](design.md#the-outline)).
   - **Ruled out.** A committed `outline.md`. Two open pull requests that each change a summary would both rewrite it and conflict. Writing it in `verify` keeps it current in every session that checks its work.
   - **Ruled out.** A skill, shipped in the package and linked by pnpm ([pnpm](https://pnpm.io/agent-skills)). It's pnpm's own route, not a standard. It needed an approval and `skills.dirs` in every repository, since CI fails without them, plus an ignored folder and an exception in `prose check`. All of that delivered a pointer to `prose rules`, with no evidence that a pointer gets followed.
-  - **Ruled out.** A copy of the rules in each `AGENTS.md`, kept by `prose rules --write`. A rule's text belongs to the tool that checks it ([lessons](lessons.md#checks-and-advice)), and a copy needs a check of its own to stay current.
+  - **Ruled out.** A copy of the rules in each `AGENTS.md`, kept by `prose rules --write`. A rule's text belongs to the tool that checks it ([lessons](lessons.md#state-it-once)), and a copy needs a check of its own to stay current.
 - [ ] **`broken-anchor` from markz's ids.** It collects a page's ids from its rendered HTML. A Markdown page could take them from markz's `ids` instead, as the other tools read their docs. A source page still needs the HTML, since `uniqueIds` changes ids as it renders.
 
 ## Where it is
@@ -19,7 +19,7 @@ The `@prose` convention and the read-only command work, and this repository is r
 - **An outline in every session.** `prose outline` writes `outline.md`, every file with its summary, and `AGENTS.md` imports it. `verify` writes it, and git ignores it.
 - **Commands stated once.** Each command opens its section of [usage](usage.md) with an id, and `prose help` prints them with markz's reader. A test holds the commands the CLI runs to the ones usage states.
 - **One small package.** prose has no dependencies, bundles markz, and ships at about 250 KB ([development](development.md#what-ships)).
-- **Used across the repositories.** markz, pagez, base and craftz each run `prose check` in CI, through craftz's rules. Its first version was a larger tool, cut back to the parts that got read ([lessons](lessons.md#what-use-taught)).
+- **Used across the repositories.** markz, pagez, base and craftz each run `prose check` in CI, through craftz's rules. Its first version was a larger tool, cut back to the parts that got read ([lessons](lessons.md#build-only-what-gets-used)).
 
 ## Later
 
