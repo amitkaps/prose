@@ -115,12 +115,16 @@ function folders(files: string[]): string[] {
  *
  * The build clears its output before writing, so it refuses any folder it didn't make.
  *
- * That's a folder that holds the repository, one with tracked files in it, or a non-empty one without a
- * previous build's marker. It never edits `.gitignore`. It warns when the output would show as
- * untracked files instead, since committing them is rarely what's wanted. Clearing retries, since
- * Finder can write a `.DS_Store` into the folder while it's being emptied.
+ * That's a folder that holds the repository, one with tracked files in it, or a non-empty one
+ * without a previous build's marker. The marker is written as soon as the folder is made, not
+ * after the last page. So a build that's stopped partway, as `vp run` stops one when another task
+ * in `verify` fails, leaves a folder the next build clears.
+ *
+ * It never edits `.gitignore`. It warns when the output would show as untracked files instead,
+ * since committing them is rarely what's wanted. Clearing retries, since Finder can write a
+ * `.DS_Store` into the folder while it's being emptied.
  */
-function prepareOut(root: string, out: string, warnings: Warning[]): void {
+export function prepareOut(root: string, out: string, warnings: Warning[]): void {
   const rel = relative(out, root);
   if (rel === "" || !rel.startsWith("..")) {
     throw new Error(`the output folder ${out} holds the repository itself`);
@@ -142,6 +146,7 @@ function prepareOut(root: string, out: string, warnings: Warning[]): void {
   }
   rmSync(out, { recursive: true, force: true, maxRetries: 3 });
   mkdirSync(out, { recursive: true });
+  writeFileSync(join(out, MARKER), "Written by prose build; the next build clears this folder.\n");
 }
 
 /** Writes the pages of a repository's last commit as a static site. */
@@ -204,10 +209,6 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
       writeFileSync(target, asset.body);
     }
     writeFileSync(join(out, "_headers"), HEADERS);
-    writeFileSync(
-      join(out, MARKER),
-      "Written by prose build; the next build clears this folder.\n",
-    );
     return { out, pages: paths.length, version, warnings };
   } finally {
     rmSync(snapshot, { recursive: true, force: true });

@@ -20,7 +20,7 @@ import { tmpdir } from "node:os";
 import { join, posix, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { LIVE, STYLE } from "../src/assets.js";
-import { build } from "../src/build.js";
+import { build, prepareOut } from "../src/build.js";
 import { renderRoute, type Site } from "../src/server.js";
 import { projectFiles } from "../src/tree.js";
 
@@ -209,6 +209,14 @@ describe("build: a repository", () => {
     expect(existsSync(join(other, "keep.txt"))).toBe(true);
     await expect(build(root, { out: root })).rejects.toThrow("holds the repository");
     await expect(build(root, { out: join(root, "src") })).rejects.toThrow("tracked files");
+  });
+
+  it("clears a build that was stopped partway", async () => {
+    const out = join(temp("prose-build-stopped-"), "site");
+    prepareOut(root, out, []);
+    writeFileSync(join(out, "404.html"), "half\n");
+    const again = await build(root, { out });
+    expect(readFileSync(join(again.out, "404.html"), "utf-8")).not.toBe("half\n");
   });
 
   it("clears its own previous output, and warns when the output isn't ignored", async () => {
