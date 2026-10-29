@@ -11,6 +11,12 @@ The rule is [Write the spec first](https://craftz.amitkaps.com/docs/rules.md#wri
 - **Linking each code to its rule found the missing rules.** Once every code had to name the agent rule it serves, five kinds of check had none to name. Each became part of a rule. The link runs from code to rule only, since most rules are about meaning and have no code.
 - **An address built from position moved.** The spec promised `#addTodo`, and the code made `top-chunk-2`, which moved when a block was added above it. A comment's link is its heading's id, as markz makes it ([writing](writing.md#links)).
 
+## Draw the boundaries first
+
+The rule is [Draw the boundaries first](https://craftz.amitkaps.com/docs/rules.md#draw-the-boundaries-first). prose checks only form a machine can be sure of, and design says what it isn't ([design](design.md#what-it-isnt)).
+
+- **The one real drift was about meaning.** A `@prose` block about origins disagreed with `AGENTS.md`, and no symbol or staleness check would see it. So prose checks only form a machine can be sure of ([design](design.md#what-it-isnt)).
+
 ## Measure before changing
 
 The rule is [Measure before changing](https://craftz.amitkaps.com/docs/rules.md#measure-before-changing). A check is added only once a sample shows what it would catch.
@@ -56,7 +62,6 @@ The rule is [Have a way to verify](https://craftz.amitkaps.com/docs/rules.md#hav
 
 - **Measure a replacement against what it replaces.** Small tokenizers replaced shiki, about 18 MB installed and most of what a page cost. A script compared their colours with shiki's, character by character, on this repository's files. It started near 95% and pointed straight at the misses, and shiki went only at 99.3%. The highlighter is now about 50 times faster, and a page about a third smaller.
 - **A generator found what no example had.** Property tests found that the parser kept a CRLF line's `\r` inside a comment's text, so an edit at its end would have split a line ending. Each fixture variant, like CRLF or no final newline, costs one line in the generator.
-- **The one real drift was about meaning.** A `@prose` block about origins disagreed with `AGENTS.md`, and no symbol or staleness check would see it. So prose checks only form a machine can be sure of ([design](design.md#what-it-isnt)).
 - **An audit that reuses a tab carries its state.** axe failed a tree link on a different number of pages each run, since the rail kept its scroll in `sessionStorage`. The audit clears it, so each page is checked as it first loads.
 
 ## Silence is the failure
