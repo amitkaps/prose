@@ -8,4 +8,6 @@ try {
   if (localStorage.getItem("prose:mode") === "prose") {
     document.documentElement.classList.add("prose-only");
   }
-} catch {}
+} catch {
+  // Storage the browser blocks leaves the page in its default mode.
+}

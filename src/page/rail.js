@@ -18,7 +18,9 @@
       }
       rail.scrollTop = saved.scroll;
     }
-  } catch {}
+  } catch {
+    // Blocked storage, or a saved rail that isn't JSON, leaves the rail as the page draws it.
+  }
   // Set by hand, since `scrollIntoView` would also move where the keyboard's Tab starts from.
   const current = rail.querySelector("[aria-current]");
   if (current) {
@@ -35,6 +37,8 @@
       );
       const open = [...opened].map((d) => d.dataset.folder);
       sessionStorage.setItem("prose:rail", JSON.stringify({ open, scroll: rail.scrollTop }));
-    } catch {}
+    } catch {
+      // Storage the browser blocks forgets the rail, and the next page draws it afresh.
+    }
   });
 }
