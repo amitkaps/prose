@@ -22,7 +22,7 @@ A comment whose first token is `@prose` explains the code below it, in Markdown.
 - **Summaries first.** A summary is the first paragraph of a file, folder, prose block or doc, after its title. `prose check` warns when a file's summary has no title, and `prose style` when it runs past about three lines. Together the summaries are the map of the project. Three plain lines are a map, but three packed sentences are a chore, so the [agent rules](usage.md#for-agents) limit both length and density.
 - **One marker.** The convention has `@prose` and nothing else, and a Markdown heading is all the structure a comment needs. A `@todo`, `@decision` or `@note` marker would be one more thing to keep in sync. Decisions go into the prose they change.
 
-**Evidence.** In a sample of 40 sections across four repositories, no claim that could be checked had drifted ([lessons](lessons.md#keeping-prose-true)). That's encouraging, but too small a sample to show prose reliably stays true. Agents are told to keep it current, so it shows the habit holds, not that the prose helps them.
+**Evidence.** In a sample of 40 sections across four repositories, no claim that could be checked had drifted ([lessons](lessons.md#measure-before-changing)). That's encouraging, but too small a sample to show prose reliably stays true. Agents are told to keep it current, so it shows the habit holds, not that the prose helps them.
 
 ### Checks
 
@@ -34,7 +34,7 @@ A comment whose first token is `@prose` explains the code below it, in Markdown.
 
 A rule is a list item in a doc that opens with its id, like [`summary-first`](usage.md#summary-first). Each warning names the rule it serves. [`prose rules`](usage.md#rules) prints the rules, and `prose rules <code>` prints one. So the doc is also the help, a warning points into it, and a renamed id breaks a link.
 
-**Evidence.** A rule stated in three places drifted, and a rule in a doc that drives its check didn't ([lessons](lessons.md#state-it-once)). Linking each code to its rule found five rules nobody had written. craftz, markz and pagez now print their rules the same way.
+**Evidence.** A rule stated in three places drifted, and a rule in a doc that drives its check didn't ([lessons](lessons.md#dont-repeat-yourself)). Linking each code to its rule found five rules nobody had written. craftz, markz and pagez now print their rules the same way.
 
 ### Advice on style
 
@@ -71,7 +71,7 @@ The items below follow from these costs.
 Prose leaves some jobs to other tools. Each item names one, says why in a line, and links to what use taught about it.
 
 - **Not an editor.** The human's editor and the agent change the repository. So prose has no editing, no notes in the source and no review of changes. Discussion happens in the chat, and the prose says what the code means now ([lessons](lessons.md#build-only-what-gets-used)).
-- **Not a checker of meaning.** The one real drift found in use was about meaning, which no mechanical check catches. So there are no staleness checks, coverage percentages or LLM summaries ([lessons](lessons.md#keeping-prose-true), [usage](usage.md#warnings)).
+- **Not a checker of meaning.** The one real drift found in use was about meaning, which no mechanical check catches. So there are no staleness checks, coverage percentages or LLM summaries ([lessons](lessons.md#draw-the-boundaries-first), [usage](usage.md#warnings)).
 - **Not something agents look up.** Agents don't go looking for a map or a skill. So the outline and the rules reach them through `AGENTS.md`, and pnpm's agent skills were ruled out ([lessons](lessons.md#build-only-what-gets-used)).
 - **Not a new file format or a toolchain.** No `.ts.md`, no tangling and no compiler, which would break `tsc`, the language server, formatters and linters. `@prose` is a comment, like JSDoc, and the outline is plain Markdown, so every standard tool keeps working.
 - **Not a site generator or a host.** Navigation stops at the bar's links to the docs. A site with its own navigation and design needs a static site generator ([writing.md](writing.md#folders-and-docs)). Deploying, and each host's config, belong to the project ([lessons](lessons.md#build-only-what-gets-used), [usage.md](usage.md#build)).
