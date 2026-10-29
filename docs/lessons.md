@@ -32,6 +32,13 @@ The rule is [Don't repeat yourself](https://craftz.amitkaps.com/docs/rules.md#do
 - **A check sees one file, so drift across files passes.** Each copy of craftz's command summary read well alone. Write a summary that names each part and links the file that explains it.
 - **Print what agents work out anyway.** Agents piped `prose check` and `prose style` into scripts to count findings by code. Both commands now end with that count, most first ([usage](usage.md#warnings)).
 
+## One name, one meaning
+
+The rule is [One name, one meaning](https://craftz.amitkaps.com/docs/rules.md#one-name-one-meaning). A warning code names the form it rejects, and an attribute what it does ([usage](usage.md#warnings)).
+
+- **A code names the form it rejects, not the construct.** markz's `directive`, `footnote` and `jsx` read as if markz had none, though it keeps another form of each. So they became `colon-directive`, `caret-footnote` and `jsx-component`. What made a name cost was ambiguity, not its length.
+- **Name an attribute for what it does.** `-prose` left a file out of the checks, but read as "this file has no prose". `prose-unchecked` says what it does, as `linguist-vendored` does ([usage](usage.md#warnings)).
+
 ## Parse, don't match text
 
 The rule is [Parse, don't match text](https://craftz.amitkaps.com/docs/rules.md#parse-dont-match-text). The lexer counts no braces, and a test holds it to oxc's comments.
@@ -78,10 +85,8 @@ The rule is [Silence is the failure](https://craftz.amitkaps.com/docs/rules.md#s
 - **Old blocks get edited around, not rewritten.** base's content loading kept wording from before the rules through four changes, retelling the code, until its length stood out.
 - **A change that tunes code rightly skips prose, and nothing can tell it from one that should have.** A speed change that alters a cost the prose states slips through the same way.
 
-## Names and anchors
+## Anchors
 
-- **A code names the form it rejects, not the construct.** markz's `directive`, `footnote` and `jsx` read as if markz had none, though it keeps another form of each. So they became `colon-directive`, `caret-footnote` and `jsx-component`. What made a name cost was ambiguity, not its length.
-- **Name an attribute for what it does.** `-prose` left a file out of the checks, but read as "this file has no prose". `prose-unchecked` says what it does, as `linguist-vendored` does ([usage](usage.md#warnings)).
 - **A command's id can take a heading's place.** Opening each section of usage with its command, as `build` and `style`, kept every link to those headings landing on the command.
 
 ## Rendering
