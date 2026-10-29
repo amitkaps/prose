@@ -105,7 +105,9 @@ describe("build: tests/fixtures/simple", () => {
         encoding: "utf-8",
         stdio: ["ignore", "pipe", "ignore"],
       }).trim();
-    } catch {}
+    } catch {
+      // A commit with no tag of its own leaves `headTag` empty.
+    }
     for (const page of shown()) {
       const html = readFileSync(join(out, page), "utf-8");
       expect(html).not.toContain(LIVE.url);

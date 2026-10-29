@@ -47,7 +47,9 @@
       for (const run of runs) run.classList.remove("opened", "closed");
       try {
         localStorage.setItem("prose:mode", proseOnly ? "prose" : "code");
-      } catch {}
+      } catch {
+        // Storage the browser blocks keeps the mode for this page only.
+      }
       sync();
     });
   }
@@ -69,7 +71,9 @@
       sessionStorage.removeItem(key);
       scrollTo(0, Number(y));
     }
-  } catch {}
+  } catch {
+    // Storage the browser blocks leaves the page where it opens.
+  }
 }
 
 /** @prose

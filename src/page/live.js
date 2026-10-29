@@ -30,7 +30,9 @@
     events.onmessage = () => {
       try {
         sessionStorage.setItem(key, String(scrollY));
-      } catch {}
+      } catch {
+        // Storage the browser blocks reloads at the top.
+      }
       location.reload();
     };
   };
