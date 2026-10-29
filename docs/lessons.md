@@ -1,82 +1,95 @@
 # Lessons
 
-What building and using prose taught. The first half is what use taught about what to build and what to leave out. The second half is bug classes from the code, for the next change.
+What building and using prose taught, for whoever changes it next. Each lesson says what went wrong and what to do about it. What the code does now is in its `@prose`, and the story is in the pull request.
 
-## What use taught
+The first groups follow the principles in [craftz's Practice](https://craftz.amitkaps.com/docs/rules.md#practice), and each says what holds its principle here. prose's own groups come after them, then [Tools](#tools). A lesson that repeats one in its group means the principle needs a check.
 
-Besides this repository, prose has been used on markz, sitez, ship, pagez and base. The first lessons came from reports that sitez's and markz's agents wrote on 2026-09-30. Prose was a larger tool then, with a dev route inside the app, notes in the source and checks against the code. Later lessons came from running `prose check` and `prose style` across all of them.
+## State it once
 
-### What gets read
+The rule is [State it once](https://craftz.amitkaps.com/docs/rules.md#state-it-once). A test holds the codes, the rows and the agent rules to each other, and `broken-link` and `id-twice` hold the links and ids.
 
-- **Build the smallest thing that gets read, and watch whether it is.** The first version's `/__prose/` route, its annotator and a planned _since_ view were most of its work, and the human rarely opened them. They read the docs in the editor, and `@prose` blocks once in a while. A Vite plugin and planned dev tools went the same way. Before building the next view, ask what the human actually opened last week.
-- **The renderer earned its place as user documentation.** Its published pages are the docs for this repository and for markz. The same files serve the human reading the design and a user learning the tool, with nothing written twice.
-- **First paragraphs are a map for finding, not a substitute for reading.** Grepping 89 `@prose` summaries finds the right file faster than reading code. Agents still read the whole file once they find it. Writing prose also caught gaps. Stating "plain-JS scripts are checked too" led to checking it, and then to a test.
+- **A rule stated in more than one place drifted in the copies.** A markz `@prose` block disagreed with its `AGENTS.md` about where origins live. craftz's command summary was repeated in four places, and two had missed a line. `markz-markdown` copied markz's rules into prose's. Link to the one owner, and keep only the how and why ([writing](writing.md#links)). A rule's text belongs to the tool that checks it ([writing](writing.md#a-tools-rules)).
+- **A check sees one file, so drift across files passes.** Each copy of craftz's command summary read well alone. Write a summary that names each part and links the file that explains it.
+- **A rule held to its doc still went quiet.** The repository that kept the rules before craftz held its doc to its checks by id. When its ids moved from dots to kebab case, its survey still picked rules by the dotted prefix, so every check stopped running and every repository passed. Hold the doc to the rules, and the rules to what runs them.
+- **Linking each code to its rule found the missing rules.** Once every code had to name the agent rule it serves, five kinds of check had none to name. Each became part of a rule. The link runs from code to rule only, since most rules are about meaning and have no code.
 
-### Where decisions live
+## Try it on the real thing
 
-- **Discussion happens in the chat, not in annotations.** A decision takes several turns of conversation, and the agent then rewrites a doc or the plan. `@note` never became the channel. sitez had one note open for weeks, and markz had none. A channel the human has to go and look at loses to the one they're already in. So the human keeps the mental model from the chat and the docs it changes, more than from the renderer.
-- **The short promises doc paid off most.** sitez's `prose/idea.md` settled design questions from what the project promises. For example, sitez has no configuration, so a layer can't be switched off, only overridden. Its "Not in v1" list pushed features to other projects. It works because it's short enough to hold in mind.
-- **A rule stated in three places drifts in the untested ones.** markz explains its syntax in `syntax.md`, states it in the tested `grammar.md`, and restated it in `@prose`. One `@prose` block already disagreed with `AGENTS.md` about where origins live. Link to the owner, and keep only the how and why ([writing](writing.md#links)).
-- **A rule in a doc can drive the code.** ship's `standard.md` opens each checked rule with an id, and `scripts/rules.ts` holds its check under the same id. A test holds the two to the same ids, so a rule can't be stated without a check, or checked without being stated. markz's `grammar.md` gives each construct an id, and its tests read the page as data, with markz itself. In both, the human argues about the doc, and the agent changes the code to match. prose's warning codes became the third, and all three now write an id the same way ([writing](writing.md#a-tools-rules)). Then ship's ids moved from dots to kebab case. Its survey still picked rules by the dotted prefix, so every check went quiet, and every repository passed. The test held the doc to the rules, but not the rules to what runs them, so it now holds that too.
-- **Linking each code to its rule found the missing rules.** Once every code had to name the agent rule it serves, five kinds of check had no rule to name. They were blank lines around an element line, a marker on its own line, a heading's level, a summary's title, and a link's target. Each became part of a rule. The link runs from code to rule only, since most rules are about meaning, and have no code.
+The rule is [Try it on the real thing](https://craftz.amitkaps.com/docs/rules.md#try-it-on-the-real-thing). A new warning runs on the other repositories before it lands, and the lexer is tested against oxc on every JS and TS file here.
 
-### Keeping prose true
+- **A check that passed its fixtures failed on real repositories.** The first run asked `.vscode/`, which holds only JSON, for a README, and a resolver bug flagged exports that had comments. Run each new warning on markz, pagez, base and craftz first, so every warning left is real.
+- **A generator found what no example had.** Property tests found that the parser kept a CRLF line's `\r` inside a comment's text, so an edit at its end would have split a line ending. Each fixture variant, like CRLF or no final newline, costs one line in the generator.
 
-- **The checks never ran.** markz's `AGENTS.md` says "nothing checks prose against code on its own", and its agents grep instead. The one real drift was that block about origins. It was about meaning, which no symbol or staleness check sees. So prose kept the reading, the convention and a renderer, and dropped the checks ([design](design.md#what-it-isnt)). Checks came back later only for form a machine can be sure of, in `prose check`, which runs in CI where nobody has to remember it.
-- **The prose costs a second edit per change and drifts toward density.** 36 of sitez's 49 commits touch `prose/`. Blocks grew into long sentences carrying three qualifications each, since "rewrite, don't append" is harder than it sounds. The three-line limit on first paragraphs came from this. It wasn't enough, because the docs kept packing points into long sentences. So the rules later asked for plain sentences too ([the agent rules](usage.md#for-agents)).
-- **Tuning changes rightly skip prose, and staleness can't tell.** markz's speed commits changed code without prose, which was correct. But a speed change that alters a cost the prose states would slip through the same way.
-- **Prose's share of the lines sorts nothing.** Across six repositories, prose ran to 0.19–0.32 lines for each line of code. Both ends held good files and bad. One summary over a long file was fine where `//` comments gave each part its reason, and prose near the code's length was fine where it held decisions about how a page looks. So length shows where to read, and reading the outliers found what was wrong. It isn't a check.
-- **The drift no check sees is across files.** craftz's command summary said what `status` reads, as four other places did, and two had missed a line the rest had. `prose check` and `prose style` read one file at a time, so each sentence passed. The fix was a summary that names each part and links the file that explains it, as prose's own command does.
-- **Old blocks get edited around, not rewritten.** base's content loading kept wording from before the rules through four changes. Its blocks retold the code, and nothing flagged it until its length stood out.
-- **A sample found no drift, which shows the habit, not the help.** 40 random `@prose` sections across craftz, markz, prose and pagez made 22 claims that could be checked against the code, and all held. `@prose` names about six times as much code per block as JSDoc, and none of its names were gone. Agents are told to keep it current, so this shows they do, not that it helps them. One section said its code should already be deleted, which is how the dead code was found.
+## Measure before changing
 
-### Checks and advice
+The rule is [Measure before changing](https://craftz.amitkaps.com/docs/rules.md#measure-before-changing). Cases from the highlighter's comparison with shiki stay in `tests/highlight.test.ts`.
 
-- **Run a check on real repositories before it lands.** Each of `prose check`'s new warnings was run on markz, sitez, ship and pagez first. The first run asked `.vscode/`, which holds only JSON, for a README, and a resolver bug flagged exports that had comments. Both were fixed before the check shipped, so every warning left was real.
-- **Fixtures swamp the counts.** 183 of pagez's 191 warnings were test pages and build snapshots, each in its own folder. `.gitattributes` leaves them out, as `prose-unchecked` or `linguist-generated`. A way to leave text out is also a way to hide it, so both commands say how many files were left out, and the agent rules forbid it to quiet a warning ([usage](usage.md#for-agents)).
-- **Advice that's wrong teaches agents to ignore it.** `prose style` first flagged every colon and semicolon that might join two ideas. On five repositories most of the colons it flagged opened a list or an explanation, and read fine. A wrong suggestion has an agent rewrite a good sentence, and learn to pass over the rest. So it now flags only what a rewrite would improve, and colons fell from 316 suggestions to 49 ([usage](usage.md#style)).
-- **Weigh the machinery against what it delivers.** A skill linked by pnpm needed an approval and a setting in every repository, an ignored folder and an exception in `prose check`, all to deliver a pointer to `prose rules`. Trying it also found that CI failed without the setting, which only an install with a clean environment showed, since an agent's shell sets the variables pnpm reads. It was taken out before it shipped. Improve what every agent already reads, `AGENTS.md`, before adding a channel.
-- **Print what agents work out anyway.** Agents piped `prose check` and `prose style` into Python scripts, to count the findings by code before fixing them. So both commands now end with that count, most first ([usage](usage.md#warnings)).
-- **A code names the form it rejects, not the construct.** markz's `directive`, `footnote` and `jsx` read as if markz had no directives or footnotes, though it keeps another form of each. So they became `colon-directive`, `caret-footnote` and `jsx-component`. What made a name cost was ambiguity, not its number of words, so no test counts them.
-- **A rule's text belongs to the tool that checks it.** `markz-markdown` copied markz's rules into prose's, so they drifted when markz changed. Now it points to markz's rules, which `prose rules` prints from the markz it bundles, and markz's codes serve rules markz words ([writing](writing.md#a-tools-rules)).
-- **Name an attribute for what it does.** `-prose` left a file out of the checks, but it read as "this file has no prose". `prose-unchecked` says what it does, as `linguist-vendored` does ([usage](usage.md#warnings)).
+- **Measure a replacement against what it replaces.** Small tokenizers replaced shiki, about 18 MB installed and most of what a page cost. A script compared their colours with shiki's, character by character, on this repository's files. It started near 95% and pointed straight at the misses, and shiki went only at 99.3%. The highlighter is now about 50 times faster, and a page about a third smaller.
 
-### Publishing
+## Silence is the failure
 
-- **Publishing belongs to a site generator.** markz's site renders its `prose/` docs in place as its pages, and sitez generalizes that, so a folder of Markdown is a site. It works because the docs link by repo path. They were also rewritten into neutral, current prose (markz #62), not left as a record of the conversation. So prose doesn't publish. It keeps the same files readable locally ([writing](writing.md#folders-and-docs)).
-- **A command to publish wasn't needed either.** `prose publish` committed a built site to a branch. The one site that could have used it deploys from `main` with a Cloudflare Worker instead ([development](development.md#the-site)).
-- **Each host keeps its own files.** The build has no `CNAME`, `.nojekyll` or other host config. Each host changes its files, credentials and rules on its own schedule, so a project keeps its host's config in its own repository.
-- **Clearing the output can race Finder.** sitez's build failed twice with `ENOTEMPTY` while clearing `.prose`, which had a `.DS_Store` in it. Finder writes one into a folder that's open, and it landed after the folder was emptied but before it was removed. `rmSync`'s `maxRetries` retries on `ENOTEMPTY`, so the build clears with it.
+The rule is [Silence is the failure](https://craftz.amitkaps.com/docs/rules.md#silence-is-the-failure). `prose check` runs in CI, and both commands say how many files `.gitattributes` left out.
 
-## What the code taught
+- **Advice that's wrong teaches agents to ignore it.** `prose style` first flagged every colon that might join two ideas, and most opened a list and read fine. A wrong suggestion has an agent rewrite a good sentence, and pass over the rest. Flag only what a rewrite would improve, which took colons from 316 suggestions to 49 ([usage](usage.md#style)).
+- **A way to leave text out is a way to hide it.** 183 of pagez's 191 warnings were test pages and snapshots, which `.gitattributes` now leaves out. So both commands count what they left out, and the agent rules forbid it to quiet a warning ([usage](usage.md#for-agents)).
 
-These were found by dogfooding on prose's own source and on real repositories. Real code has more variety than a curated fixture.
+## Parse, don't match text
 
-### The parser and scanner
+The rule is [Parse, don't match text](https://craftz.amitkaps.com/docs/rules.md#parse-dont-match-text). The lexer counts no braces, and a test holds it to oxc's comments.
 
-- **A `@prose` block inside a callback or object literal is silently dropped.** In `register({ setup(ctx) { /** @prose */ } })` the block is at depth 2, not 0. At first only depth 0 counted. Now a comment counts at any depth when it starts its own line, in every language ([writing](writing.md#in-each-language)). One that shares its line with code is still an ordinary comment. That one rule replaced a statement walk for JS and a brace counter for CSS.
-- **A tokenizer that handles strings and comments but not regex literals is one construct from silent corruption.** In ``.replace(/`/g, "")``, the backtick read as a template-literal opener. It "closed" at the next backtick in the file and broke `{}` depth for everything after. There was no error, and comments just stopped being found. A `skipRegexLiteral` that guessed from the last token fixed that case, but still misread `return /x/`. oxc's comment list replaced the hand tokenizer. Later a lexer came back, because oxc's native binary was too heavy for a comment list ([development](development.md#what-ships)). It counts no braces, so a misread can't spread. It reads `${…}` in a template as code. A test checks it against oxc on every JS and TS file in the repository. Before it landed, it matched oxc on all 19,282 JS and TS files in `node_modules`.
-- **A scanner with no closing delimiter must let the marker define the boundary.** YAML and TOML use `#` comments. The scanner collected every contiguous `#` line and checked only the first for a marker, so it merged two back-to-back `@prose` blocks. A block now runs from a marker line to the next marker line or the first non-`#` line. Ask "what happens when two blocks touch", not just "what happens at the end". Writing that test case directly caught it.
-- **Don't reimplement scope analysis with regexes.** `declaredIdentifiers` grew one construct per bug report. Imports came first (`marked`), then parameters (`html` in `headingId(html: string)`). No flat regex can find a parameter inside nested parens and braces, and destructuring and class members were still pending. The fix was structural. It parsed with `oxc-parser`, the engine oxlint, oxfmt and tsdown already use, and walked the AST. The names later went, with the anchors they made, and then oxc went too.
-- **Property tests found a CRLF bug that no example had.** The parser kept the `\r` of a CRLF line inside comment text. The `#`-style scanner's `endIndex` sat between `\r` and `\n`. So an edit at that offset in a CRLF YAML or TOML file would have split a line ending. Each fixture variant, like CRLF or no final newline, costs one line in the generator.
+- **A tokenizer one construct short corrupted everything after it.** In ``.replace(/`/g, "")``, the backtick read as a template's start, and every comment after it was lost with no error. A guess from the last token still misread `return /x/`. The lexer now reads `${…}` as code and counts no braces, so a misread can't spread, and it matched oxc on all 19,282 JS and TS files in `node_modules` before it landed.
+- **Scope analysis by regex grew one construct per bug.** Imports came first, then parameters, and destructuring and class members were still to come. No flat regex finds a parameter inside nested parentheses. Walk a parsed tree, or drop the feature, which is what happened here.
 
-### The file as the leaf
+## Build only what gets used
 
-- **A chunk shown alone doesn't make sense.** So the tree stops at files, and a file node carries its prose comments, each with its byte span. The page lays the source out around those spans. It drops the comment text and renders it as prose in its place, which shows the whole file with nothing repeated. Exact offsets beat line ranges here. The `.svelte` part-clipping had already shown that per-chunk code slices lose the tags between parts. Once the page worked this way, the parser's own chunks, sections and preamble had no reader left, and they went.
+The rule is [Build only what gets used](https://craftz.amitkaps.com/docs/rules.md#build-only-what-gets-used). Agents reach prose through `AGENTS.md`, not a channel of its own.
 
-### Anchors and addresses
+- **Most of the first version went unread.** A `/__prose/` route in the app, an annotator, a planned _since_ view, a Vite plugin and dev tools were most of the work, and the human rarely opened them. `@note` never became the channel either, since a decision takes turns in the chat. The docs, read in the editor and published as the user docs, were what got read. Before building a view, ask what the human opened last week.
+- **Weigh the machinery against what it delivers.** A skill linked by pnpm needed an approval and a setting in every repository, an ignored folder and an exception in `prose check`, all to deliver a pointer to `prose rules`. CI failed without the setting, which only a clean install showed. It was taken out before it shipped. Improve what every agent already reads, `AGENTS.md`, before adding a channel.
+- **A command nobody needed went.** `prose publish` committed a built site to a branch, and the one site that could use it deploys from `main` with a Worker ([development](development.md#the-site)). A site generator publishes a folder of docs, and each host keeps its config in its own repository ([writing](writing.md#folders-and-docs)).
+- **Print what agents work out anyway.** Agents piped `prose check` and `prose style` into scripts to count findings by code. Both commands now end with that count, most first ([usage](usage.md#warnings)).
 
-- **An address built from position isn't stable, whatever the spec calls it.** The spec promised `#addTodo`, but the code produced `top-chunk-2`, which moves when a block is inserted above. Derive anchors from content ([writing](writing.md#links)).
-- **The heading is the anchor the reader already sees.** Anchors were once a heading's slug, then the first name the code declared, then `chunk-N`. That took an AST walk and its own tests, for links nobody wrote. A comment's link is now its heading's id, as markz makes it, the same rule GitHub uses for docs.
-- **A command's id can take a heading's place.** `prose build` and `prose style` wanted the ids `build` and `style`, which the headings Build and Style already had. Renaming the headings and opening each section with its command kept every link to `usage.md#build` and `#style` landing in the same place, now on the command itself.
+## Read what's live
 
-### Rendering
+The rule is [Read what's live](https://craftz.amitkaps.com/docs/rules.md#read-whats-live).
 
-- **A global `code { padding }` rule for inline spans also hit the highlighter's `<pre><code>`.** It added a stray space before every block's first token. Copied text came out clean, since padding is box model, not content. A `pre code` reset fixes it.
-- **Measure a replacement against what it replaces.** Small tokenizers replaced shiki, which was about 18 MB installed and most of what a page cost. A script compared their colours with shiki's, character by character, on this repository's files. It started near 95% and pointed straight at the misses, like arrow functions, CSS units and shell arguments. It reached 99.3% before shiki went, and cases from it stay in `tests/highlight.test.ts`. The highlighter is now about 50 times faster, and a page about a third smaller, since a token carries a class instead of an inline style.
-- **An audit that reuses a tab carries its state.** axe failed a tree link on a different number of pages each run. The rail keeps its scroll in `sessionStorage`, so each page opened where the one before had left it, sometimes with a link half under the contents. The audit now clears it, so each page is checked as it first loads.
-- **`oxlint`'s type-aware mode (`tsgolint`) is the type check** for `.ts`, not a separate `tsc --noEmit`. It caught a real `no-floating-promises` at once.
+- **A summarized page lost what mattered.** A web fetch ran a library's docs through a smaller model, which dropped its examples and a caveat that changed what adopting it cost. Install into a scratch folder and read its `.d.ts` files.
 
-### Working style
+## Keeping prose true
 
-- **Read the installed `.d.ts` files, not a summarized doc fetch.** `WebFetch` ran pages through a smaller model that lost specifics. It dropped concrete examples and a caveat that changed the cost of adopting a library. Install into a scratch directory and grep `dist/*.d.ts`.
+- **The one real drift was about meaning.** A `@prose` block about origins disagreed with `AGENTS.md`, and no symbol or staleness check would see it. So prose checks only form a machine can be sure of ([design](design.md#what-it-isnt)).
+- **Prose drifts toward density.** Blocks grew into long sentences carrying three qualifications each, since rewriting is harder than appending. A three-line summary wasn't enough, so the rules ask for plain sentences too ([usage](usage.md#for-agents)).
+- **Old blocks get edited around, not rewritten.** base's content loading kept wording from before the rules through four changes, retelling the code, until its length stood out.
+- **A change that tunes code rightly skips prose, and nothing can tell it from one that should have.** A speed change that alters a cost the prose states slips through the same way.
+- **Prose's share of the lines sorts nothing.** Across six repositories it ran from 0.19 to 0.32 lines per line of code, with good files and bad at both ends. Length shows where to read, so it isn't a check.
+- **A sample found no drift, which shows the habit, not the help.** 22 checkable claims in 40 random sections across four repositories all held. Agents are told to keep prose current, so this shows they do, not that it helps them. One section said its code should already be gone, which is how the dead code was found.
+
+## Names
+
+- **A code names the form it rejects, not the construct.** markz's `directive`, `footnote` and `jsx` read as if markz had none, though it keeps another form of each. So they became `colon-directive`, `caret-footnote` and `jsx-component`. What made a name cost was ambiguity, not its length.
+- **Name an attribute for what it does.** `-prose` left a file out of the checks, but read as "this file has no prose". `prose-unchecked` says what it does, as `linguist-vendored` does ([usage](usage.md#warnings)).
+
+## The parser and scanner
+
+- **A `@prose` block inside a callback was dropped.** Only a block at depth 0 counted, so one in `register({ setup(ctx) { … } })` was lost. A comment now counts at any depth when it starts its own line, in every language ([writing](writing.md#in-each-language)).
+- **A scanner with no closing delimiter merged two blocks.** It collected every contiguous `#` line, so two `@prose` blocks back to back became one. A block now ends at the next marker line. Ask what happens when two blocks touch, not only what happens at the end.
+
+## Anchors and addresses
+
+- **An address built from position moved.** The spec promised `#addTodo`, and the code made `top-chunk-2`, which moved when a block was added above it. A comment's link is its heading's id, as markz makes it ([writing](writing.md#links)).
+- **A command's id can take a heading's place.** Opening each section of usage with its command, as `build` and `style`, kept every link to those headings landing on the command.
+
+## Rendering
+
+- **A chunk shown alone didn't make sense.** The page lays out the whole file around its comments' byte spans, and renders each comment as prose in its place. Exact offsets keep the tags between a `.svelte` file's parts, which per-chunk slices lost.
+- **A global `code { padding }` also hit `<pre><code>`.** It added a stray space before every block's first token. A `pre code` reset fixes it.
+- **An audit that reuses a tab carries its state.** axe failed a tree link on a different number of pages each run, since the rail kept its scroll in `sessionStorage`. The audit clears it, so each page is checked as it first loads.
+
+{#tools}
+
+## Tools
+
+What each tool does that its docs don't say.
+
+- **oxlint's type-aware mode is the type check.** `tsgolint` checks `.ts` in place of a separate `tsc --noEmit`, and caught a real `no-floating-promises` at once.
+- **Finder writes into a folder that's being cleared.** A build failed with `ENOTEMPTY`, since a `.DS_Store` landed after `.prose` was emptied and before it was removed. Clear with `rmSync`'s `maxRetries`.
