@@ -3,7 +3,8 @@
  *
  * Reads a few pages of this repository's site with the keyboard alone, at a desktop and a phone
  * width. It prints each thing that fails, with where, and exits non-zero if any does. Run it with
- * `pnpm run keyboard` before a release ([development](../docs/development.md#release)).
+ * `pnpm run test:e2e`, which the `e2e` workflow runs on every pull request
+ * ([development](../docs/development.md#browser-checks)).
  *
  * axe sees a page as it stands ([axe.ts](axe.ts)). This presses keys, so it finds what only shows
  * in use. Every Tab stop must be visible and show a focus ring. The stops go in the page's order,

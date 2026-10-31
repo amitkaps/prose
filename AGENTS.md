@@ -47,6 +47,7 @@ pnpm install
 pnpm run check         # format, lint and types
 pnpm run test
 pnpm run build         # the library and the command
+pnpm run test:e2e      # the accessibility and keyboard checks, in Chromium (about two minutes)
 pnpm run prose         # read this repository with the command build wrote
 ```
 

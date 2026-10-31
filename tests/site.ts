@@ -1,10 +1,13 @@
 /** @prose
- * # This repository's site, in Chrome
+ * # This repository's site, in Chromium
  *
  * What the browser checks share. They build the site from `HEAD` with the renderer in `dist/`, and
- * serve it to a page in the Chrome installed on the machine, so nothing is downloaded. The page
- * asks for `http://site/…`, and each request is answered from the built files as a static host
- * would answer it, so no server runs.
+ * serve it to a page in Playwright's Chromium.
+ *
+ * The same browser runs on a laptop, in a cloud session and in CI. `pnpm exec playwright-core
+ * install chromium` fetches it, once for each version of Playwright. The page asks for
+ * `http://site/…`, and each request is answered from the built files as a static host would
+ * answer it, so no server runs.
  */
 // The checks also run code in the page, so they're typed with the DOM.
 /// <reference lib="dom" />
@@ -27,7 +30,7 @@ export interface Site {
 export async function openSite(): Promise<Site> {
   const dir = mkdtempSync(join(tmpdir(), "prose-site-"));
   execFileSync("node", ["dist/cli.js", "build", ".", "--out", dir], { stdio: "ignore" });
-  const browser = await chromium.launch({ channel: "chrome" });
+  const browser = await chromium.launch();
   return {
     pages: pages(dir),
     browser,

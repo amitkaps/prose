@@ -1,0 +1,40 @@
+# @prose
+# # Browser checks
+#
+# Runs the accessibility audit and the keyboard check on every pull request, in Chromium against
+# the built site (`pnpm run test:e2e`). They take about two minutes, so they're a workflow of this
+# repository's own beside `ci.yml`, which stays the same in every repository and finishes first.
+# A failure shows on the pull request. The `main` ruleset doesn't require this job yet.
+#
+# A job that runs past ten minutes is stopped.
+name: E2E
+
+on:
+  pull_request:
+    branches: [main]
+
+# A new push cancels the run before it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      # Reads the pnpm version from package.json's `packageManager`.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright-core install --with-deps chromium
+
+      - run: pnpm run test:e2e
