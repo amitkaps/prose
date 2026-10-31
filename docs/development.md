@@ -31,7 +31,7 @@ The package is one bundle with no dependencies, about 250 KB unpacked. It's read
 
 `pnpm run test:e2e` runs the accessibility audit and the keyboard check in Chromium, and the `e2e` workflow runs it on every pull request. The audit runs axe on every page of this site, in both colour schemes, at a desktop and a phone width ([tests/axe.ts](../tests/axe.ts)). The keyboard check reads a page of each kind with Tab, Enter, Space and Esc ([tests/keyboard.ts](../tests/keyboard.ts)). To run one alone, build, then `node tests/axe.ts` or `node tests/keyboard.ts`. Together they take about two minutes, which is why they aren't in `verify`, and `pnpm pr` doesn't run them.
 
-After `pnpm install`, run `pnpm exec playwright-core install chromium` once, and again when Playwright's version changes. A Claude Code session does it at its start, through the shared session-start hook. The checks use Playwright's own Chromium, not the Chrome on the machine, so a laptop, a cloud session and CI run the same browser.
+After `pnpm install`, run `pnpm exec playwright install --only-shell chromium` once, and again when Playwright's version changes. A Claude Code session does it at its start, through the shared session-start hook, and the cloud image ships the headless shell for the version [craftz pins](https://craftz.amitkaps.com/docs/rules.md#versions-playwright), so it downloads nothing there. To look at a page you changed, save it as a PNG with `pnpm craftz shot <url> <file.png>`. The checks use Playwright's own Chromium, not the Chrome on the machine, so a laptop, a cloud session and CI run the same browser.
 
 The review that added the checks ruled out three things:
 

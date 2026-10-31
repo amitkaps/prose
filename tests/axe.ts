@@ -13,7 +13,7 @@
  */
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import type { Page } from "playwright-core";
+import type { Page } from "@playwright/test";
 import { openSite } from "./site.ts";
 
 const SCHEMES = ["light", "dark"] as const;
