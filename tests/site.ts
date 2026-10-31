@@ -4,8 +4,8 @@
  * What the browser checks share. They build the site from `HEAD` with the renderer in `dist/`, and
  * serve it to a page in Playwright's Chromium.
  *
- * The same browser runs on a laptop, in a cloud session and in CI. `pnpm exec playwright-core
- * install chromium` fetches it, once for each version of Playwright. The page asks for
+ * The same browser runs on a laptop, in a cloud session and in CI. `pnpm exec playwright
+ * install --only-shell chromium` fetches it, once for each version of Playwright. The page asks for
  * `http://site/…`, and each request is answered from the built files as a static host would
  * answer it, so no server runs.
  */
@@ -15,7 +15,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { type Browser, chromium, type Page } from "playwright-core";
+import { type Browser, chromium, type Page } from "@playwright/test";
 
 /** The built site, a browser, and a way to open a page on it. */
 export interface Site {

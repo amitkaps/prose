@@ -13,7 +13,7 @@
  *
  * A screen reader isn't checked here, and nothing checks it yet.
  */
-import type { Page } from "playwright-core";
+import type { Page } from "@playwright/test";
 import { openSite } from "./site.ts";
 
 /** One page of each kind: a folder with a README, one without, a doc, a source file and a file
