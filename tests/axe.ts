@@ -3,9 +3,9 @@
  *
  * Runs axe on every page of this repository's site, in light and dark, at a desktop and a phone
  * width. It prints each rule that fails, with where, and exits non-zero if any does. Run it with
- * `pnpm run axe` before a release ([development](../docs/development.md#release)).
+ * `pnpm run test:e2e`, which the `e2e` workflow runs on every pull request ([development](../docs/development.md#browser-checks)).
  *
- * It isn't a `.test.ts` file, so `pnpm run test` and CI leave it out, since CI has no browser. It
+ * It isn't a `.test.ts` file, so `pnpm run test` leaves it out, since a browser makes it slow. It
  * checks the committed pages, built and served as [site.ts](site.ts) says.
  *
  * axe checks what a machine can see in a page, like contrast, names and roles. What a keyboard
@@ -20,6 +20,11 @@ const SCHEMES = ["light", "dark"] as const;
 const WIDTHS = [1280, 390];
 const TAGS = ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa", "best-practice"];
 const PARALLEL = 8;
+// Contrast is most of axe's time on a page, and it comes out the same at each width, since the
+// colours follow the scheme and the content. So it runs at the first width only.
+// axe is served as a file the browser caches, since adding its text to each page costs more.
+const AXE_URL = "http://site/__axe.js";
+const SLOW = { "color-contrast": { enabled: false } };
 
 /** @prose
  * # What's accepted
@@ -31,9 +36,15 @@ const PARALLEL = 8;
  * and a screen reader reads the item's text right after it. A label like _Done_ would repeat the
  * state without naming the task, and one naming the task would need ids that can clash with
  * headings.
+ *
+ * A file in the rail is accepted for `target-size` too. The "On this page" box above it is sticky,
+ * so rows scroll under it by design, and a row left under its last link when the rail's scroll is
+ * restored overlaps it for a moment. A row is 26px tall, so it's the overlap alone that axe sees,
+ * and it ends at the first scroll.
  */
 const ACCEPTED: Record<string, string> = {
   label: ':is(li, li > p) > input[type="checkbox"][disabled]',
+  "target-size": ".rail a.file",
 };
 
 interface Violation {
@@ -55,11 +66,11 @@ async function audit(page: Page, { path, scheme, width }: (typeof jobs)[number])
   await page.emulateMedia({ colorScheme: scheme });
   await page.setViewportSize({ width, height: 900 });
   await page.goto(`http://site${path}`);
-  await page.addScriptTag({ content: axe });
+  await page.addScriptTag({ url: AXE_URL });
   const violations = await page.evaluate(
-    async ({ tags, accepted }) => {
+    async ({ tags, accepted, rules }) => {
       // @ts-expect-error: axe is the script just added to the page.
-      const { violations } = (await axe.run(document, { runOnly: tags })) as {
+      const { violations } = (await axe.run(document, { runOnly: tags, rules })) as {
         violations: Violation[];
       };
       return violations
@@ -73,7 +84,7 @@ async function audit(page: Page, { path, scheme, width }: (typeof jobs)[number])
         }))
         .filter(({ nodes }) => nodes.length);
     },
-    { tags: TAGS, accepted: ACCEPTED },
+    { tags: TAGS, accepted: ACCEPTED, rules: width === WIDTHS[0] ? {} : SLOW },
   );
   for (const violation of violations) {
     const entry = found.get(violation.id) ?? { violation, where: new Set(), count: 0 };
@@ -86,6 +97,13 @@ async function audit(page: Page, { path, scheme, width }: (typeof jobs)[number])
 await Promise.all(
   Array.from({ length: PARALLEL }, async () => {
     const page = await site.newPage();
+    await page.route(AXE_URL, (route) =>
+      route.fulfill({
+        body: axe,
+        contentType: "text/javascript",
+        headers: { "cache-control": "max-age=3600" },
+      }),
+    );
     // Each page as it first loads. A tab keeps the rail's scroll from the page before, so a tree
     // link could sit half under the contents, as any scroll can leave it.
     await page.addInitScript(() => sessionStorage.removeItem("prose:rail"));
