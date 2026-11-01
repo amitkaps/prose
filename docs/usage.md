@@ -162,7 +162,7 @@ Other forms look like a joined idea or an aside but aren't, so they get no sugge
 pnpm prose outline   # writes outline.md at the root
 ```
 
-The outline is the repository as a tree, with the first paragraph of each file's prose, and a folder's from its `README.md`. It leaves out what `.gitattributes` marks `prose-unchecked`, like fixtures. An agent reads it to find its way, so have `AGENTS.md` import it, as `@outline.md` does in Claude Code. Put `outline.md` in `.gitignore`, and have `verify` run `prose outline` after `prose check`. It's then current wherever the work is checked, and two pull requests never conflict over it.
+The outline is the repository as a tree, with the first paragraph of each file's prose, and a folder's from its `README.md`. It leaves out what `.gitattributes` marks `prose-unchecked`, like fixtures. An agent reads it to find its way, so have `AGENTS.md` name it and say to open the part for the folder it expects the code in. Importing it with `@outline.md` loads the whole map into every session, which cost 6k to 20k tokens and found no files sooner ([design](design.md#the-outline)). Put `outline.md` in `.gitignore`, and write it where the work is saved, like a `pr` and `gone` script, so two pull requests never conflict over a committed copy.
 
 ## Rules and help
 
