@@ -2,13 +2,13 @@
  * # `prose outline`
  *
  * Writes `outline.md`, the repository as a tree with each file's summary, so an agent sees the
- * whole map in one read. `AGENTS.md` imports it, so it's in context every session, and again
- * after a summary ([plan](../docs/plan.md)). Docs, config and source are all in it, since a
- * config file's summary says what it's for as much as a module's does.
+ * whole map in one read. `AGENTS.md` names it, and an agent opens the part for the folder it
+ * works in. Docs, config and source are all in it, since a config file's summary says what it's
+ * for as much as a module's does.
  *
- * It's a copy of the summaries, so nobody edits it, and it's gitignored. `verify` writes it after
- * `prose check`, so it's current wherever the work is checked. A committed copy would conflict
- * between two open pull requests that each change a summary.
+ * It's a copy of the summaries, so nobody edits it, and it's gitignored. `pnpm pr` and `pnpm gone`
+ * write it, and `verify` only checks. A committed copy would conflict between two open pull
+ * requests that each change a summary.
  */
 import { writeFileSync } from "node:fs";
 import { dirname, join, posix } from "node:path";

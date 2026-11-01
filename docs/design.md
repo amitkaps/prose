@@ -44,9 +44,9 @@ A rule is a list item in a doc that opens with its id, like [`summary-first`](us
 
 ### The outline
 
-[`prose outline`](usage.md#outline) writes `outline.md`, every file in the repository with its summary. `verify` writes it, and git ignores it. `AGENTS.md` imports it, so it's in every agent's context from the start.
+[`prose outline`](usage.md#outline) writes `outline.md`, every file in the repository with its summary. `pnpm pr` and `pnpm gone` write it, and git ignores it. `AGENTS.md` names it, and an agent opens the part for the folder it expects to work in.
 
-**Evidence.** None yet. Agents never ran the map grep the rules told them to, so a map has to be in context already, not found ([plan](plan.md)). It works if agents search less before their first edit, and open the right file sooner, than in the sessions before it.
+**Evidence.** Agents never ran the map grep the rules told them to, so the map had to be put in front of them. Across 21 sessions on craftz and visframe, an agent found the same files with the outline imported, left out or named in a bullet. None opened it unprompted, and an import cost 6k to 20k tokens in every session for nothing. So `AGENTS.md` names it, and the headers stay as they are.
 
 ### The renderer
 
@@ -56,7 +56,7 @@ A rule is a list item in a doc that opens with its id, like [`summary-first`](us
 
 ### What's shown, and what isn't
 
-The checks, the rules and the docs have shown their worth in use. That agents find their way better, and that the human's model stays more reliable, is still the hypothesis. The outline is the first test of it.
+The checks, the rules and the docs have shown their worth in use. That agents find their way better, and that the human's model stays more reliable, is still the hypothesis. The outline was the first test of it, and it showed no gain from loading the map.
 
 ## The trade-offs
 
@@ -72,7 +72,7 @@ Prose leaves some jobs to other tools. Each item names one, says why in a line, 
 
 - **Not an editor.** The human's editor and the agent change the repository. So prose has no editing, no notes in the source and no review of changes. Discussion happens in the chat, and the prose says what the code means now ([lessons](lessons.md#build-only-what-gets-used)).
 - **Not a checker of meaning.** The one real drift found in use was about meaning, which no mechanical check catches. So there are no staleness checks, coverage percentages or LLM summaries ([lessons](lessons.md#draw-the-boundaries-first), [usage](usage.md#warnings)).
-- **Not something agents look up.** Agents don't go looking for a map or a skill. So the outline and the rules reach them through `AGENTS.md`, and pnpm's agent skills were ruled out ([lessons](lessons.md#build-only-what-gets-used)).
+- **Not something agents look up.** Agents don't go looking for a map or a skill. So the rules reach them through `AGENTS.md`, and the outline is named there, and pnpm's agent skills were ruled out ([lessons](lessons.md#build-only-what-gets-used)).
 - **Not a new file format or a toolchain.** No `.ts.md`, no tangling and no compiler, which would break `tsc`, the language server, formatters and linters. `@prose` is a comment, like JSDoc, and the outline is plain Markdown, so every standard tool keeps working.
 - **Not a site generator or a host.** Navigation stops at the bar's links to the docs. A site with its own navigation and design needs a static site generator ([writing.md](writing.md#folders-and-docs)). Deploying, and each host's config, belong to the project ([lessons](lessons.md#build-only-what-gets-used), [usage.md](usage.md#build)).
 - **Not part of the app.** No dev route in the app's server, no build plugin and no custom dev tools. The renderer reads any repository without the app running ([lessons](lessons.md#build-only-what-gets-used)).
