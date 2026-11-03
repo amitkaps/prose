@@ -6,9 +6,15 @@
 # the same in every repository, so what a repository adds goes in `verify`. The job is named
 # `ci`, the check that branch protection requires.
 #
-# A job that runs past ten minutes is stopped, where GitHub's own limit is six hours. That's for
-# a job that hangs. A slow `verify` passes, and `craftz status` notes it, as
-# [the rules](https://craftz.amitkaps.com/docs/rules.md#ci) say.
+# A job that runs past three minutes is stopped, where GitHub's own limit is six hours. That's for
+# a job that hangs. The `verify` step is stopped at two minutes, twelve times its budget, so a
+# `verify` that has slowed that far fails and gets fixed. One over the budget but under the stop passes, and
+# `craftz status` notes it, as [the rules](https://craftz.amitkaps.com/docs/rules.md#ci) say.
+#
+# On a pull request, `prose style` also gives its advice on the files the pull request changed,
+# shown beside their lines. An agent that opens one without `pnpm pr` sees it there. It's advice,
+# so it never fails. It runs after `verify`, since prose's own `prose` is the build `verify`
+# writes, and it runs when `verify` fails too.
 name: CI
 
 on:
@@ -28,17 +34,29 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
+        # A pull request's checkout is a merge commit, so its first parent is `main`.
+        with:
+          fetch-depth: 2
       # Reads the pnpm version from package.json's `packageManager`.
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+      - name: Set up Node
+        uses: actions/setup-node@v7
         with:
           node-version-file: package.json
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install
+        run: pnpm install --frozen-lockfile
 
       - name: Verify
+        timeout-minutes: 2
         run: pnpm run verify
+
+      - name: Style
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        run: pnpm prose style --since HEAD^1

@@ -170,8 +170,8 @@ importers:
   .:
     devDependencies:
       '@amitkaps/craftz':
-        specifier: 0.16.0
-        version: 0.16.0(vite-plus@1.4.0(@types/node@26.6.6)(@vitest/ui@5.0.5)(playwright@1.63.0)(publint@0.3.25))
+        specifier: 0.18.1
+        version: 0.18.1(vite-plus@1.4.0(@types/node@26.6.6)(@vitest/ui@5.0.5)(playwright@1.63.0)(publint@0.3.25))
       '@amitkaps/markz':
         specifier: 0.9.0
         version: 0.9.0
@@ -193,8 +193,8 @@ importers:
 
 packages:
 
-  '@amitkaps/craftz@0.16.0':
-    resolution: {integrity: sha512-6bEQ6oOzfk7jpXgMmF1WZX0Zo2D+47C/acVCXWass3JoKfEw9SfE4lVY/DMXyqRPgDVCAFkjkXo7a74tq/7TDQ==}
+  '@amitkaps/craftz@0.18.1':
+    resolution: {integrity: sha512-jw+QEEIGjMHEa3F8J4fUoB8tvpAs66kCVzIx39rS6v3OTxlXFRDHuDC1b6I5hqsUY4rbVf9/Yp+1Q6JkK3g6oQ==}
     engines: {node: '>=26.13.0'}
     hasBin: true
     peerDependencies:
@@ -1039,8 +1039,8 @@ packages:
   std-env@4.3.0:
     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
 
-  tinybench@6.2.2:
-    resolution: {integrity: sha512-nIZ2N2dFpjBsg2hgitKu7mA+FvsIJuGJOwysRngmVRRmWgR/UyPjwJj8c/fT/dhm8EkHnF5EOogRf+0Z2qrimA==}
+  tinybench@6.2.3:
+    resolution: {integrity: sha512-Al01C2JIBnO2CXCAPbpAl6sUiOZHeThGtHYNTa51JRw9PyWOCdr+9Ong05R4qg/Sk3+H645E8ov1h2c58ityNw==}
     engines: {node: '>=20.0.0'}
 
   tinyexec@1.3.1:
@@ -1128,8 +1128,8 @@ packages:
     engines: {node: '>=20.11'}
     hasBin: true
 
-  ws@8.22.0:
-    resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
+  ws@8.22.1:
+    resolution: {integrity: sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -1150,7 +1150,7 @@ packages:
 
 snapshots:
 
-  '@amitkaps/craftz@0.16.0(vite-plus@1.4.0(@types/node@26.6.6)(@vitest/ui@5.0.5)(playwright@1.63.0)(publint@0.3.25))':
+  '@amitkaps/craftz@0.18.1(vite-plus@1.4.0(@types/node@26.6.6)(@vitest/ui@5.0.5)(playwright@1.63.0)(publint@0.3.25))':
     dependencies:
       vite-plus: 1.4.0(@types/node@26.6.6)(@vitest/ui@5.0.5)(playwright@1.63.0)(publint@0.3.25)
 
@@ -1398,7 +1398,7 @@ snapshots:
       sirv: 3.0.2
       tinyrainbow: 3.2.0
       vitest: 5.0.5(@types/node@26.6.6)(@vitest/browser-preview@5.0.5)(@vitest/ui@5.0.5)(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.6)(publint@0.3.25))(publint@0.3.25)
-      ws: 8.22.0
+      ws: 8.22.1
     transitivePeerDependencies:
       - '@arethetypeswrong/core'
       - '@types/node'
@@ -1781,7 +1781,7 @@ snapshots:
 
   std-env@4.3.0: {}
 
-  tinybench@6.2.2: {}
+  tinybench@6.2.3: {}
 
   tinyexec@1.3.1: {}
 
@@ -1871,7 +1871,7 @@ snapshots:
       obug: 3.0.0
       picomatch: 4.0.7
       std-env: 4.3.0
-      tinybench: 6.2.2
+      tinybench: 6.2.3
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       vite: '@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.6)(publint@0.3.25)'
@@ -1905,7 +1905,7 @@ snapshots:
 
   why-is-node-running@3.2.1: {}
 
-  ws@8.22.0: {}
+  ws@8.22.1: {}
 
   yuku-core@0.19.0:
     dependencies:
