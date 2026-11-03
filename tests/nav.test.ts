@@ -2,7 +2,8 @@
  * # Docs nav tests
  *
  * The docs linked in the bar. A `nav` list in `docs/README.md` sets their order, and without one
- * every doc is linked in alphabetical order. Names that aren't docs are skipped, with a warning.
+ * every doc is linked in alphabetical order. A folder in the list links its page. Names that
+ * aren't docs or folders are skipped, with a warning.
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -49,9 +50,28 @@ describe("docsNav", () => {
         "nav-missing",
         2,
         17,
-        "nav lists missing.md, which isn't a doc in docs/, so the bar skips it",
+        "nav lists missing.md, which isn't a doc or a folder in docs/, so the bar skips it",
       ],
-      ["nav-missing", 2, 40, "nav lists /quality, which isn't a doc in docs/, so the bar skips it"],
+      [
+        "nav-missing",
+        2,
+        40,
+        "nav lists /quality, which isn't a doc or a folder in docs/, so the bar skips it",
+      ],
+    ]);
+  });
+
+  it("links a folder in the nav list to its page, with or without its slash", () => {
+    const files = repo("---\nnav: [deep/, usage.md, deep, deep/x.md, empty/]\n---\n# Docs\n");
+    const warnings: Warning[] = [];
+    expect(docsNav(root, files, warnings)).toEqual([
+      { path: "docs/deep/", label: "Deep" },
+      { path: "docs/usage.md", label: "Usage" },
+      { path: "docs/deep/", label: "Deep" },
+    ]);
+    expect(warnings.map((w) => w.message)).toEqual([
+      "nav lists deep/x.md, which isn't a doc or a folder in docs/, so the bar skips it",
+      "nav lists empty/, which isn't a doc or a folder in docs/, so the bar skips it",
     ]);
   });
 
@@ -73,5 +93,12 @@ describe("docsNav", () => {
     );
     expect(html).toContain('popovertarget="docs"');
     expect(renderNav([], "")).toBe("");
+  });
+
+  it("marks a folder on its own page and on the pages in it", () => {
+    const nav = [{ path: "docs/areas/", label: "Areas" }];
+    expect(renderNav(nav, "docs/areas/")).toContain('aria-current="page">Areas');
+    expect(renderNav(nav, "docs/areas/ui.md")).toContain('aria-current="true">Areas');
+    expect(renderNav(nav, "docs/design.md")).not.toContain("aria-current");
   });
 });
