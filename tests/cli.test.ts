@@ -44,9 +44,27 @@ function repo(files: Record<string, string>): string {
   return root;
 }
 
+/** Runs the command outside GitHub Actions, since CI sets `GITHUB_ACTIONS` and `prose style`
+ *  prints more there. */
 function run(cwd: string, ...args: string[]) {
-  const { status, stdout, stderr } = spawnSync("node", [cli, ...args], { cwd, encoding: "utf8" });
+  return runIn(cwd, false, ...args);
+}
+
+function runIn(cwd: string, actions: boolean, ...args: string[]) {
+  const env = { ...process.env, GITHUB_ACTIONS: actions ? "true" : "" };
+  const { status, stdout, stderr } = spawnSync("node", [cli, ...args], {
+    cwd,
+    env,
+    encoding: "utf8",
+  });
   return { status, out: stdout.trim().split("\n"), err: stderr.trim().split("\n") };
+}
+
+/** Commits every file in `root`, so a later change is a branch's. */
+function commit(root: string): void {
+  const git = (...args: string[]) => execFileSync("git", args, { cwd: root, stdio: "ignore" });
+  git("add", "-A");
+  git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "start");
 }
 
 const clean = { "README.md": "# Demo\n\nA demo.\n" };
@@ -110,6 +128,28 @@ describe("prose style", () => {
     expect(status).toBe(0);
     expect(err).toEqual(["prose: nope: no file prose reads"]);
     expect(out).toEqual(["prose: no suggestions, of 0 files read"]);
+  });
+
+  it("reads only the files changed since a ref with --since, committed or not", () => {
+    const root = repo({ ...clean, "a.md": "# A\n\nOne idea; another.\n" });
+    commit(root);
+    writeFileSync(join(root, "b.md"), "# B\n\nTwo ideas; more.\n");
+    const { status, out } = run(root, "style", "--since", "HEAD");
+    expect(status).toBe(0);
+    expect(out).toEqual([
+      "prose: note: b.md:3:10: joining-semicolon: semicolon joining two ideas; write two sentences",
+      "prose: `prose rules <code>` says what a code asks for",
+      "prose: 1 suggestion in 1 file, of 1 file read",
+    ]);
+    expect(run(root, "style", "--since", "nope").err[0]).toMatch(/no common commit of nope/);
+  });
+
+  it("prints each suggestion as a notice too in GitHub Actions", () => {
+    const { out } = runIn(repo(joined), true, "style");
+    expect(out.slice(0, 2)).toEqual([
+      "prose: note: README.md:3:9: joining-semicolon: semicolon joining two ideas; write two sentences",
+      "::notice file=README.md,line=3,col=9,title=prose joining-semicolon::semicolon joining two ideas; write two sentences",
+    ]);
   });
 
   it("exits quietly when the reader stops early", () => {

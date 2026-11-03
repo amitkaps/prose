@@ -1,8 +1,9 @@
 /** @prose
  * # Where the repository lives
  *
- * The repository's name and GitHub address, read from its `origin` remote. Every page shows the
- * name. The address lets a page link to the repository, a commit and a tag.
+ * The repository's name and GitHub address, read from its `origin` remote, and what a branch
+ * changed. Every page shows the name. The address lets a page link to the repository, a commit and
+ * a tag.
  *
  * The name comes from the remote, not the folder, because a host builds in a checkout folder of
  * its own. Cloudflare's is called `repo`. With no remote, or for a subfolder, the folder's name
@@ -51,6 +52,29 @@ function origin(root: string): string | undefined {
 export function repoUrl(root: string): string | undefined {
   const remote = origin(root);
   return remote ? githubUrl(remote) : undefined;
+}
+
+/** @prose
+ * # What a branch changed
+ *
+ * The files changed since the branch left `ref`, for `prose style --since`. A file the branch
+ * committed and one it's still writing both count.
+ *
+ * That's every change from where `ref` and `HEAD` meet to the working tree, and the untracked
+ * files git doesn't ignore. A ref git can't find throws, so a typo isn't read as no change.
+ */
+export function changedSince(root: string, ref: string): Set<string> {
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: root, encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] });
+  let base: string;
+  try {
+    base = git("merge-base", ref, "HEAD").trim();
+  } catch {
+    throw new Error(`prose style --since: git finds no common commit of ${ref} and HEAD`);
+  }
+  const changed = git("diff", "--name-only", "--relative", base);
+  const untracked = git("ls-files", "--others", "--exclude-standard");
+  return new Set(`${changed}\n${untracked}`.split("\n").filter(Boolean));
 }
 
 /** The project's name: the `origin` repository's, or the folder's when there's no remote or the

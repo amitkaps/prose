@@ -30,6 +30,7 @@ import { build } from "./build.js";
 import { finding, printHelp, printOne, printRules } from "@amitkaps/markz/rules";
 import { OUTLINE, writeOutline } from "./outline.js";
 import { proseCommands, sets } from "./rules.js";
+import { changedSince } from "./repo.js";
 import { serve } from "./server.js";
 import { styleAdvice } from "./style.js";
 import { projectFiles } from "./tree.js";
@@ -70,20 +71,35 @@ const RULES = "prose: `prose rules <code>` says what a code asks for\n";
  * It's printed to stdout, since it's what was asked for, and it always exits 0.
  *
  * It ends with how many files it read, as `prose check` does. A path that holds nothing prose
- * reads is named, so a typo isn't mistaken for clean text.
+ * reads is named, so a typo isn't mistaken for clean text. With `--since`, only the files the
+ * branch changed are read ([repo.ts](repo.ts)). A path with none of those is fine, since that's
+ * a branch that left it alone.
+ *
+ * In GitHub Actions, which sets `GITHUB_ACTIONS`, each suggestion is also printed as a `::notice`
+ * workflow command. GitHub shows it on the pull request, where an agent that opened it without
+ * `pnpm pr` still sees it.
  */
-function style(paths: string[]): void {
+function style(args: string[]): void {
   const root = resolve(".");
+  const at = args.indexOf("--since");
+  const ref = at === -1 ? undefined : args[at + 1];
+  if (at !== -1 && (!ref || ref.startsWith("-"))) throw new Error("prose style --since takes a ref");
+  const paths = at === -1 ? args : args.filter((_, i) => i !== at && i !== at + 1);
+  const changed = ref === undefined ? undefined : changedSince(root, ref);
   const all = projectFiles(root);
   const files = new Set<string>();
   for (const given of paths.length ? paths : ["."]) {
     const path = relative(root, resolve(given)).replace(/\\/g, "/");
     const found = all.filter((f) => !path || f === path || f.startsWith(`${path}/`));
     if (found.length === 0) process.stderr.write(`prose: ${given}: no file prose reads\n`);
-    for (const f of found) files.add(f);
+    for (const f of found) if (!changed || changed.has(f)) files.add(f);
   }
   const advice = styleAdvice(root, [...files].sort());
-  for (const a of advice) process.stdout.write(`${formatWarning(a, "note")}\n`);
+  const actions = process.env.GITHUB_ACTIONS === "true";
+  for (const a of advice) {
+    process.stdout.write(`${formatWarning(a, "note")}\n`);
+    if (actions) process.stdout.write(`${notice(a)}\n`);
+  }
   process.stdout.write(byCode(advice));
   if (advice.length) process.stdout.write(RULES);
   const read = readCount(root, [...files], "read");
@@ -93,6 +109,21 @@ function style(paths: string[]): void {
       ? `prose: ${count(advice.length, "suggestion")} in ${count(where, "file")}, of ${read}\n`
       : `prose: no suggestions, of ${read}\n`,
   );
+}
+
+/** A suggestion as GitHub's workflow command, `::notice file=…,line=…,col=…,title=…::message`.
+ *  GitHub reads `%`, a line break, and in a property `:` and `,`, so those are escaped. */
+function notice(a: Warning<string>): string {
+  const data = (s: string) => s.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  const property = (s: string) => data(s).replace(/:/g, "%3A").replace(/,/g, "%2C");
+  const where = [
+    `file=${property(a.path ?? "")}`,
+    a.line && `line=${a.line}`,
+    a.column && `col=${a.column}`,
+    `title=${property(`prose ${a.code}`)}`,
+  ].filter(Boolean);
+  const message = a.instead ? `${a.message}; write ${a.instead}` : a.message;
+  return `::notice ${where.join(",")}::${data(message)}`;
 }
 
 /** How many files a command read, and how many `.gitattributes` left out, so a skip is never

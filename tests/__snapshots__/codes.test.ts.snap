@@ -30,7 +30,8 @@ exports[`prose's rules print as they did 1`] = `
 ## Keeping it true
 
 - **Kept current.** Keep prose current in the same change as the code. Rewrite it where it has drifted, and don't append. A change that only tunes code, with the same behaviour and the same stated costs, needn't touch prose.
-- **Current plan.** If the project keeps a plan, keep it current: what's next first, in order, then what works now, one line for each thing it does, rewritten in place rather than added to with each release.
+- **Current plan.** If the project keeps a plan, keep it current. What's next comes first, in order, then what works now, one line for each thing it does. Rewrite it in place, and don't add to it with each release. A task, \`- [ ]\`, says what's left in a few lines, and links the doc where its design and rules live. A piece of it is a sub-task. A done task leaves, and what it built goes in the doc that states it.
+  Checked by \`ticked-task\` and \`long-task\`.
 - **After writing.** After writing prose, run \`prose style\` on the files you changed. Rewrite where a suggestion helps the reader, and leave it where it doesn't. Never split or reword a sentence only to make a suggestion go away.
 - **No quieting.** Never mark a file \`prose-unchecked\` in \`.gitattributes\` to quiet a warning. Fix the text. \`prose-unchecked\` is for files that are wrong on purpose, like fixtures.
 "
