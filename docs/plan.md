@@ -1,10 +1,10 @@
 # Plan
 
-The `@prose` convention and the read-only command work, and this repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). 0.11.1 is on npm as `@amitkaps/prose`, and what each release changed is in its [notes on GitHub](https://github.com/amitkaps/prose/releases). This plan says what's next, in order, and what works now.
+The `@prose` convention and the read-only command work, and this repository is read with them at [prose.amitkaps.com](https://prose.amitkaps.com). 0.12.0 is on npm as `@amitkaps/prose`, and what each release changed is in its [notes on GitHub](https://github.com/amitkaps/prose/releases). This plan says what's next, in order, and what works now.
 
 ## Next, in order
 
-- [ ] **Count whether agents now find the code and the rules.** Before the outline, `prose rules` was read before the first prose edit in only 8 of 23 sessions that wrote prose, and the map grep in the agent rules never ran. Now `outline.md` is in every agent's context, and craftz's shared `AGENTS.md` says when to read the rules. Once a couple of weeks of sessions have run, count both again. The outline works if agents search less before their first edit, and open the right file sooner ([design](design.md#the-outline)).
+- [ ] **Count whether agents now find the code and the rules.** Before the outline, `prose rules` was read before the first prose edit in 8 of 23 sessions that wrote prose. Count it again, and whether agents search less before their first edit, once a couple of weeks of sessions have run ([design](design.md#the-outline)).
   - **Ruled out.** A committed `outline.md`. Two open pull requests that each change a summary would both rewrite it and conflict. Writing it in `verify` keeps it current in every session that checks its work.
   - **Ruled out.** A skill, shipped in the package and linked by pnpm ([pnpm](https://pnpm.io/agent-skills)). It's pnpm's own route, not a standard. It needed an approval and `skills.dirs` in every repository, since CI fails without them, plus an ignored folder and an exception in `prose check`. All of that delivered a pointer to `prose rules`, with no evidence that a pointer gets followed.
   - **Ruled out.** A copy of the rules in each `AGENTS.md`, kept by `prose rules --write`. A rule's text belongs to the tool that checks it ([lessons](lessons.md#dont-repeat-yourself)), and a copy needs a check of its own to stay current.
@@ -12,8 +12,8 @@ The `@prose` convention and the read-only command work, and this repository is r
 
 ## Where it is
 
-- **Reading.** `prose .` and `prose build` show a repository as documents, with a file tree, the docs in the bar and a table of contents ([reading](reading.md)). Its pages are the user docs for this repository and for markz.
-- **Checks and advice.** `prose check` warns about form a machine can be sure of, and runs in CI. `prose style` gives advice an agent can take every time ([usage](usage.md#warnings)). Each code links to the [agent rule](usage.md#for-agents) it serves, and a test holds the codes, the rows and the rules to each other ([writing](writing.md#a-tools-rules)). A written id is kebab case and stated on one page.
+- **Reading.** `prose .` and `prose build` show a repository as documents, with a file tree, the docs and folders `nav` lists in the bar, and a table of contents ([reading](reading.md)). Its pages are the user docs for this repository and for markz.
+- **Checks and advice.** `prose check` warns about form a machine can be sure of, and runs in CI. `prose style` gives advice an agent can take every time, on sentences and on a plan's ticked or long tasks, and `--since` reads only what a branch changed, for CI ([usage](usage.md#warnings)). Each code links to the [agent rule](usage.md#for-agents) it serves, and a test holds the codes, the rows and the rules to each other ([writing](writing.md#a-tools-rules)). A written id is kebab case and stated on one page.
 - **Rules without a fetch.** `prose rules` prints the agent rules for the installed version, each with the codes that check it, then markz's, read with markz's reader. `prose rules <id>` prints one rule, or one code and its rule. Every repository's `AGENTS.md` says to run it before the first edit to a `@prose` comment or a `.md` file.
 - **An outline to open.** `prose outline` writes `outline.md`, every file with its summary. `AGENTS.md` names it and agents open the part they need, since an import cost 6k to 20k tokens in every session. `pnpm pr` and `pnpm gone` write it, and git ignores it.
 - **Commands stated once.** Each command opens its section of [usage](usage.md) with an id, and `prose help` prints them with markz's reader. A test holds the commands the CLI runs to the ones usage states.
