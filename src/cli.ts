@@ -83,7 +83,8 @@ function style(args: string[]): void {
   const root = resolve(".");
   const at = args.indexOf("--since");
   const ref = at === -1 ? undefined : args[at + 1];
-  if (at !== -1 && (!ref || ref.startsWith("-"))) throw new Error("prose style --since takes a ref");
+  if (at !== -1 && (!ref || ref.startsWith("-")))
+    throw new Error("prose style --since takes a ref");
   const paths = at === -1 ? args : args.filter((_, i) => i !== at && i !== at + 1);
   const changed = ref === undefined ? undefined : changedSince(root, ref);
   const all = projectFiles(root);
