@@ -113,14 +113,17 @@ tests/fixtures/** prose-unchecked
 
 ## Advice on style
 
-- [`prose style [path ...]`]{#style}: gives advice on how the files you name read, and always passes.
+- [`prose style [path ...] [--since <ref>]`]{#style}: gives advice on how the files you name read, and always passes.
 
 ```sh
 prose style docs/usage.md src/store.ts   # advice on the files you just wrote
 prose style docs                         # a folder
+prose style --since origin/main          # the files a branch changed
 ```
 
 `prose style` gives advice on how the files you name read, against [the agent rules](#for-agents). It prints one suggestion a line, like a warning, and always passes. With no path, it reads every file. It ends with how many files it read, and counts its suggestions by code, as `prose check` does.
+
+`--since <ref>` reads only the files changed since the branch left `<ref>`, committed or not, among the paths named. So CI can give a pull request advice on what it changed, whichever tool opened it. In GitHub Actions, each suggestion is also printed as a notice, which GitHub shows on the pull request.
 
 ```text
 prose: note: docs/usage.md:20:31: joining-semicolon: semicolon joining two ideas; write two sentences
@@ -131,7 +134,7 @@ prose: `prose rules <code>` says what a code asks for
 prose: 3 suggestions in 2 files, of 12 files read
 ```
 
-It's for the writer of a file, right after writing it. So it isn't part of `prose check` and never shows on a page. A count of words is only a guess at what's hard to read. In CI or on every page, it would teach an agent to dodge the count.
+It's for the writer of a file, right after writing it. So it isn't part of `prose check` and never shows on a page. A count of words is only a guess at what's hard to read. As a failure, or on every file, it would teach an agent to dodge the count. In CI it reads only what the pull request changed, and passes.
 
 It's conservative, so a suggestion is worth taking. It flags only what it's confident a rewrite would improve, and lets a form that's often fine pass, even when some of that form joins two ideas. A wrong suggestion would have an agent rewrite a good sentence, and learn to pass over the rest. A miss costs less, since [the agent rules](#for-agents) still say how to write. So fix what it finds, and rewrite to help the reader, not to make a suggestion go away.
 
@@ -142,8 +145,10 @@ It's conservative, so a suggestion is worth taking. It flags only what it's conf
 | [`joining-semicolon`]{#joining-semicolon} | a semicolon joins two ideas | two sentences | [Plain sentences](#plain-sentences) |
 | [`joining-colon`]{#joining-colon} | a colon joins two ideas, with a clause after it that a subject or verb opens | two sentences | [Plain sentences](#plain-sentences) |
 | [`parenthetical-aside`]{#parenthetical-aside} | a parenthesis holds an aside, not a link, an example or a gloss of a few words | its own sentence, or cut it | [Plain sentences](#plain-sentences) |
+| [`ticked-task`]{#ticked-task} | a task is ticked, `- [x]`, with no open task under it | what it built in the doc that states it, and remove the task | [Current plan](#current-plan) |
+| [`long-task`]{#long-task} | an open task is over 80 words | what's left, with a link to where its design lives | [Current plan](#current-plan) |
 
-Only paragraphs are read. Headings, code, tables and metadata aren't sentences. A file that `.gitattributes` marks `prose-unchecked` gets no advice, as it gets no warnings ([warnings](#warnings)).
+Only paragraphs and tasks are read. A task is a list item with a checkbox, in any file, and only its own paragraphs count, not the tasks under it. Headings, code, tables and metadata aren't sentences. A file that `.gitattributes` marks `prose-unchecked` gets no advice, as it gets no warnings ([warnings](#warnings)).
 
 A colon gets a suggestion only when a clause plainly follows it. That means a subject like "it", "they" or "there" opens what follows, or a verb like "is", "doesn't" or "keeps" comes within its first four words. A verb after "that" or "what" belongs to an inner clause, and doesn't count. So `It never throws: syntax markz doesn't accept stays text` gets one. A list like `three settings: the cooldown, allowBuilds and the override` doesn't, and nor does an explanation like `How it's built: the tree it produces`. Some colons that join two clauses pass too, and that's the cost of being conservative.
 
@@ -209,6 +214,6 @@ The rules fall in four groups: where prose goes, how it reads, what it says, and
 ### Keeping it true
 
 - [**Kept current.**]{#kept-current} Keep prose current in the same change as the code. Rewrite it where it has drifted, and don't append. A change that only tunes code, with the same behaviour and the same stated costs, needn't touch prose.
-- [**Current plan.**]{#current-plan} If the project keeps a plan, keep it current: what's next first, in order, then what works now, one line for each thing it does, rewritten in place rather than added to with each release.
+- [**Current plan.**]{#current-plan} If the project keeps a plan, keep it current. What's next comes first, in order, then what works now, one line for each thing it does. Rewrite it in place, and don't add to it with each release. A task, `- [ ]`, says what's left in a few lines, and links the doc where its design and rules live. A piece of it is a sub-task. A done task leaves, and what it built goes in the doc that states it.
 - [**After writing.**]{#after-writing} After writing prose, run `prose style` on the files you changed. Rewrite where a suggestion helps the reader, and leave it where it doesn't. Never split or reword a sentence only to make a suggestion go away.
 - [**No quieting.**]{#no-quieting} Never mark a file `prose-unchecked` in `.gitattributes` to quiet a warning. Fix the text. `prose-unchecked` is for files that are wrong on purpose, like fixtures.

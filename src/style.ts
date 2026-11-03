@@ -5,9 +5,10 @@
  * ([usage](../docs/usage.md#style)). It's advice for the writer of a file, not a fault, so it never
  * fails and never shows on a page.
  *
- * A count of words is only a guess at what's hard to read. In CI or on every page, it would teach
- * an agent to dodge the count, which is the cramming the rules are there to stop. So `prose check`
- * leaves it out, and the writer asks for it on the files they just wrote.
+ * A count of words is only a guess at what's hard to read. As a failure, or on every file, it would
+ * teach an agent to dodge the count, which is the cramming the rules are there to stop. So `prose
+ * check` leaves it out, and the writer asks for it on the files they just wrote. CI asks for it on
+ * the files a pull request changed, and it passes there too.
  *
  * It's conservative, so a suggestion is worth taking. An agent acts on what it's shown, and can't
  * tell a right suggestion from a wrong one. A wrong one makes it rewrite a good sentence, and teaches
@@ -28,6 +29,8 @@ export const STYLE_CODES = [
   "joining-semicolon",
   "joining-colon",
   "parenthetical-aside",
+  "ticked-task",
+  "long-task",
 ] as const;
 export type StyleCode = (typeof STYLE_CODES)[number];
 
@@ -295,14 +298,83 @@ function summary(doc: Document): NodeId | undefined {
   return undefined;
 }
 
+/** @prose
+ * # Tasks
+ *
+ * A task is a list item with a checkbox, `- [ ]` or `- [x]`, in any file. It's a thing to do, so
+ * it says what's left, and the design and the rules it builds live in the doc it links. That's
+ * [the current plan](../docs/usage.md#current-plan). Two forms of a task get advice.
+ *
+ * - A ticked task with no open task under it is done. What it built belongs in the doc that states
+ *   it, and the task leaves. Only the outermost is noted, since its ticked sub-tasks go with it.
+ * - An open task over `TASK_WORDS` holds its design, not only what's left.
+ *
+ * Only a task's own paragraphs count, not the tasks under it.
+ *
+ * Both read the checkbox, not the words. A note in a task of what's done, like "the gate is built",
+ * gets no advice of its own. Matching such phrases guessed wrong on about one in eight of a
+ * private repository's, like "a key is not built from a field". The note leaves with its task when
+ * the task is ticked.
+ */
+const TASK_WORDS = 80;
+
+/** The words in a task's own paragraphs, leaving out the lists under it. */
+function ownWords(doc: Document, item: NodeId): number {
+  return doc
+    .children(item)
+    .filter((child) => doc.type(child) === "paragraph")
+    .reduce((sum, child) => {
+      const flat: Flat = { text: "", at: [] };
+      flatten(doc, child, flat);
+      return sum + words(flat.text);
+    }, 0);
+}
+
+/** Whether a task open under `item`, at any depth, still has work in it. */
+function hasOpenTask(doc: Document, item: NodeId): boolean {
+  return doc
+    .children(item)
+    .some(
+      (child) =>
+        (doc.type(child) === "listItem" && doc.data(child, "listItem").checked === false) ||
+        hasOpenTask(doc, child),
+    );
+}
+
+function taskAdvice(doc: Document, item: NodeId, inTicked: boolean): Advice[] {
+  const advice: Advice[] = [];
+  const { checked } = doc.data(item, "listItem");
+  if (checked && !inTicked && !hasOpenTask(doc, item)) {
+    advice.push({
+      code: "ticked-task",
+      message: "a task that's done",
+      instead: "what it built in the doc that states it, and remove the task",
+      start: doc.start(item),
+    });
+  }
+  const count = ownWords(doc, item);
+  if (!checked && count > TASK_WORDS) {
+    advice.push({
+      code: "long-task",
+      message: `open task of ${count} words`,
+      instead: "what's left, with a link to where its design lives",
+      start: doc.start(item),
+    });
+  }
+  return advice;
+}
+
 /** Every piece of advice on a parsed text, in the order it occurs. */
 export function textStyle(doc: Document): Advice[] {
   const advice: Advice[] = [];
   const first = summary(doc);
-  const visit = (node: NodeId): void => {
+  const visit = (node: NodeId, inTicked = false): void => {
     for (const child of doc.children(node)) {
       const type = doc.type(child);
-      if (type === "paragraph") {
+      if (type === "listItem" && doc.data(child, "listItem").checked !== null) {
+        advice.push(...taskAdvice(doc, child, inTicked));
+        visit(child, inTicked || doc.data(child, "listItem").checked === true);
+      } else if (type === "paragraph") {
         const flat: Flat = { text: "", at: [] };
         flatten(doc, child, flat);
         if (child === first) {
@@ -317,7 +389,7 @@ export function textStyle(doc: Document): Advice[] {
           }
         }
         advice.push(...paragraphAdvice(flat));
-      } else if (type !== "heading" && type !== "code" && type !== "table") visit(child);
+      } else if (type !== "heading" && type !== "code" && type !== "table") visit(child, inTicked);
     }
   };
   visit(doc.root);

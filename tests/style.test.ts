@@ -2,8 +2,9 @@
  * # Style tests
  *
  * Where a text's style breaks the plain-sentence rules, and the forms that look like a break but
- * aren't, like a list item's label, an abbreviation or a short gloss. Then the advice on a
- * repository's files, at each one's own line, leaving out what isn't checked.
+ * aren't, like a list item's label, an abbreviation or a short gloss. A task gets advice when it's
+ * ticked or long. Then the advice on a repository's files, at each one's own line, leaving out
+ * what isn't checked.
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -80,6 +81,20 @@ describe("textStyle", () => {
     expect(codes("The block is read once (design: Parser foundation, in full).\n")).toEqual([]);
     expect(codes("Leaves (paragraphs, headings, table cells) go on.\n")).toEqual([]);
     expect(codes("It's decoded (`&#169;` → `©`, `\\*` → `*`) first.\n")).toEqual([]);
+  });
+
+  it("notes the outermost ticked task with nothing open under it", () => {
+    expect(codes("- [x] Done.\n- [ ] Not yet.\n")).toEqual(["ticked-task"]);
+    expect(codes("- [x] Done.\n  - [x] Its piece.\n")).toEqual(["ticked-task"]);
+    expect(codes("- [x] Mostly done.\n  - [ ] A piece left.\n")).toEqual([]);
+    expect(codes("- Done, with no checkbox.\n")).toEqual([]);
+  });
+
+  it("notes an open task over 80 words of its own, not counting its sub-tasks", () => {
+    const ten = Array.from({ length: 8 }, () => "Ten words in a sentence that says what is left.");
+    expect(codes(`- [ ] ${ten.join(" ")} More.\n`)).toEqual(["long-task"]);
+    expect(codes(`- [ ] ${ten.join(" ")}\n  - [ ] ${ten.join(" ")}\n`)).toEqual([]);
+    expect(codes(`- [x] ${ten.join(" ")} More.\n`)).toEqual(["ticked-task"]);
   });
 
   it("reads paragraphs only, not headings, code or tables", () => {
