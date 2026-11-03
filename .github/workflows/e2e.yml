@@ -1,12 +1,15 @@
 # @prose
-# # Browser checks
+# # End-to-end tests
 #
-# Runs the accessibility audit and the keyboard check on every pull request, in Chromium against
-# the built site (`pnpm run test:e2e`). They take about two minutes, so they're a workflow of this
-# repository's own beside `ci.yml`, which stays the same in every repository and finishes first.
-# A failure shows on the pull request. The `main` ruleset doesn't require this job yet.
+# Runs a repository's browser checks, `pnpm run test:e2e`, on every pull request. It's a workflow
+# beside `ci.yml`, so `ci` stays the same in every repository and finishes first. The `main`
+# ruleset doesn't require it, and a failure shows on the pull request. A failed run keeps its
+# Playwright report for a week, to open the trace.
 #
-# A job that runs past ten minutes is stopped.
+# A job that runs past six minutes is stopped, where GitHub's own limit is six hours. That's for
+# a job that hangs. The `test:e2e` step is stopped at four minutes, twice its budget, so a suite
+# that has slowed that far fails and gets fixed. One over the budget but under the stop passes, and
+# `craftz status` notes it, as [the rules](https://craftz.amitkaps.com/docs/rules.md#ci) say.
 name: E2E
 
 on:
@@ -24,17 +27,37 @@ permissions:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
       # Reads the pnpm version from package.json's `packageManager`.
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+      - name: Set up Node
+        uses: actions/setup-node@v7
         with:
           node-version-file: package.json
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps --only-shell chromium
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      # The headless shell is all a headless run needs, and it's far smaller than full Chromium.
+      # The libraries and the shell are two steps, so a run's page shows what each took.
+      - name: Chromium libraries
+        run: pnpm exec playwright install-deps chromium
+      - name: Chromium
+        run: pnpm exec playwright install --only-shell chromium
 
-      - run: pnpm run test:e2e
+      - name: test:e2e
+        timeout-minutes: 4
+        run: pnpm run test:e2e
+
+      - name: Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
