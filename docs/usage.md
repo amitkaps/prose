@@ -95,7 +95,7 @@ It reads only form a machine can be sure of, never meaning. It warns about each 
 | [`no-prose`]{#no-prose} | a file prose reads for prose has no `@prose` comment | its summary in a `@prose` comment at the top | [Every file](#every-file) |
 | [`no-readme`]{#no-readme} | a folder with a file prose reads has no `README.md`, except `.github/` | a `README.md` that says what lives there | [Every file](#every-file) |
 | [`undocumented-export`]{#undocumented-export} | a package that isn't private ships types, and an export it ships has no doc comment | a `/** … */` comment above it, and one line is enough | [Every export](#every-export) |
-| [`nav-missing`]{#nav-missing} | `nav` in `docs/README.md` names a file that isn't a doc | a doc's name in docs/ | [Stated once](#stated-once) |
+| [`nav-missing`]{#nav-missing} | `nav` in `docs/README.md` names a file that isn't a doc or a folder | a doc's or a folder's name in docs/ | [Stated once](#stated-once) |
 | [`id-case`]{#id-case} | a span's written id isn't lowercase kebab case | the id in lowercase kebab case, like `no-readme` | [Written ids](#written-ids) |
 | [`id-twice`]{#id-twice} | a span's written id is stated on another page of the repository too | a link to the page that states it | [Written ids](#written-ids) |
 | [`uncommitted-changes`]{#uncommitted-changes} | the build leaves out uncommitted changes | a commit first |  |

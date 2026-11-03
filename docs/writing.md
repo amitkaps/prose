@@ -44,7 +44,7 @@ Write it plainly. Told to be short, an agent compresses instead of cutting. It k
 
 A folder's `README.md` is its prose, and the root `README.md` is the project's. These are ordinary READMEs, which GitHub already renders. Leave `.github/` without one, because GitHub would show it in place of the root's README.
 
-Writing that spans files, like what the project promises or the plan, goes in Markdown files. prose suggests no names or layout for them. A `docs/` folder at the root gets one extra. The bar on every page links its docs, in the order a `nav: [design.md, usage.md]` list in `docs/README.md`'s metadata gives ([src/nav.ts](../src/nav.ts)). `prose build` warns about a name in the list that isn't a doc there. Without that list, the bar links every doc in the folder.
+Writing that spans files, like what the project promises or the plan, goes in Markdown files. prose suggests no names or layout for them. A `docs/` folder at the root gets one extra. The bar on every page links its docs, in the order a `nav: [design.md, usage.md]` list in `docs/README.md`'s metadata gives ([src/nav.ts](../src/nav.ts)). A folder in `docs/` can be in the list too, like `areas/`, and links the folder's page. That suits a set of docs too many for the bar, like one spec per area. `prose build` warns about a name in the list that isn't a doc or a folder there. Without that list, the bar links every doc in the folder, and no folders.
 
 The docs are plain Markdown linked by repo path, so a static site generator can publish them as they are. What gets published is that tool's concern.
 
