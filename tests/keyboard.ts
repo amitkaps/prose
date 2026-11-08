@@ -3,7 +3,7 @@
  *
  * Reads a few pages of this repository's site with the keyboard alone, at a desktop and a phone
  * width. It prints each thing that fails, with where, and exits non-zero if any does. Run it with
- * `pnpm run test:e2e`, which the `e2e` workflow runs on every pull request
+ * `pnpm run test:browser`, which the `browser` workflow runs when `package.json` changes, as a release does
  * ([development](../docs/development.md#browser-checks)).
  *
  * axe sees a page as it stands ([axe.ts](axe.ts)). This presses keys, so it finds what only shows

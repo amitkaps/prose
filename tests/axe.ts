@@ -3,7 +3,7 @@
  *
  * Runs axe on every page of this repository's site, in light and dark, at a desktop and a phone
  * width. It prints each rule that fails, with where, and exits non-zero if any does. Run it with
- * `pnpm run test:e2e`, which the `e2e` workflow runs on every pull request ([development](../docs/development.md#browser-checks)).
+ * `pnpm run test:browser`, which the `browser` workflow runs when `package.json` changes, as a release does ([development](../docs/development.md#browser-checks)).
  *
  * It isn't a `.test.ts` file, so `pnpm run test` leaves it out, since a browser makes it slow. It
  * checks the committed pages, built and served as [site.ts](site.ts) says.
