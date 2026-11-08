@@ -19,6 +19,6 @@ One test file for each source file that has logic, run with `pnpm run test`. The
 - [cli.test.ts](cli.test.ts): the command's exit codes, streams, summary and flags, run on the built command.
 - [accent.test.ts](accent.test.ts): a project's colour and tab icon, and the browser's bar in the paper's colour.
 
-Two checks need a browser, so they run in the `e2e` workflow, not with the rest, and `pnpm run test:e2e` runs both. [axe.ts](axe.ts) is the accessibility audit. [keyboard.ts](keyboard.ts) reads pages by keyboard. Both build and serve the site through [site.ts](site.ts).
+Two checks need a browser, so they run in the `browser` workflow, not with the rest, and `pnpm run test:browser` runs both. [axe.ts](axe.ts) is the accessibility audit. [keyboard.ts](keyboard.ts) reads pages by keyboard. Both build and serve the site through [site.ts](site.ts).
 
 Commit a change to the fixture before running them, since a build exports `HEAD`.
