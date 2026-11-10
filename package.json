@@ -41,13 +41,13 @@
     "craftz": "craftz"
   },
   "devDependencies": {
-    "@amitkaps/craftz": "0.22.0",
+    "@amitkaps/craftz": "0.23.0",
     "@amitkaps/markz": "0.9.0",
     "@playwright/test": "1.63.0",
     "@types/node": "26.6.6",
     "axe-core": "^4.14.0",
     "publint": "0.3.25",
-    "vite-plus": "1.5.0"
+    "vite-plus": "1.5.1"
   },
   "devEngines": {
     "packageManager": {
