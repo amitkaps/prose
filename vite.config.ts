@@ -136,11 +136,17 @@ export default defineConfig({
    * `site`, its prose build, wait for `build`. They're tasks, not scripts, so each can.
    */
   run: {
-    cache: false,
+    cache: { scripts: false, tasks: true },
     tasks: {
-      docs: { command: "pnpm prose check", dependsOn: ["build"] },
-      site: { command: "pnpm prose build", dependsOn: ["build"] },
-      all: { command: "true", dependsOn: ["check", "test", "build", "docs", "site"] },
+      docs: { command: "pnpm prose check", dependsOn: ["built"] },
+      site: { command: "pnpm prose build", dependsOn: ["built"] },
+      all: {
+        command: "true",
+        dependsOn: ["check", "tested", "built", "docs", "site"],
+        cache: false,
+      },
+      tested: { command: "pnpm run test", cache: { input: [{ auto: true }, "!dist/**"] } },
+      built: { command: "pnpm run build" },
     },
   },
 });
