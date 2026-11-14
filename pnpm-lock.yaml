@@ -179,8 +179,8 @@ importers:
   .:
     devDependencies:
       '@amitkaps/craftz':
-        specifier: 0.24.0
-        version: 0.24.0(vite-plus@1.6.0(@types/node@26.6.6)(@vitest/ui@5.1.0)(playwright@1.63.0)(publint@0.3.25))
+        specifier: 0.25.0
+        version: 0.25.0(vite-plus@1.6.0(@types/node@26.6.6)(@vitest/ui@5.1.0)(playwright@1.63.0)(publint@0.3.25))
       '@amitkaps/markz':
         specifier: 0.9.0
         version: 0.9.0
@@ -202,8 +202,8 @@ importers:
 
 packages:
 
-  '@amitkaps/craftz@0.24.0':
-    resolution: {integrity: sha512-JvOgGRqlw37vo5OrN+1dY1GfRMUQbY5i6LdEym1pVdJNaQzG7QZj8MNPNtWpQClyKAOXaTaCxvpkvdEjzE4x3g==}
+  '@amitkaps/craftz@0.25.0':
+    resolution: {integrity: sha512-EZqq6lpk8sLDPe9UheqQILSxWCPXI3jnJ2ZExNinSqp645LauyMXWMdu8iGgA09J80rVrSXT4laDLoNmQJdEYQ==}
     engines: {node: '>=26.13.1'}
     hasBin: true
     peerDependencies:
@@ -229,8 +229,8 @@ packages:
   '@blazediff/core@1.10.0':
     resolution: {integrity: sha512-AOQff0zgR7cGsZL+4E7hVkmujoPUpm0J9xzWGWZj5wCjd3gmxESXAPfKyuzs93VdpQNFhHlBhfOjrcZ+XTERtQ==}
 
-  '@jridgewell/resolve-uri@3.1.2':
-    resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
+  '@jridgewell/resolve-uri@3.1.3':
+    resolution: {integrity: sha512-lhTtjtoEArWBjismtfS761S9Hlyn+nIZqOZVYoZ1Xn82PMNMVnk+jj/NhC4fAXGTs7ydONcJiR5vyQBTMDu27g==}
     engines: {node: '>=6.0.0'}
 
   '@jridgewell/sourcemap-codec@1.6.0':
@@ -1137,8 +1137,8 @@ packages:
     engines: {node: '>=20.11'}
     hasBin: true
 
-  ws@8.22.2:
-    resolution: {integrity: sha512-/rEZ2ejown2N5gxVTHUu9bVVC7ttu0/Tgzf5hbTOixR3Fs7mbbXgn2DbdbcKgJOmpQMtrIUWivtYuVMnp/W/yA==}
+  ws@8.23.0:
+    resolution: {integrity: sha512-wCkmX8QMOrKjgO8HW2WyDbTSGeqkocxgDzS9iR79rEAexty6/2qzilx3Ag8Tqf9ykop3irLKle0MtVn5qjVnoQ==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -1159,7 +1159,7 @@ packages:
 
 snapshots:
 
-  '@amitkaps/craftz@0.24.0(vite-plus@1.6.0(@types/node@26.6.6)(@vitest/ui@5.1.0)(playwright@1.63.0)(publint@0.3.25))':
+  '@amitkaps/craftz@0.25.0(vite-plus@1.6.0(@types/node@26.6.6)(@vitest/ui@5.1.0)(playwright@1.63.0)(publint@0.3.25))':
     dependencies:
       vite-plus: 1.6.0(@types/node@26.6.6)(@vitest/ui@5.1.0)(playwright@1.63.0)(publint@0.3.25)
 
@@ -1177,13 +1177,13 @@ snapshots:
 
   '@blazediff/core@1.10.0': {}
 
-  '@jridgewell/resolve-uri@3.1.2': {}
+  '@jridgewell/resolve-uri@3.1.3': {}
 
   '@jridgewell/sourcemap-codec@1.6.0': {}
 
   '@jridgewell/trace-mapping@0.3.31':
     dependencies:
-      '@jridgewell/resolve-uri': 3.1.2
+      '@jridgewell/resolve-uri': 3.1.3
       '@jridgewell/sourcemap-codec': 1.6.0
 
   '@oxc-project/runtime@0.158.0': {}
@@ -1387,7 +1387,7 @@ snapshots:
       sirv: 3.0.2
       tinyrainbow: 3.2.0
       vitest: 5.1.0(@types/node@26.6.6)(@vitest/browser-preview@5.1.0)(@vitest/ui@5.1.0)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(publint@0.3.25))
-      ws: 8.22.2
+      ws: 8.23.0
     transitivePeerDependencies:
       - bufferutil
       - msw
@@ -1833,7 +1833,7 @@ snapshots:
 
   why-is-node-running@3.2.1: {}
 
-  ws@8.22.2: {}
+  ws@8.23.0: {}
 
   yuku-core@0.19.0:
     dependencies:
