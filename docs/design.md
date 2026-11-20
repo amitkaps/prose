@@ -46,7 +46,7 @@ A rule is a list item in a doc that opens with its id, like [`summary-first`](us
 
 [`prose outline`](usage.md#outline) writes `outline.md`, every file in the repository with its summary. `pnpm pr` and `pnpm gone` write it, and git ignores it. `AGENTS.md` names it, and an agent opens the part for the folder it expects to work in.
 
-**Evidence.** Agents never ran the map grep the rules told them to, so the map had to be put in front of them. Across 21 sessions on craftz and visframe, an agent found the same files with the outline imported, left out or named in a bullet. None opened it unprompted, and an import cost 6k to 20k tokens in every session for nothing. So `AGENTS.md` names it, and the headers stay as they are.
+**Evidence.** Agents never ran the map grep the rules told them to, so the map had to be put in front of them. Across 21 sessions on craftz and a private application, an agent found the same files with the outline imported, left out or named in a bullet. None opened it unprompted, and an import cost 6k to 20k tokens in every session for nothing. So `AGENTS.md` names it, and the headers stay as they are.
 
 ### The renderer
 
