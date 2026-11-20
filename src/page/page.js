@@ -18,7 +18,11 @@
  */
 {
   const root = document.documentElement;
-  const runs = [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".code"))];
+  /** @type {NodeListOf<HTMLElement>} */
+  const codes = document.querySelectorAll(".code");
+  const runs = [...codes];
+  /** @type {NodeListOf<HTMLElement>} */
+  const modes = document.querySelectorAll("[data-mode]");
   /** @param {HTMLElement} run */
   const isOpen = (run) =>
     root.classList.contains("prose-only")
@@ -26,9 +30,7 @@
       : !run.classList.contains("closed");
   const sync = () => {
     const proseOnly = root.classList.contains("prose-only");
-    for (const b of /** @type {NodeListOf<HTMLElement>} */ (
-      document.querySelectorAll("[data-mode]")
-    )) {
+    for (const b of modes) {
       b.setAttribute("aria-pressed", String((b.dataset.mode === "prose") === proseOnly));
     }
     for (const run of runs) {
@@ -38,9 +40,7 @@
       );
     }
   };
-  for (const b of /** @type {NodeListOf<HTMLElement>} */ (
-    document.querySelectorAll("[data-mode]")
-  )) {
+  for (const b of modes) {
     b.addEventListener("click", () => {
       const proseOnly = b.dataset.mode === "prose";
       root.classList.toggle("prose-only", proseOnly);
@@ -87,12 +87,14 @@
  * docked tree if it's closed. Choosing a heading from the popover closes it, so the text shows.
  */
 {
-  const links = [
-    .../** @type {NodeListOf<HTMLAnchorElement>} */ (document.querySelectorAll(".toc a")),
-  ];
-  const section = /** @type {HTMLElement | null} */ (document.querySelector(".where .section"));
+  /** @type {NodeListOf<HTMLAnchorElement>} */
+  const tocLinks = document.querySelectorAll(".toc a");
+  const links = [...tocLinks];
+  /** @type {HTMLElement | null} */
+  const section = document.querySelector(".where .section");
   const rail = /** @type {HTMLElement} */ (document.getElementById("rail"));
-  const pane = /** @type {HTMLElement | null} */ (rail.querySelector(".toc-rail"));
+  /** @type {HTMLElement | null} */
+  const pane = rail.querySelector(".toc-rail");
   /** @type {string | undefined} */
   let shown;
   /** @param {HTMLAnchorElement} a */
@@ -112,7 +114,8 @@
     }
     for (const a of links) a.classList.toggle("here", idOf(a) === current);
     // The rail's contents scroll on their own, so its mark is kept in view there, not the page's.
-    const marked = /** @type {HTMLElement | null | undefined} */ (pane?.querySelector("a.here"));
+    /** @type {HTMLElement | null | undefined} */
+    const marked = pane?.querySelector("a.here");
     if (pane && marked && current !== shown) {
       shown = current;
       const { offsetTop: top, offsetHeight: height } = marked;

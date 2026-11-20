@@ -10,9 +10,8 @@
   try {
     const saved = JSON.parse(sessionStorage.getItem("prose:rail") || "null");
     if (saved) {
-      const folders = /** @type {NodeListOf<HTMLDetailsElement>} */ (
-        rail.querySelectorAll("details[data-folder]")
-      );
+      /** @type {NodeListOf<HTMLDetailsElement>} */
+      const folders = rail.querySelectorAll("details[data-folder]");
       for (const d of folders) {
         if (saved.open.includes(d.dataset.folder)) d.open = true;
       }
@@ -32,9 +31,8 @@
   }
   addEventListener("pagehide", () => {
     try {
-      const opened = /** @type {NodeListOf<HTMLDetailsElement>} */ (
-        rail.querySelectorAll("details[data-folder][open]")
-      );
+      /** @type {NodeListOf<HTMLDetailsElement>} */
+      const opened = rail.querySelectorAll("details[data-folder][open]");
       const open = [...opened].map((d) => d.dataset.folder);
       sessionStorage.setItem("prose:rail", JSON.stringify({ open, scroll: rail.scrollTop }));
     } catch {

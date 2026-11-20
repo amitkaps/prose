@@ -43,7 +43,7 @@ function focused(page: Page): Promise<Stop | null> {
     const shown = el.id === "dock" ? document.querySelector<HTMLElement>("label.dock")! : el;
     const box = shown.getBoundingClientRect();
     const style = getComputedStyle(shown);
-    const text = (el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 30);
+    const text = (el.getAttribute("aria-label") ?? el.textContent).trim().slice(0, 30);
     return {
       name: `${el.tagName.toLowerCase()}${el.className ? `.${el.className.split(" ")[0]}` : ""} "${text}"`,
       region: regions.findIndex((selector) => el.closest(selector)),
