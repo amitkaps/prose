@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /** @prose
- * # `prose [dir]`
+ * # `prose [<dir>]`
  *
  * The command. `prose` serves a repository and opens it in the browser. `prose build` writes the
  * same pages as static files, for any host to serve. `prose check` fails on what the text gets
