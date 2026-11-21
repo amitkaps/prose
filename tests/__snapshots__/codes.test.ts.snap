@@ -15,7 +15,7 @@ exports[`prose's rules print as they did 1`] = `
   Checked by \`untitled-summary\` and \`long-summary\`.
 - **Plain sentences.** Write plain sentences. Each one holds one idea, in about 25 words at most, in the active voice with a named subject. If a point doesn't fit, give it its own sentence or cut it. Don't join ideas with semicolons or colons, and keep parentheses for links and examples. Use one term for each concept, the one the docs already use.
   Checked by \`long-sentence\`, \`joining-semicolon\`, \`joining-colon\` and \`parenthetical-aside\`.
-- **markz's Markdown.** Prose goes in \`@prose\` comments, written in [markz's Markdown](https://markz.amitkaps.com/docs/usage.md#for-agents), whose rules \`prose rules\` prints after these. \`@prose\` and the comment's close each sit on their own line, and headings step down one level at a time. Ordinary comments stay for code-level notes.
+- **markz's Markdown.** Prose goes in \`@prose\` comments, written in [markz's Markdown](https://markz.amitkaps.com/docs/usage.md#for-agents), whose syntax for ids, attributes and elements \`prose rules\` prints after these. \`@prose\` and the comment's close each sit on their own line, and headings step down one level at a time. Ordinary comments stay for code-level notes.
   Checked by \`heading-skip\` and \`marker-line\`.
 
 ## What it says
