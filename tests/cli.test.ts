@@ -52,7 +52,9 @@ function run(cwd: string, ...args: string[]) {
 }
 
 function runIn(cwd: string, actions: boolean, ...args: string[]) {
-  const env = { ...process.env, GITHUB_ACTIONS: actions ? "true" : "" };
+  // The Markdown a pipe or an agent reads, even under a runner that forces colour.
+  const { FORCE_COLOR: _, ...rest } = process.env;
+  const env = { ...rest, NO_COLOR: "1", GITHUB_ACTIONS: actions ? "true" : "" };
   const { status, stdout, stderr } = spawnSync("node", [cli, ...args], {
     cwd,
     env,
