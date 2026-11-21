@@ -176,8 +176,8 @@ importers:
   .:
     devDependencies:
       '@amitkaps/craftz':
-        specifier: 0.27.0
-        version: 0.27.0(vite-plus@1.7.0(@types/node@26.6.6)(@vitest/ui@5.1.0)(playwright@1.63.0)(publint@0.3.25))
+        specifier: 0.28.0
+        version: 0.28.0(vite-plus@1.7.0(@types/node@26.6.6)(@vitest/ui@5.1.0)(playwright@1.63.0)(publint@0.3.25))
       '@amitkaps/markz':
         specifier: 0.10.0
         version: 0.10.0
@@ -199,8 +199,8 @@ importers:
 
 packages:
 
-  '@amitkaps/craftz@0.27.0':
-    resolution: {integrity: sha512-J5cmdr7qJ70Hg+O8+jwzV0mtTyCFBEN+XiAVzInJ3qiW4QZUGpRSMXpAliH/SNHmEVFU+e7nMZ0lYnKHZzoP5A==}
+  '@amitkaps/craftz@0.28.0':
+    resolution: {integrity: sha512-PIaahNsvBO3A8mNCqlyo+PgZCvwAPbO64V+sQIWa84udH47U7Ot8adU8Vw9zSWPUzh8bWq2dAngtT+I76PEkEw==}
     engines: {node: '>=26.13.1'}
     hasBin: true
     peerDependencies:
@@ -1179,7 +1179,7 @@ packages:
 
 snapshots:
 
-  '@amitkaps/craftz@0.27.0(vite-plus@1.7.0(@types/node@26.6.6)(@vitest/ui@5.1.0)(playwright@1.63.0)(publint@0.3.25))':
+  '@amitkaps/craftz@0.28.0(vite-plus@1.7.0(@types/node@26.6.6)(@vitest/ui@5.1.0)(playwright@1.63.0)(publint@0.3.25))':
     dependencies:
       vite-plus: 1.7.0(@types/node@26.6.6)(@vitest/ui@5.1.0)(playwright@1.63.0)(publint@0.3.25)
 
