@@ -16,8 +16,8 @@
  * The commands are in the same doc, each the list item that opens its section, so the rules are
  * read only from under For agents, and the commands from the rest. `prose help` prints them.
  *
- * markz's rules print after prose's, from the markz prose bundles, which is the one `check` ran.
- * So `prose rules reference-link` prints markz's own text, and the markz rule it serves.
+ * markz's rules come from the markz prose bundles, which is the one `check` ran. So
+ * `prose rules reference-link` prints markz's own text, and the markz rule it serves.
  */
 import { headings, ids, parse, walk, type NodeId } from "@amitkaps/markz";
 import {
@@ -70,8 +70,37 @@ export function proseRules(source: string = usage): Rules {
   return { tool: "prose", rules, codes };
 }
 
-/** prose's rules, then markz's, as `prose rules` prints them. */
+/** prose's rules, then markz's, which `prose rules <code>` finds a code in. */
 export const sets: Rules[] = compose(proseRules(), markz);
+
+/** @prose
+ * # markz's syntax, in short
+ *
+ * `prose rules` prints only the markz rules for syntax an agent writes on purpose, like an id
+ * span or an element, since no warning teaches it how. `prose rules markz` prints them all.
+ *
+ * The rest say what not to write, and `check` names each slip with what to write instead, so
+ * printing them ahead costs every session words the warning already says. A test fails if an id
+ * here leaves markz.
+ */
+export const WRITTEN = [
+  "heading-hash",
+  "attributes-span",
+  "attributes-above",
+  "element-braces",
+  "note-span",
+  "html-raw-block",
+];
+
+/** prose's rules, then markz's syntax in short, as `prose rules` prints them. */
+export const short: Rules[] = compose(proseRules(), {
+  ...markz,
+  rules: markz.rules.filter((rule) => WRITTEN.includes(rule.id)),
+});
+
+/** The line `prose rules` ends with, for markz's other rules. */
+export const MORE =
+  "markz's other rules say what not to write, and `prose check` names each slip with what to write instead. `prose rules markz` prints them all.\n";
 
 /** prose's commands, from a usage doc: the list items that open with an id, outside For agents. */
 export function proseCommands(source: string = usage): Commands {

@@ -188,9 +188,10 @@ pnpm prose help style  # what one does, from this page
 ```sh
 pnpm prose rules                # the rules, as raw text
 pnpm prose rules joining-colon  # what one code asks for
+pnpm prose rules markz          # all of markz's rules
 ```
 
-The rules fall in four groups: where prose goes, how it reads, what it says, and keeping it true. Each rule has a name, and each code in [warnings](#warnings) and [style](#style) names the rule it serves. So `prose rules` prints each rule with the codes that check it, and a test holds the two to each other. A code can't ship without a rule to say what to write, though most rules are about meaning and no code checks them. markz's rules print after prose's, from the markz prose bundles, and each markz code serves one of them. The codes about a build, `uncommitted-changes` and `unignored-build`, serve none, since they aren't about the writing.
+The rules fall in four groups: where prose goes, how it reads, what it says, and keeping it true. Each rule has a name, and each code in [warnings](#warnings) and [style](#style) names the rule it serves. So `prose rules` prints each rule with the codes that check it, and a test holds the two to each other. A code can't ship without a rule to say what to write, though most rules are about meaning and no code checks them. After prose's rules, it prints markz's for the syntax an agent writes on purpose, like an id span or an element. markz's other rules say what not to write, and `check` names each slip with what to write instead, so `prose rules markz` prints them only when asked. Each markz code serves one of markz's rules. The codes about a build, `uncommitted-changes` and `unignored-build`, serve none, since they aren't about the writing.
 
 ### Where prose goes
 
@@ -202,7 +203,7 @@ The rules fall in four groups: where prose goes, how it reads, what it says, and
 
 - [**Summary first.**]{#summary-first} Every prose comment, README and doc begins with a short first paragraph, its summary for the human, in about three lines. A file's summary opens with a heading, its title. The paragraph says what the file or section means, not what its code does. Detail goes below it. When a change alters a file's role, rewrite that paragraph in the same change.
 - [**Plain sentences.**]{#plain-sentences} Write plain sentences. Each one holds one idea, in about 25 words at most, in the active voice with a named subject. If a point doesn't fit, give it its own sentence or cut it. Don't join ideas with semicolons or colons, and keep parentheses for links and examples. Use one term for each concept, the one the docs already use.
-- [**markz's Markdown.**]{#markz-markdown} Prose goes in `@prose` comments, written in [markz's Markdown](https://markz.amitkaps.com/docs/usage.md#for-agents), whose rules `prose rules` prints after these. `@prose` and the comment's close each sit on their own line, and headings step down one level at a time. Ordinary comments stay for code-level notes.
+- [**markz's Markdown.**]{#markz-markdown} Prose goes in `@prose` comments, written in [markz's Markdown](https://markz.amitkaps.com/docs/usage.md#for-agents), whose syntax for ids, attributes and elements `prose rules` prints after these. `@prose` and the comment's close each sit on their own line, and headings step down one level at a time. Ordinary comments stay for code-level notes.
 
 ### What it says
 

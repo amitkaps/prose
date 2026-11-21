@@ -27,9 +27,9 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { build } from "./build.js";
-import { finding, printHelp, printOne, printRules } from "@amitkaps/markz/rules";
+import { finding, markz, printHelp, printOne, printRules } from "@amitkaps/markz/rules";
 import { OUTLINE, writeOutline } from "./outline.js";
-import { proseCommands, sets } from "./rules.js";
+import { MORE, proseCommands, sets, short } from "./rules.js";
 import { changedSince } from "./repo.js";
 import { serve } from "./server.js";
 import { styleAdvice } from "./style.js";
@@ -177,7 +177,12 @@ async function main(argv: string[]): Promise<void> {
     if (code === "-h" || code === "--help") return void process.stdout.write(help());
     if (rest.length || code?.startsWith("-"))
       throw new Error(`prose rules takes one code\n\n${help()}`);
-    const printed = code ? printOne(sets, code) : printRules(sets);
+    const printed =
+      code === "markz"
+        ? printRules([markz])
+        : code
+          ? printOne(sets, code)
+          : `${printRules(short)}\n${MORE}`;
     if (printed === undefined) throw new Error(`prose and markz state no \`${code}\``);
     return void process.stdout.write(printed);
   }
