@@ -159,18 +159,28 @@ export function findInFile<Code extends string>(
   return inComments(path, node.source ?? "", node.comments ?? [], find);
 }
 
-/** What one run of the check knows of the repository: its files, each linked page's heading
- *  ids, the page each written id was first stated on, and the exports its package ships, each
- *  read once. */
+/** What one run of the check knows of the repository: its files, the folders that hold them, each
+ *  linked page's heading ids, the page each written id was first stated on, and the exports its
+ *  package ships, each read once. */
 export interface Run {
   files: Set<string>;
+  folders: Set<string>;
   ids: Map<string, Set<string>>;
   stated: Map<string, string>;
   shipped?: Map<string, Map<string, number>>;
 }
 
 export function newRun(files: string[]): Run {
-  return { files: new Set(files), ids: new Map(), stated: new Map() };
+  // Every folder above a file, worked out once, since each file's links ask whether one exists.
+  const folders = new Set(
+    files.flatMap((f) =>
+      f
+        .split("/")
+        .slice(0, -1)
+        .map((_, i, parts) => parts.slice(0, i + 1).join("/")),
+    ),
+  );
+  return { files: new Set(files), folders, ids: new Map(), stated: new Map() };
 }
 
 /** One file's warnings, markz's and prose's own, in the file's order. */
@@ -179,7 +189,7 @@ export function fileWarnings(root: string, path: string, run: Run): Warning[] {
   return [
     ...noProse(root, path),
     ...findInFile(root, path, markzFindings),
-    ...structureWarnings(root, path, run.files, run.ids, run.stated),
+    ...structureWarnings(root, path, run.files, run.folders, run.ids, run.stated),
     ...undocumentedExports(path, run.shipped, root),
   ].sort((a, b) => (a.line ?? 0) - (b.line ?? 0) || (a.column ?? 0) - (b.column ?? 0));
 }

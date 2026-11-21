@@ -19,7 +19,15 @@ import {
   contentWarnings,
   formatWarning,
   markdownWarnings,
+  newRun,
 } from "../src/warnings.js";
+
+describe("newRun", () => {
+  it("lists each folder that holds a file once, for every file's links to read", () => {
+    const run = newRun(["README.md", "src/a.ts", "src/lib/b.ts", "docs/c.md"]);
+    expect(run.folders).toEqual(new Set(["src", "src/lib", "docs"]));
+  });
+});
 
 describe("formatWarning", () => {
   it("writes the level, the place, the code, the message and what to write instead, as a compiler does", () => {

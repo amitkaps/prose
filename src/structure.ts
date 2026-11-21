@@ -29,18 +29,20 @@ export const STRUCTURE_CODES = [
 ] as const;
 export type StructureCode = (typeof STRUCTURE_CODES)[number];
 
-/** One file's structure warnings, against the repository's `files`. `stated` holds the page
+/** One file's structure warnings, against the repository's `files` and the `folders` that hold
+ *  them. `stated` holds the page
  *  each written id was first stated on, across the run. */
 export function structureWarnings(
   root: string,
   path: string,
   files: Set<string>,
+  folders: Set<string>,
   ids: Map<string, Set<string>>,
   stated: Map<string, string>,
 ): Warning<StructureCode>[] {
   if (!isSource(root, path)) return [];
   const found = [
-    ...findInFile(root, path, links(root, path, files, ids)),
+    ...findInFile(root, path, links(root, path, files, folders, ids)),
     ...findInFile(root, path, headingLevels()),
     ...findInFile(root, path, writtenIds(path, stated)),
   ];
@@ -66,16 +68,9 @@ function links(
   root: string,
   path: string,
   files: Set<string>,
+  folders: Set<string>,
   ids: Map<string, Set<string>>,
 ): Finder<StructureCode> {
-  const folders = new Set(
-    [...files].flatMap((f) =>
-      f
-        .split("/")
-        .slice(0, -1)
-        .map((_, i, parts) => parts.slice(0, i + 1).join("/")),
-    ),
-  );
   return (doc) => {
     const found: Found<StructureCode>[] = [];
     walk(doc, {
