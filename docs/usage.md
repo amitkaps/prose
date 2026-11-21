@@ -181,6 +181,8 @@ pnpm prose help style  # what one does, from this page
 
 `prose rules` is for an agent, as [For agents](#for-agents) says.
 
+In a terminal, `help` and `rules` show their Markdown in colour, without its marks, and wrap it to the window. Anywhere else, like a pipe, an agent's shell or with `NO_COLOR` set, they print the Markdown as it is.
+
 ## For agents
 
 `prose rules` prints the rules below, from the docs of the version installed, and `prose rules <code>` prints one code's row with the rule it serves. Have the project's `AGENTS.md` or `CLAUDE.md` say to run it before writing prose, or changing code a `@prose` comment explains. An agent then reads the rules as written, with no fetch, and they change when prose is upgraded.

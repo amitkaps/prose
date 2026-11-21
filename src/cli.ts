@@ -27,7 +27,7 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { build } from "./build.js";
-import { finding, markz, printHelp, printOne, printRules } from "@amitkaps/markz/rules";
+import { finding, markz, printHelp, printOne, printRules, write } from "@amitkaps/markz/rules";
 import { OUTLINE, writeOutline } from "./outline.js";
 import { MORE, proseCommands, sets, short } from "./rules.js";
 import { changedSince } from "./repo.js";
@@ -37,6 +37,14 @@ import { projectFiles } from "./tree.js";
 import { checkedCount, contentWarnings, formatWarning, type Warning } from "./warnings.js";
 
 const help = (): string => printHelp(proseCommands())!;
+
+/** Help and rules, in colour in a terminal and as Markdown anywhere else, as markz writes them.
+ *  prose's commands are the usages it colours. */
+const show = (markdown: string): void =>
+  write(
+    markdown,
+    proseCommands().commands.map((c) => c.label),
+  );
 
 function version(): string {
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8")) as {
@@ -154,7 +162,7 @@ async function main(argv: string[]): Promise<void> {
   let out: string | undefined;
   if (argv[0] === "style") {
     const paths = argv.slice(1);
-    if (paths.some((a) => a === "-h" || a === "--help")) return void process.stdout.write(help());
+    if (paths.some((a) => a === "-h" || a === "--help")) return show(help());
     return style(paths);
   }
   if (argv[0] === "help") {
@@ -162,11 +170,11 @@ async function main(argv: string[]): Promise<void> {
     const printed = rest.length ? undefined : printHelp(proseCommands(), name);
     if (printed === undefined)
       throw new Error(`prose has no command \`${argv.slice(1).join(" ")}\``);
-    return void process.stdout.write(printed);
+    return show(printed);
   }
   if (argv[0] === "outline") {
     const [given, ...rest] = argv.slice(1);
-    if (given === "-h" || given === "--help") return void process.stdout.write(help());
+    if (given === "-h" || given === "--help") return show(help());
     if (rest.length || given?.startsWith("-"))
       throw new Error(`prose outline takes one folder\n\n${help()}`);
     const files = writeOutline(resolve(given ?? "."));
@@ -174,7 +182,7 @@ async function main(argv: string[]): Promise<void> {
   }
   if (argv[0] === "rules") {
     const [code, ...rest] = argv.slice(1);
-    if (code === "-h" || code === "--help") return void process.stdout.write(help());
+    if (code === "-h" || code === "--help") return show(help());
     if (rest.length || code?.startsWith("-"))
       throw new Error(`prose rules takes one code\n\n${help()}`);
     const printed =
@@ -184,14 +192,14 @@ async function main(argv: string[]): Promise<void> {
           ? printOne(sets, code)
           : `${printRules(short)}\n${MORE}`;
     if (printed === undefined) throw new Error(`prose and markz state no \`${code}\``);
-    return void process.stdout.write(printed);
+    return show(printed);
   }
   const command = argv[0] === "build" || argv[0] === "check" ? argv[0] : null;
   const building = command === "build";
   if (command) argv = argv.slice(1);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
-    if (arg === "-h" || arg === "--help") return void process.stdout.write(help());
+    if (arg === "-h" || arg === "--help") return show(help());
     if (arg === "-v" || arg === "--version") return void process.stdout.write(`${version()}\n`);
     const value = () => (arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : argv[++i]);
     if (arg === "--no-open") open = false;
