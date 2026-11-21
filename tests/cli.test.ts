@@ -255,7 +255,7 @@ describe("flags", () => {
   it("prints help and the version", () => {
     const root = repo(clean);
     expect(run(root, "--help").out[0]).toBe(
-      "Usage: prose <command>, and prose help <command> says more",
+      "Usage: `prose <command>`, and `prose help <command>` says more.",
     );
     expect(run(root, "--version").out[0]).toMatch(/^\d+\.\d+\.\d+/);
   });
