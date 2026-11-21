@@ -18,7 +18,8 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import { proseCommands } from "../src/rules.js";
+import { markz } from "@amitkaps/markz/rules";
+import { proseCommands, WRITTEN } from "../src/rules.js";
 
 const packed = mkdtempSync(join(tmpdir(), "prose-packed-"));
 const cli = join(packed, "dist/cli.js");
@@ -183,7 +184,21 @@ describe("prose rules", () => {
     expect(out).toContain("## Keeping it true");
     expect(out).toContain("  Checked by `heading-skip` and `marker-line`.");
     const markz = out.indexOf("# markz");
-    expect(out.slice(markz, markz + 3)).toEqual(["# markz", "", "## Metadata"]);
+    expect(out.slice(markz, markz + 3)).toEqual(["# markz", "", "## Blocks"]);
+    expect(out).toContainEqual(expect.stringMatching(/^- `attributes-span`: /));
+    expect(out).not.toContainEqual(expect.stringMatching(/^- `metadata-block`: /));
+    expect(out.at(-1)).toMatch(/^markz's other rules say what not to write/);
+  });
+
+  it("prints all of markz's rules for markz", () => {
+    const out = run(repo(clean), "rules", "markz").out;
+    expect(out[0]).toBe("## Metadata");
+    expect(out).toContainEqual(expect.stringMatching(/^- `check-after`: /));
+  });
+
+  it("keeps markz's rules in short to ids markz has", () => {
+    const ids = markz.rules.map((rule) => rule.id);
+    expect(WRITTEN.filter((id) => !ids.includes(id))).toEqual([]);
   });
 
   it("prints one code's row, then the rule it serves", () => {
