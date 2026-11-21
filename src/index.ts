@@ -1,7 +1,7 @@
 /** @prose
  * # The library
  *
- * What the package exports for use in code. The commands are `prose [dir]` and `prose build`
+ * What the package exports for use in code. The commands are `prose [<dir>]` and `prose build`
  * ([cli.ts](cli.ts)). The same server, build, parser and tree walk are here for anyone who wants
  * that view of a repository in code.
  */

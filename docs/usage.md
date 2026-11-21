@@ -15,7 +15,7 @@ To read a repository once without installing, run `npx @amitkaps/prose .` or `pn
 
 ## Read a repository
 
-- [`prose [dir] [--port <n>] [--no-open]`]{#serve}: serves a repository and opens it in the browser.
+- [`prose [<dir>] [--port <n>] [--no-open]`]{#serve}: serves a repository and opens it in the browser.
 
 ```sh
 prose .                 # serve it at http://127.0.0.1:1234/ and open the browser
@@ -46,7 +46,7 @@ The first `@prose` in a file is its summary, and a folder's page shows its first
 
 ## Publish a site
 
-- [`prose build [dir] [--out <dir>]`]{#build}: writes the same pages as a static site, from the last commit.
+- [`prose build [<dir>] [--out <dir>]`]{#build}: writes the same pages as a static site, from the last commit.
 
 ```sh
 prose build             # the same pages as static files, in .prose
@@ -64,7 +64,7 @@ The build also writes a `_headers` file, which Cloudflare and Netlify read. It c
 
 ## Warnings
 
-- [`prose check [dir]`]{#check}: prints what the text gets wrong, and fails if it finds anything.
+- [`prose check [<dir>]`]{#check}: prints what the text gets wrong, and fails if it finds anything.
 
 ```sh
 prose check             # what the text gets wrong, by file and line
@@ -113,7 +113,7 @@ tests/fixtures/** prose-unchecked
 
 ## Advice on style
 
-- [`prose style [path ...] [--since <ref>]`]{#style}: gives advice on how the files you name read, and always passes.
+- [`prose style [<path> ...] [--since <ref>]`]{#style}: gives advice on how the files you name read, and always passes.
 
 ```sh
 prose style docs/usage.md src/store.ts   # advice on the files you just wrote
@@ -161,7 +161,7 @@ Other forms look like a joined idea or an aside but aren't, so they get no sugge
 
 ## An outline for agents
 
-- [`prose outline [dir]`]{#outline}: writes `outline.md`, every file in the repository with its summary.
+- [`prose outline [<dir>]`]{#outline}: writes `outline.md`, every file in the repository with its summary.
 
 ```sh
 pnpm prose outline   # writes outline.md at the root
@@ -171,8 +171,8 @@ The outline is the repository as a tree, with the first paragraph of each file's
 
 ## Rules and help
 
-- [`prose rules [code]`]{#rules}: prints the rules to write prose by, or what one code asks for.
-- [`prose help [command]`]{#help}: lists the commands, or prints what one does.
+- [`prose rules [<code>]`]{#rules}: prints the rules to write prose by, or what one code asks for.
+- [`prose help [<command>]`]{#help}: lists the commands, or prints what one does.
 
 ```sh
 pnpm prose help        # every command, with how it's run
