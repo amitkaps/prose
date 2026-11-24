@@ -156,6 +156,7 @@ export default defineConfig({
     expect: { requireAssertions: true },
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    exclude: ["**/node_modules/**", "**/.git/**", ".claude/worktrees/**"],
   },
 
   /** @prose

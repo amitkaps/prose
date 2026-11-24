@@ -16,3 +16,6 @@ vite.config.ts.timestamp-*
 .cloudflare/
 .wrangler/
 outline.md
+
+# Agents' worktrees
+.claude/worktrees
