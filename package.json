@@ -41,18 +41,18 @@
     "craftz": "craftz"
   },
   "devDependencies": {
-    "@amitkaps/craftz": "0.30.0",
+    "@amitkaps/craftz": "0.31.0",
     "@amitkaps/markz": "0.10.0",
     "@playwright/test": "1.63.0",
-    "@types/node": "26.6.6",
+    "@types/node": "26.6.10",
     "axe-core": "^4.14.1",
     "publint": "0.3.25",
-    "vite-plus": "1.7.0"
+    "vite-plus": "1.8.0"
   },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "12.21.0",
+      "version": "12.23.0",
       "onFail": "download"
     },
     "runtime": {
@@ -64,5 +64,5 @@
   "engines": {
     "node": ">=26.13.1"
   },
-  "packageManager": "pnpm@12.21.0"
+  "packageManager": "pnpm@12.23.0"
 }
